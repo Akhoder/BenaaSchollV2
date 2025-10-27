@@ -37,18 +37,18 @@ export default function DashboardPage() {
     if (!profile) return;
 
     if (profile.role === 'admin') {
-      const [students, teachers, classes, subjects] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'student'),
-        supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'teacher'),
+      const [studentsResult, teachersResult, classesResult, subjectsResult] = await Promise.all([
+        supabase.rpc('get_total_students'),
+        supabase.rpc('get_total_teachers'),
         supabase.from('classes').select('id', { count: 'exact' }),
         supabase.from('subjects').select('id', { count: 'exact' }),
       ]);
 
       setStats({
-        totalStudents: students.count || 0,
-        totalTeachers: teachers.count || 0,
-        totalClasses: classes.count || 0,
-        totalSubjects: subjects.count || 0,
+        totalStudents: studentsResult.data || 0,
+        totalTeachers: teachersResult.data || 0,
+        totalClasses: classesResult.count || 0,
+        totalSubjects: subjectsResult.count || 0,
       });
     } else if (profile.role === 'teacher') {
       const [classes, students] = await Promise.all([

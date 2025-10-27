@@ -8,7 +8,16 @@
 
 **Problem**: RLS policies were querying the same table they were protecting, causing infinite recursion.
 
-**Solution**: Fixed in migration `fix_rls_policies.sql`. The policies now use helper functions that prevent recursion.
+**Solution**: Fixed in multiple migrations:
+1. `fix_rls_policies.sql` - Removed recursive queries from policies
+2. `fix_all_recursive_policies.sql` - Simplified all policies to non-recursive versions
+3. `add_admin_statistics_functions.sql` - Created SECURITY DEFINER functions for admin operations
+
+**Current Implementation**:
+- Users can only read/update their own profiles via simple RLS policies
+- Admin operations use SECURITY DEFINER functions (`get_total_students()`, `get_total_teachers()`, etc.)
+- No policies query the profiles table within themselves
+- See DATABASE_SETUP.md for detailed explanation
 
 **Status**: ✅ Resolved
 
