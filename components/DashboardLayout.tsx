@@ -58,12 +58,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             key={item.name}
             href={item.href}
             className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800',
-              isActive && 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
+              'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
+              'hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20',
+              'hover:shadow-md hover:-translate-y-0.5',
+              isActive && 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30'
             )}
           >
-            <Icon className="h-5 w-5" />
-            <span>{item.name}</span>
+            <Icon className={cn(
+              'h-5 w-5 transition-colors',
+              isActive ? 'text-white' : 'text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+            )} />
+            <span className={cn(
+              'font-medium transition-colors',
+              isActive ? 'text-white' : 'text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+            )}>{item.name}</span>
+            {isActive && (
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity" />
+            )}
           </Link>
         );
       })}
@@ -71,22 +82,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <nav className="fixed top-0 z-50 w-full bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <nav className="fixed top-0 z-50 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start">
               <Sheet>
                 <SheetTrigger asChild className="lg:hidden">
-                  <Button variant="ghost" size="icon" className="mr-2">
+                  <Button variant="ghost" size="icon" className="mr-2 hover:bg-slate-100 dark:hover:bg-slate-800">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-64 p-0">
+                <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-slate-900">
                   <div className="flex h-full flex-col gap-2 p-4">
                     <div className="flex items-center gap-2 px-3 py-4 border-b border-slate-200 dark:border-slate-800">
-                      <GraduationCap className="h-6 w-6 text-blue-600" />
-                      <span className="text-lg font-bold">{t('appName')}</span>
+                      <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg">
+                        <GraduationCap className="h-6 w-6 text-white" />
+                      </div>
+                      <span className="text-lg font-display font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{t('appName')}</span>
                     </div>
                     <nav className="flex-1 space-y-1 pt-4">
                       <NavItems />
@@ -95,17 +108,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SheetContent>
               </Sheet>
 
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="p-2 bg-blue-600 rounded-lg">
+              <Link href="/dashboard" className="flex items-center gap-2 group">
+                <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <GraduationCap className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold hidden sm:inline-block">{t('appName')}</span>
+                <span className="text-xl font-display font-bold hidden sm:inline-block bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{t('appName')}</span>
               </Link>
             </div>
 
             <div className="flex items-center gap-3">
               <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-                <SelectTrigger className="w-28 h-9">
+                <SelectTrigger className="w-28 h-9 border-slate-200 dark:border-slate-700 hover:border-blue-500 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -115,19 +128,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SelectContent>
               </Select>
 
-              <div className="flex items-center gap-2">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-blue-600 text-white text-sm">
+              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+                <Avatar className="h-8 w-8 ring-2 ring-blue-500/20">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-semibold">
                     {profile?.full_name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block text-sm">
-                  <p className="font-medium">{profile?.full_name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t(profile?.role || 'student')}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">{profile?.full_name}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 capitalize">{t(profile?.role || 'student')}</p>
                 </div>
               </div>
 
-              <Button variant="ghost" size="icon" onClick={signOut} title={t('signOut')}>
+              <Button variant="ghost" size="icon" onClick={signOut} title={t('signOut')} className="hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 transition-colors">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
@@ -135,7 +148,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </nav>
 
-      <aside className="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-slate-200 dark:bg-slate-950 dark:border-slate-800 lg:translate-x-0">
+      <aside className="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-r border-slate-200/50 dark:border-slate-800/50 shadow-lg lg:translate-x-0">
         <div className="h-full px-3 pb-4 overflow-y-auto">
           <nav className="space-y-1">
             <NavItems />
@@ -143,7 +156,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </aside>
 
-      <main className="p-4 lg:ml-64 pt-20">
+      <main className="p-4 lg:ml-64 pt-20 animate-fade-in">
         {children}
       </main>
     </div>

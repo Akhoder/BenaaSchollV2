@@ -35,11 +35,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-slate-100/[0.2] dark:bg-grid-slate-900/[0.04] bg-[length:20px_20px]" />
+      <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-blue-500/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-purple-500/5 rounded-full blur-3xl" />
+      
+      <div className="w-full max-w-md relative z-10">
         <div className="flex justify-end mb-4">
           <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 border-slate-200 dark:border-slate-700 hover:border-blue-500 transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -50,15 +54,15 @@ export default function LoginPage() {
           </Select>
         </div>
 
-        <Card className="shadow-lg border-slate-200 dark:border-slate-700">
+        <Card className="shadow-2xl border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl bg-white/95 dark:bg-slate-900/95">
           <CardHeader className="space-y-3 text-center">
-            <div className="flex justify-center mb-2">
-              <div className="p-3 bg-blue-600 rounded-2xl">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform duration-300">
                 <GraduationCap className="w-8 h-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold">{t('appName')}</CardTitle>
-            <CardDescription className="text-base">{t('welcome')}</CardDescription>
+            <CardTitle className="text-3xl font-display font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{t('appName')}</CardTitle>
+            <CardDescription className="text-base text-slate-600 dark:text-slate-400 font-sans">{t('welcome')}</CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
@@ -88,7 +92,11 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-[1.02]" 
+                disabled={loading}
+              >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

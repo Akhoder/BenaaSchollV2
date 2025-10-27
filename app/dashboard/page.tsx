@@ -29,7 +29,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (profile) {
-      fetchStats();
+      fetchStats().catch(err => {
+        console.error('Error fetching stats:', err);
+      });
     }
   }, [profile]);
 
@@ -102,12 +104,12 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t('welcomeBack')}, {profile.full_name}
+      <div className="space-y-6 animate-fade-in">
+        <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/20">
+          <h1 className="text-3xl font-display font-bold tracking-tight">
+            {t('welcomeBack')}, {profile.full_name} 👋
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-blue-50 mt-1 text-lg font-medium font-sans">
             {t(`${profile.role}Dashboard`)}
           </p>
         </div>
@@ -120,31 +122,38 @@ export default function DashboardPage() {
                 value={stats.totalStudents}
                 icon={Users}
                 description={t('activeClasses')}
+                gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
                 title={t('totalTeachers')}
                 value={stats.totalTeachers}
                 icon={Users}
                 description="Faculty members"
+                gradient="from-purple-500 to-pink-500"
               />
               <StatCard
                 title={t('totalClasses')}
                 value={stats.totalClasses}
                 icon={School}
                 description="Active classes"
+                gradient="from-amber-500 to-orange-500"
               />
               <StatCard
                 title={t('subjects')}
                 value={stats.totalSubjects}
                 icon={BookOpen}
                 description="Academic subjects"
+                gradient="from-emerald-500 to-teal-500"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle>{t('recentActivity')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    {t('recentActivity')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -153,18 +162,21 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle>{t('quickActions')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                    {t('quickActions')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
                     Add New Student
                   </button>
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
                     Create Class
                   </button>
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
                     Add Teacher
                   </button>
                 </CardContent>
@@ -181,24 +193,30 @@ export default function DashboardPage() {
                 value={stats.totalClasses}
                 icon={School}
                 description="Classes you teach"
+                gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
                 title={t('myStudents')}
                 value={stats.totalStudents}
                 icon={Users}
                 description="Total students"
+                gradient="from-purple-500 to-pink-500"
               />
               <StatCard
                 title={t('schedule')}
                 value="5"
                 icon={Calendar}
                 description="Classes this week"
+                gradient="from-amber-500 to-orange-500"
               />
             </div>
 
-            <Card>
+            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle>{t('myClasses')}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                  {t('myClasses')}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -217,25 +235,31 @@ export default function DashboardPage() {
                 value={stats.totalClasses}
                 icon={School}
                 description="Enrolled classes"
+                gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
                 title={t('myGrades')}
                 value="A"
                 icon={TrendingUp}
                 description="Average grade"
+                gradient="from-emerald-500 to-teal-500"
               />
               <StatCard
                 title={t('attendance')}
                 value="95%"
                 icon={Calendar}
                 description="Attendance rate"
+                gradient="from-amber-500 to-orange-500"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle>{t('mySchedule')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    {t('mySchedule')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -244,9 +268,12 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle>{t('recentActivity')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                    {t('recentActivity')}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -266,24 +293,30 @@ export default function DashboardPage() {
                 value="0"
                 icon={School}
                 description="Classes under supervision"
+                gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
                 title="Total Students"
                 value="0"
                 icon={Users}
                 description="Students in assigned classes"
+                gradient="from-purple-500 to-pink-500"
               />
               <StatCard
                 title="Reports"
                 value="0"
                 icon={BookOpen}
                 description="Pending reports"
+                gradient="from-amber-500 to-orange-500"
               />
             </div>
 
-            <Card>
+            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle>Supervised Classes</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                  Supervised Classes
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-slate-600 dark:text-slate-400">

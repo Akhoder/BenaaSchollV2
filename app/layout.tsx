@@ -1,11 +1,30 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Poppins, Cairo } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700', '800', '900']
+});
+
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  variable: '--font-poppins',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700', '800', '900']
+});
+
+const cairo = Cairo({ 
+  subsets: ['latin', 'arabic'],
+  variable: '--font-cairo',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900']
+});
 
 export const metadata: Metadata = {
   title: 'BenaaSchool - School Management System',
@@ -18,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="scroll-smooth">
+      <body className={`${inter.variable} ${poppins.variable} ${cairo.variable} font-sans antialiased`}>
         <LanguageProvider>
           <AuthProvider>
             {children}

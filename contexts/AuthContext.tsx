@@ -50,14 +50,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    if (data) {
-      setProfile(data);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // If profile doesn't exist, create a default one
+        if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+          // Profile doesn't exist yet, this is normal during signup
+          return;
+        }
+      }
+
+      if (data) {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err);
     }
   };
 
@@ -75,23 +88,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: string, language: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          role: role,
-          preferred_language: language,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            preferred_language: language,
+          },
         },
-      },
-    });
+      });
 
-    if (!error) {
+      if (error) {
+        console.error('Signup error:', error);
+        return { error };
+      }
+
+      // Wait a moment for the trigger to create the profile
+      if (data.user) {
+        // Try to fetch the profile after a short delay
+        setTimeout(async () => {
+          await fetchProfile(data.user!.id);
+        }, 1000);
+      }
+
       router.push('/login');
+      return { error: null };
+    } catch (err) {
+      console.error('Unexpected error during signup:', err);
+      return { error: err };
     }
-
-    return { error };
   };
 
   const signOut = async () => {
