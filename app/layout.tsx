@@ -9,21 +9,24 @@ const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700', '800', '900']
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  fallback: ['system-ui', 'arial']
 });
 
 const poppins = Poppins({ 
   subsets: ['latin'],
   variable: '--font-poppins',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700', '800', '900']
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  fallback: ['system-ui', 'arial']
 });
 
 const cairo = Cairo({ 
   subsets: ['latin', 'arabic'],
   variable: '--font-cairo',
   display: 'swap',
-  weight: ['400', '500', '600', '700', '800', '900']
+  weight: ['400', '500', '600', '700', '800', '900'],
+  fallback: ['system-ui', 'arial']
 });
 
 export const metadata: Metadata = {

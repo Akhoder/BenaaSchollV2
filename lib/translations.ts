@@ -85,6 +85,7 @@ export const translations = {
     signOut: 'خروج',
     dontHaveAccount: 'ليس لديك حساب؟',
     alreadyHaveAccount: 'لديك حساب بالفعل؟',
+    home: 'الرئيسية',
     dashboard: 'لوحة التحكم',
     profile: 'الملف الشخصي',
     settings: 'الإعدادات',

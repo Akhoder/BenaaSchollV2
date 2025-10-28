@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StudentsTable } from '@/components/EnhancedTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -61,6 +61,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface StudentProfile {
   id: string;
@@ -285,12 +286,12 @@ export default function StudentsPage() {
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Enrolled
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
                 <BookOpen className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.enrolled}</div>
+              <div className="text-3xl font-bold font-display text-emerald-600">{stats.enrolled}</div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">In classes</p>
             </CardContent>
           </Card>
@@ -348,147 +349,7 @@ export default function StudentsPage() {
         </Card>
 
         {/* Students List */}
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
-                <User className="h-5 w-5 text-emerald-600" />
-                Students ({filteredStudents.length})
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {filteredStudents.length === 0 ? (
-              <div className="text-center py-12">
-                <GraduationCap className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600" />
-                <p className="mt-4 text-slate-500 dark:text-slate-400 font-sans">
-                  No students found matching your criteria
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold font-sans">Student</TableHead>
-                      <TableHead className="font-semibold font-sans">Email</TableHead>
-                      <TableHead className="font-semibold font-sans">Phone</TableHead>
-                      <TableHead className="font-semibold font-sans">Enrolled Classes</TableHead>
-                      <TableHead className="font-semibold font-sans">Grade</TableHead>
-                      <TableHead className="font-semibold font-sans">Joined</TableHead>
-                      {profile.role === 'admin' && (
-                        <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
-                      )}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.map((student) => (
-                      <TableRow
-                        key={student.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          // Navigate to student detail page
-                          console.log('View student:', student.id);
-                        }}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-emerald-500/20">
-                              <AvatarImage src={student.avatar_url} />
-                              <AvatarFallback className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white font-semibold">
-                                {student.full_name.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-semibold font-sans">{student.full_name}</div>
-                              <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                                {student.role.charAt(0).toUpperCase() + student.role.slice(1)}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm font-sans">
-                            <Mail className="h-4 w-4 text-slate-400" />
-                            {student.email}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {student.phone ? (
-                            <div className="flex items-center gap-2 text-sm font-sans">
-                              <Phone className="h-4 w-4 text-slate-400" />
-                              {student.phone}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-600">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={student.enrolled_classes && student.enrolled_classes > 0 ? 'default' : 'secondary'}
-                            className={cn(
-                              'font-semibold',
-                              student.enrolled_classes && student.enrolled_classes > 0
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                            )}
-                          >
-                            {student.enrolled_classes || 0} classes
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold">
-                            {student.average_grade || 'N/A'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 font-sans">
-                            <Calendar className="h-4 w-4" />
-                            {new Date(student.created_at).toLocaleDateString()}
-                          </div>
-                        </TableCell>
-                        {profile.role === 'admin' && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel className="font-display">Actions</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedStudent(student);
-                                    setIsDialogOpen(true);
-                                  }}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-600"
-                                  onClick={() => {
-                                    setSelectedStudent(student);
-                                    setDeleteConfirmOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <StudentsTable />
 
         {/* Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

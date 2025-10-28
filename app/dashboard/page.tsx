@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatCard } from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, Calendar, TrendingUp } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { QuickStatsChart } from '@/components/Charts';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -105,13 +105,24 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/20">
-          <h1 className="text-3xl font-display font-bold tracking-tight">
-            {t('welcomeBack')}, {profile.full_name} 👋
-          </h1>
-          <p className="text-blue-50 mt-1 text-lg font-medium font-sans">
-            {t(`${profile.role}Dashboard`)}
-          </p>
+        <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-8 text-white shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
+          {/* خلفية متحركة */}
+          <div className="absolute inset-0 bg-pattern opacity-10"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 animate-float"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12 animate-float" style={{animationDelay: '1s'}}></div>
+          
+          <div className="relative z-10">
+            <h1 className="text-4xl font-display font-bold tracking-tight text-shadow-lg">
+              {t('welcomeBack')}, {profile.full_name} 👋
+            </h1>
+            <p className="text-emerald-50 mt-2 text-xl font-medium font-sans">
+              {t(`${profile.role}Dashboard`)}
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-blue-100 text-sm">نظام متصل</span>
+            </div>
+          </div>
         </div>
 
         {profile.role === 'admin' && (
@@ -148,7 +159,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-hover border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -156,13 +167,30 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    No recent activity to display
-                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">+</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">طالب جديد مسجل</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">منذ 5 دقائق</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+                      <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">تم إنشاء فصل جديد</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">منذ ساعة</p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-hover border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
@@ -170,18 +198,20 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
-                    Add New Student
+                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md btn-gradient text-white font-medium">
+                    إضافة طالب جديد
                   </button>
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
-                    Create Class
+                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-950/20 dark:hover:to-teal-950/20 transition-all hover:shadow-md border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-medium">
+                    إنشاء فصل جديد
                   </button>
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md">
-                    Add Teacher
+                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/20 dark:hover:to-orange-950/20 transition-all hover:shadow-md border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-medium">
+                    إضافة معلم جديد
                   </button>
                 </CardContent>
               </Card>
             </div>
+
+            <QuickStatsChart />
           </>
         )}
 
