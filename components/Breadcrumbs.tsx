@@ -79,7 +79,7 @@ export function Breadcrumbs() {
         const Icon = breadcrumb.icon;
 
         return (
-          <div key={breadcrumb.href} className="flex items-center space-x-1">
+          <div key={`${breadcrumb.href}-${index}`} className="flex items-center space-x-1">
             {index > 0 && (
               <ChevronRight className="h-4 w-4 text-slate-400" />
             )}
