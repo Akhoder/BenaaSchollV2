@@ -8,6 +8,9 @@ import { StatCard } from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, Calendar, TrendingUp } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
+import { supabase } from '@/lib/supabase';
+import { getStatsOptimized } from '@/lib/optimizedQueries';
+import { ChartsWithSuspense } from '@/components/LazyComponents';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -38,50 +41,54 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     if (!profile) return;
 
-    if (profile.role === 'admin') {
-      const [studentsResult, teachersResult, classesResult, subjectsResult] = await Promise.all([
-        supabase.rpc('get_total_students'),
-        supabase.rpc('get_total_teachers'),
-        supabase.from('classes').select('id', { count: 'exact' }),
-        supabase.from('subjects').select('id', { count: 'exact' }),
-      ]);
+    try {
+      if (profile.role === 'admin') {
+        // استخدام الاستعلام المحسن للمدير
+        const { data: statsData, error } = await getStatsOptimized();
+        
+        if (error) {
+          console.error('Error fetching stats:', error);
+          return;
+        }
+        
+        if (statsData) {
+          setStats(statsData);
+        }
+      } else if (profile.role === 'teacher') {
+        // تحسين استعلامات المعلم
+        const [classes, students] = await Promise.all([
+          supabase.from('classes').select('id', { count: 'exact' }).eq('teacher_id', profile.id),
+          supabase
+            .from('student_enrollments')
+            .select('student_id', { count: 'exact' })
+            .in('class_id',
+              (await supabase.from('classes').select('id').eq('teacher_id', profile.id)).data?.map(c => c.id) || []
+            ),
+        ]);
 
-      setStats({
-        totalStudents: studentsResult.data || 0,
-        totalTeachers: teachersResult.data || 0,
-        totalClasses: classesResult.count || 0,
-        totalSubjects: subjectsResult.count || 0,
-      });
-    } else if (profile.role === 'teacher') {
-      const [classes, students] = await Promise.all([
-        supabase.from('classes').select('id', { count: 'exact' }).eq('teacher_id', profile.id),
-        supabase
+        setStats({
+          totalClasses: classes.count || 0,
+          totalStudents: students.count || 0,
+          totalTeachers: 0,
+          totalSubjects: 0,
+        });
+      } else if (profile.role === 'student') {
+        // تحسين استعلامات الطالب
+        const enrollments = await supabase
           .from('student_enrollments')
-          .select('student_id', { count: 'exact' })
-          .in('class_id',
-            (await supabase.from('classes').select('id').eq('teacher_id', profile.id)).data?.map(c => c.id) || []
-          ),
-      ]);
+          .select('class_id', { count: 'exact' })
+          .eq('student_id', profile.id)
+          .eq('status', 'active');
 
-      setStats({
-        totalClasses: classes.count || 0,
-        totalStudents: students.count || 0,
-        totalTeachers: 0,
-        totalSubjects: 0,
-      });
-    } else if (profile.role === 'student') {
-      const enrollments = await supabase
-        .from('student_enrollments')
-        .select('class_id', { count: 'exact' })
-        .eq('student_id', profile.id)
-        .eq('status', 'active');
-
-      setStats({
-        totalClasses: enrollments.count || 0,
-        totalStudents: 0,
-        totalTeachers: 0,
-        totalSubjects: 0,
-      });
+        setStats({
+          totalClasses: enrollments.count || 0,
+          totalStudents: 0,
+          totalTeachers: 0,
+          totalSubjects: 0,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching stats:', err);
     }
   };
 
@@ -211,7 +218,7 @@ export default function DashboardPage() {
               </Card>
             </div>
 
-            <QuickStatsChart />
+                   <ChartsWithSuspense />
           </>
         )}
 

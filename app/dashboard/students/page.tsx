@@ -8,6 +8,8 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { StudentsTable } from '@/components/EnhancedTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getStudentsOptimized } from '@/lib/optimizedQueries';
 import {
   Select,
   SelectContent,
@@ -109,70 +111,46 @@ export default function StudentsPage() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      let allStudents: StudentProfile[] = [];
       
-      // Try using RPC function first for admin
-      if (profile?.role === 'admin') {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('get_all_profiles');
-        
-        if (!rpcError && rpcData) {
-          allStudents = rpcData.filter((user: any) => user.role === 'student');
-        } else {
-          console.error('RPC Error:', rpcError);
-          // Fallback to direct query
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('role', 'student')
-            .order('full_name', { ascending: true });
-          
-          if (error) {
-            console.error('Direct query also failed:', error);
-            toast.error('Failed to fetch students');
-          } else {
-            allStudents = data || [];
-          }
-        }
-      } else {
-        // For teachers and supervisors, use direct query (they see only their students)
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('role', 'student')
-          .order('full_name', { ascending: true });
-        
-        if (error) {
-          console.error('Error fetching students:', error);
-          toast.error('Failed to fetch students');
-        } else {
-          allStudents = data || [];
-        }
+      // استخدام الاستعلام المحسن
+      const { data: allStudents, error } = await getStudentsOptimized(
+        profile?.role || 'student', 
+        profile?.id
+      );
+      
+      if (error) {
+        console.error('Error fetching students:', error);
+        toast.error('Failed to fetch students');
+        setStudents([]);
+        return;
       }
       
-      if (allStudents.length > 0) {
-        // Fetch enrollment data for each student
-        const studentsWithEnrollments = await Promise.all(
-          allStudents.map(async (student) => {
-            const { count } = await supabase
+      if (allStudents && allStudents.length > 0) {
+        // معالجة البيانات المحسنة
+        const processedStudents = await Promise.all(
+          allStudents.map(async (student: any) => {
+            // الحصول على عدد الفصول المسجل فيها الطالب
+            const { data: enrollments } = await supabase
               .from('student_enrollments')
-              .select('*', { count: 'exact', head: true })
+              .select('class_id')
               .eq('student_id', student.id);
             
             return {
               ...student,
-              enrolled_classes: count || 0,
-              average_grade: 'B+',
+              enrolled_classes: enrollments?.length || 0,
+              average_grade: '85.5', // يمكن تحسين هذا لاحقاً
             };
           })
         );
         
-        setStudents(studentsWithEnrollments);
+        setStudents(processedStudents);
       } else {
         setStudents([]);
       }
     } catch (err) {
       console.error('Unexpected error:', err);
       toast.error('An unexpected error occurred');
+      setStudents([]);
     } finally {
       setLoading(false);
     }
