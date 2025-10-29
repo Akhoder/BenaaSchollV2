@@ -67,12 +67,12 @@ import {
 interface ClassData {
   id: string;
   class_code: string;
-  name: string;
+  class_name: string;
   start_date: string;
   end_date?: string;
   level: number;
   image_url?: string;
-  objectives: string;
+  goals: string;
   notes?: string;
   teacher_id?: string;
   supervisor_id?: string;
@@ -95,6 +95,7 @@ export default function ClassesPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isCreating, setIsCreating] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -108,6 +109,46 @@ export default function ClassesPage() {
     teacher_id: '',
     supervisor_id: '',
   });
+
+  const formatDateForInput = (value?: string | null) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
+  const prefillFormFromClass = (c: ClassData) => {
+    setFormData({
+      name: c.class_name || '',
+      start_date: formatDateForInput(c.start_date),
+      end_date: formatDateForInput(c.end_date || ''),
+      level: c.level || 1,
+      image_url: c.image_url || '',
+      objectives: c.goals || '',
+      notes: c.notes || '',
+      teacher_id: c.teacher_id || '',
+      supervisor_id: c.supervisor_id || '',
+    });
+  };
+
+  useEffect(() => {
+    if (isDialogOpen && selectedClass) {
+      setFormData({
+        name: selectedClass.class_name || '',
+        start_date: formatDateForInput(selectedClass.start_date),
+        end_date: formatDateForInput(selectedClass.end_date || ''),
+        level: selectedClass.level || 1,
+        image_url: selectedClass.image_url || '',
+        objectives: selectedClass.goals || '',
+        notes: selectedClass.notes || '',
+        teacher_id: selectedClass.teacher_id || '',
+        supervisor_id: selectedClass.supervisor_id || '',
+      });
+    }
+    if (isDialogOpen && !selectedClass) {
+      resetForm();
+    }
+  }, [isDialogOpen, selectedClass]);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -202,35 +243,62 @@ export default function ClassesPage() {
     return `${prefix}-${timestamp}-${random}`;
   };
 
-  const handleCreateClass = async () => {
+  const handleSaveClass = async () => {
     try {
       setIsCreating(true);
       
-      const classCode = generateClassCode();
-      
-      const { error } = await supabase
-        .from('classes')
-        .insert({
-          class_code: classCode,
-          class_name: formData.name,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
-          level: formData.level,
-          image_url: formData.image_url || null,
-          goals: formData.objectives,
-          notes: formData.notes || null,
-          teacher_id: formData.teacher_id || null,
-          supervisor_id: formData.supervisor_id || null,
-        });
-
-      if (error) {
-        console.error('Error creating class:', error);
-        toast.error('Failed to create class');
+      if (selectedClass) {
+        const { error } = await supabase
+          .from('classes')
+          .update({
+            class_name: formData.name,
+            start_date: formData.start_date,
+            end_date: formData.end_date || null,
+            level: formData.level,
+            image_url: formData.image_url || null,
+            goals: formData.objectives,
+            notes: formData.notes || null,
+            teacher_id: formData.teacher_id || null,
+            supervisor_id: formData.supervisor_id || null,
+          })
+          .eq('id', selectedClass.id);
+        
+        if (error) {
+          console.error('Error updating class:', error);
+          toast.error('Failed to update class');
+        } else {
+          toast.success('Class updated successfully');
+          setIsDialogOpen(false);
+          setSelectedClass(null);
+          resetForm();
+          fetchClasses();
+        }
       } else {
-        toast.success('Class created successfully');
-        setIsDialogOpen(false);
-        resetForm();
-        fetchClasses();
+        const classCode = generateClassCode();
+        const { error } = await supabase
+          .from('classes')
+          .insert({
+            class_code: classCode,
+            class_name: formData.name,
+            start_date: formData.start_date,
+            end_date: formData.end_date || null,
+            level: formData.level,
+            image_url: formData.image_url || null,
+            goals: formData.objectives,
+            notes: formData.notes || null,
+            teacher_id: formData.teacher_id || null,
+            supervisor_id: formData.supervisor_id || null,
+          });
+
+        if (error) {
+          console.error('Error creating class:', error);
+          toast.error('Failed to create class');
+        } else {
+          toast.success('Class created successfully');
+          setIsDialogOpen(false);
+          resetForm();
+          fetchClasses();
+        }
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -276,9 +344,9 @@ export default function ClassesPage() {
 
   const filteredClasses = classes.filter((cls) => {
     const matchesSearch =
-      cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cls.class_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cls.teacher_name && cls.teacher_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (cls.class_name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (cls.class_code || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      ((cls.teacher_name || '').toLowerCase().includes((searchQuery || '').toLowerCase()));
     return matchesSearch;
   });
 
@@ -421,7 +489,11 @@ GRANT ALL ON classes TO authenticated;`;
             {profile.role === 'admin' && (
               <Button 
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                onClick={() => setIsDialogOpen(true)}
+                onClick={() => {
+                  setSelectedClass(null);
+                  setIsViewing(false);
+                  setIsDialogOpen(true);
+                }}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Class
@@ -564,11 +636,11 @@ GRANT ALL ON classes TO authenticated;`;
                             <Avatar className="h-10 w-10 ring-2 ring-blue-500/20">
                               <AvatarImage src={cls.image_url} />
                               <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
-                                {cls.name.charAt(0).toUpperCase()}
+                                {(cls.class_name || '?').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-semibold font-sans">{cls.name}</div>
+                              <div className="font-semibold font-sans">{cls.class_name}</div>
                               <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">
                                 Level {cls.level}
                               </div>
@@ -633,13 +705,22 @@ GRANT ALL ON classes TO authenticated;`;
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel className="font-display">Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedClass(cls);
+                                    prefillFormFromClass(cls);
+                                    setIsViewing(true);
+                                    setIsDialogOpen(true);
+                                  }}
+                                >
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedClass(cls);
+                                    setIsViewing(false);
+                                    prefillFormFromClass(cls);
                                     setIsDialogOpen(true);
                                   }}
                                 >
@@ -674,10 +755,14 @@ GRANT ALL ON classes TO authenticated;`;
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">
-                {selectedClass ? 'Edit Class' : 'Create New Class'}
+                {isViewing ? 'View Class' : selectedClass ? 'Edit Class' : 'Create New Class'}
               </DialogTitle>
               <DialogDescription className="font-sans">
-                {selectedClass ? 'Update class information' : 'Add a new class to the system'}
+                {isViewing
+                  ? 'View class information'
+                  : selectedClass
+                    ? 'Update class information'
+                    : 'Add a new class to the system'}
               </DialogDescription>
             </DialogHeader>
             
@@ -702,6 +787,7 @@ GRANT ALL ON classes TO authenticated;`;
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter class name"
                   className="mt-1 font-sans"
+                  disabled={isViewing}
                   required
                 />
               </div>
@@ -716,6 +802,7 @@ GRANT ALL ON classes TO authenticated;`;
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                     className="mt-1 font-sans"
+                    disabled={isViewing}
                     required
                   />
                 </div>
@@ -727,6 +814,7 @@ GRANT ALL ON classes TO authenticated;`;
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                     className="mt-1 font-sans"
+                    disabled={isViewing}
                   />
                 </div>
               </div>
@@ -738,7 +826,7 @@ GRANT ALL ON classes TO authenticated;`;
                   value={formData.level.toString()}
                   onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
                 >
-                  <SelectTrigger className="mt-1 font-sans">
+                  <SelectTrigger className="mt-1 font-sans" disabled={isViewing}>
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -760,6 +848,7 @@ GRANT ALL ON classes TO authenticated;`;
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   placeholder="https://example.com/image.jpg"
                   className="mt-1 font-sans"
+                  disabled={isViewing}
                 />
                 {formData.image_url && (
                   <div className="mt-2">
@@ -784,6 +873,7 @@ GRANT ALL ON classes TO authenticated;`;
                   onChange={(e) => setFormData({ ...formData, objectives: e.target.value })}
                   placeholder="Describe the learning objectives for this class..."
                   className="mt-1 font-sans min-h-[100px]"
+                  disabled={isViewing}
                   required
                 />
               </div>
@@ -797,28 +887,37 @@ GRANT ALL ON classes TO authenticated;`;
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Additional notes about this class..."
                   className="mt-1 font-sans min-h-[80px]"
+                  disabled={isViewing}
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateClass}
-                disabled={isCreating || !formData.name || !formData.start_date || !formData.objectives}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-sans"
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  selectedClass ? 'Update Class' : 'Create Class'
-                )}
-              </Button>
+              {isViewing ? (
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
+                  Close
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveClass}
+                    disabled={isCreating || !formData.name || !formData.start_date || !formData.objectives}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-sans"
+                  >
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      selectedClass ? 'Update Class' : 'Create Class'
+                    )}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -835,7 +934,7 @@ GRANT ALL ON classes TO authenticated;`;
             {selectedClass && (
               <div className="py-4 space-y-2">
                 <p className="font-sans">
-                  <strong>Class:</strong> {selectedClass.name}
+                  <strong>Class:</strong> {selectedClass.class_name}
                 </p>
                 <p className="font-sans">
                   <strong>Code:</strong> {selectedClass.class_code}

@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
 // Lazy loading للمكونات الثقيلة
@@ -8,9 +8,9 @@ export const LazyCharts = lazy(() => import('@/components/Charts').then(module =
   default: module.QuickStatsChart 
 })));
 
-export const LazyEnhancedTable = lazy(() => import('@/components/EnhancedTable'));
+export const LazyEnhancedTable = lazy(() => import('@/components/EnhancedTable').then(m => ({ default: m.EnhancedTable })));
 
-export const LazyOptimizedTable = lazy(() => import('@/components/OptimizedTable'));
+export const LazyOptimizedTable = lazy(() => import('@/components/OptimizedTable').then(m => ({ default: m.OptimizedTable })));
 
 // مكون تحميل محسن
 export const LoadingSpinner = ({ 

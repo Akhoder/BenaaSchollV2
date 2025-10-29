@@ -18,10 +18,51 @@
 */
 
 -- ============================================
+-- PART 0: Create Profiles Table (if not exists)
+-- ============================================
+
+-- Create profiles table if it doesn't exist
+CREATE TABLE IF NOT EXISTS profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  full_name text NOT NULL,
+  role text NOT NULL CHECK (role IN ('admin', 'teacher', 'student', 'supervisor')),
+  avatar_url text,
+  phone text,
+  language_preference text DEFAULT 'en' CHECK (language_preference IN ('en', 'ar', 'fr')),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Enable RLS on profiles table
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Create basic RLS policy for profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT
+  TO authenticated
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id);
+
+-- Grant permissions
+GRANT ALL ON profiles TO authenticated;
+
+-- ============================================
 -- PART 1: Create Classes Table
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS classes (
+-- Drop existing tables if they exist to ensure clean migration
+DROP TABLE IF EXISTS class_subjects CASCADE;
+DROP TABLE IF EXISTS student_enrollments CASCADE;
+DROP TABLE IF EXISTS classes CASCADE;
+
+CREATE TABLE classes (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   class_code text UNIQUE NOT NULL,
   class_name text NOT NULL,
@@ -43,7 +84,7 @@ CREATE TABLE IF NOT EXISTS classes (
 -- PART 2: Create Student Enrollments Table
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS student_enrollments (
+CREATE TABLE student_enrollments (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
   class_id uuid REFERENCES classes(id) ON DELETE CASCADE,
@@ -56,7 +97,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
 -- PART 3: Create Class Subjects Table
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS class_subjects (
+CREATE TABLE class_subjects (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   class_id uuid REFERENCES classes(id) ON DELETE CASCADE,
   subject_name text NOT NULL,
@@ -69,20 +110,20 @@ CREATE TABLE IF NOT EXISTS class_subjects (
 -- ============================================
 
 -- Classes indexes
-CREATE INDEX IF NOT EXISTS idx_classes_teacher_id ON classes(teacher_id) WHERE teacher_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_classes_supervisor_id ON classes(supervisor_id) WHERE supervisor_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_classes_level ON classes(level);
-CREATE INDEX IF NOT EXISTS idx_classes_active ON classes(is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(class_code);
+CREATE INDEX idx_classes_teacher_id ON classes(teacher_id) WHERE teacher_id IS NOT NULL;
+CREATE INDEX idx_classes_supervisor_id ON classes(supervisor_id) WHERE supervisor_id IS NOT NULL;
+CREATE INDEX idx_classes_level ON classes(level);
+CREATE INDEX idx_classes_active ON classes(is_active) WHERE is_active = true;
+CREATE INDEX idx_classes_code ON classes(class_code);
 
 -- Student enrollments indexes
-CREATE INDEX IF NOT EXISTS idx_student_enrollments_student_id ON student_enrollments(student_id);
-CREATE INDEX IF NOT EXISTS idx_student_enrollments_class_id ON student_enrollments(class_id);
-CREATE INDEX IF NOT EXISTS idx_student_enrollments_status ON student_enrollments(status);
+CREATE INDEX idx_student_enrollments_student_id ON student_enrollments(student_id);
+CREATE INDEX idx_student_enrollments_class_id ON student_enrollments(class_id);
+CREATE INDEX idx_student_enrollments_status ON student_enrollments(status);
 
 -- Class subjects indexes
-CREATE INDEX IF NOT EXISTS idx_class_subjects_class_id ON class_subjects(class_id);
-CREATE INDEX IF NOT EXISTS idx_class_subjects_teacher_id ON class_subjects(teacher_id) WHERE teacher_id IS NOT NULL;
+CREATE INDEX idx_class_subjects_class_id ON class_subjects(class_id);
+CREATE INDEX idx_class_subjects_teacher_id ON class_subjects(teacher_id) WHERE teacher_id IS NOT NULL;
 
 -- ============================================
 -- PART 5: Create Functions
@@ -96,29 +137,27 @@ AS $$
 DECLARE
   timestamp_part text;
   random_part text;
-  class_code text;
+  v_class_code text;
   exists_count integer;
 BEGIN
   -- Generate timestamp part (last 6 digits of current timestamp)
   timestamp_part := right(extract(epoch from now())::text, 6);
   
-  -- Generate random 3-character part
-  random_part := upper(substring(md5(random()::text) from 1 for 3));
-  
-  -- Combine parts
-  class_code := 'CLS-' || timestamp_part || '-' || random_part;
-  
-  -- Check if code already exists (very unlikely but safe)
-  SELECT COUNT(*) INTO exists_count FROM classes WHERE class_code = class_code;
-  
-  -- If exists, generate new one
-  WHILE exists_count > 0 LOOP
+  -- Keep generating codes until a unique one is found
+  LOOP
+    -- Generate random 3-character part
     random_part := upper(substring(md5(random()::text) from 1 for 3));
-    class_code := 'CLS-' || timestamp_part || '-' || random_part;
-    SELECT COUNT(*) INTO exists_count FROM classes WHERE class_code = class_code;
+    
+    -- Combine parts
+    v_class_code := 'CLS-' || timestamp_part || '-' || random_part;
+    
+    -- Check if code already exists (very unlikely but safe)
+    SELECT COUNT(*) INTO exists_count FROM classes c WHERE c.class_code = v_class_code;
+    
+    EXIT WHEN exists_count = 0;
   END LOOP;
   
-  RETURN class_code;
+  RETURN v_class_code;
 END;
 $$;
 

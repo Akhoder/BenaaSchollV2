@@ -188,7 +188,7 @@ export function OptimizedTable<T extends Record<string, any>>({
               <TableRow className="bg-slate-50 dark:bg-slate-800">
                 {columns.map((column) => (
                   <TableHead 
-                    key={column.key} 
+                    key={String(column.key)} 
                     className={cn(
                       "font-semibold text-slate-700 dark:text-slate-300",
                       column.sortable && "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none"

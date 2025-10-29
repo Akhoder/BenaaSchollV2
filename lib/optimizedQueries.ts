@@ -8,11 +8,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 دقائق
 // دالة مساعدة لتنظيف الذاكرة المؤقتة
 const cleanupCache = () => {
   const now = Date.now();
-  for (const [key, value] of queryCache.entries()) {
+  const keysToDelete: string[] = [];
+  queryCache.forEach((value, key) => {
     if (now - value.timestamp > CACHE_DURATION) {
-      queryCache.delete(key);
+      keysToDelete.push(key);
     }
-  }
+  });
+  keysToDelete.forEach((key) => queryCache.delete(key));
 };
 
 // دالة مساعدة للحصول على البيانات من الذاكرة المؤقتة أو قاعدة البيانات

@@ -94,21 +94,20 @@ AS $$
 DECLARE
   timestamp_part text;
   random_part text;
-  class_code text;
+  v_class_code text;
   exists_count integer;
 BEGIN
   timestamp_part := right(extract(epoch from now())::text, 6);
   random_part := upper(substring(md5(random()::text) from 1 for 3));
-  class_code := 'CLS-' || timestamp_part || '-' || random_part;
   
-  SELECT COUNT(*) INTO exists_count FROM classes WHERE class_code = class_code;
-  WHILE exists_count > 0 LOOP
+  LOOP
+    v_class_code := 'CLS-' || timestamp_part || '-' || random_part;
+    SELECT COUNT(*) INTO exists_count FROM classes c WHERE c.class_code = v_class_code;
+    EXIT WHEN exists_count = 0;
     random_part := upper(substring(md5(random()::text) from 1 for 3));
-    class_code := 'CLS-' || timestamp_part || '-' || random_part;
-    SELECT COUNT(*) INTO exists_count FROM classes WHERE class_code = class_code;
   END LOOP;
   
-  RETURN class_code;
+  RETURN v_class_code;
 END;
 $$;
 
