@@ -72,7 +72,7 @@ export default function SubjectsPage() {
         supabase.from('classes').select('id, class_name').order('created_at', { ascending: false }),
         supabase
           .from('class_subjects')
-          .select(`id, class_id, subject_name, teacher_id, created_at, classes!inner(class_name), teacher:profiles!teacher_id(full_name)`) // inner to ensure class exists
+          .select(`id, class_id, subject_name, teacher_id, created_at, classes(class_name), teacher:profiles!teacher_id(full_name)`) // left join to not filter out subjects
           .order('created_at', { ascending: false }),
       ]);
 
@@ -107,13 +107,19 @@ export default function SubjectsPage() {
         if (t.id) teacherNameById[t.id] = t.full_name;
       });
 
+      // Build a quick lookup for class names
+      const classNameById: Record<string, string> = {};
+      (classesRes.data || []).forEach((c: any) => {
+        if (c.id) classNameById[c.id] = c.class_name;
+      });
+
       const subjectsWithNames: SubjectRow[] = (subjectsRes.data || []).map((s: any) => ({
         id: s.id,
         class_id: s.class_id,
         subject_name: s.subject_name,
         teacher_id: s.teacher_id,
         created_at: s.created_at,
-        class_name: s.classes?.class_name,
+        class_name: s.classes?.class_name ?? classNameById[s.class_id],
         teacher_name: s.teacher?.full_name ?? (s.teacher_id ? teacherNameById[s.teacher_id] : undefined),
       }));
 
@@ -184,6 +190,8 @@ export default function SubjectsPage() {
       const { error } = await supabase.from('class_subjects').delete().eq('id', id);
       if (error) throw error;
       toast.success('Subject deleted');
+      // Optimistic update to reflect deletion immediately
+      setSubjects(prev => prev.filter(s => s.id !== id));
       void loadData();
     } catch (e: any) {
       console.error(e);

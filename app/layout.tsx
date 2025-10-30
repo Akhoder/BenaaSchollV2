@@ -42,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} ${poppins.variable} ${cairo.variable} font-sans antialiased`}>
+        <link rel="icon" href="/icons/icon-144x144.png" />
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>

@@ -37,6 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
+    { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
     { name: t('classes'), href: '/dashboard/classes', icon: School, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin'] },

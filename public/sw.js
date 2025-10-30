@@ -25,8 +25,21 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
       // تخزين الملفات الثابتة
-      caches.open(STATIC_CACHE_NAME).then((cache) => {
-        return cache.addAll(STATIC_FILES);
+      caches.open(STATIC_CACHE_NAME).then(async (cache) => {
+        // addAll fails if any item 404s; add individually and ignore failures
+        await Promise.all(
+          STATIC_FILES.map(async (url) => {
+            try {
+              const res = await fetch(url, { cache: 'no-cache' });
+              if (res.ok) {
+                await cache.put(url, res.clone());
+              }
+            } catch (_) {
+              // ignore
+            }
+          })
+        );
+        return true;
       }),
       // تفعيل Service Worker فوراً
       self.skipWaiting()

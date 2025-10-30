@@ -205,13 +205,25 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md btn-gradient text-white font-medium">
+                  <button 
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/20 dark:hover:to-purple-950/20 transition-all hover:shadow-md btn-gradient text-white font-medium"
+                    onClick={() => router.push('/dashboard/students')}
+                    aria-label="إضافة طالب جديد"
+                  >
                     إضافة طالب جديد
                   </button>
-                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-950/20 dark:hover:to-teal-950/20 transition-all hover:shadow-md border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-medium">
+                  <button 
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-950/20 dark:hover:to-teal-950/20 transition-all hover:shadow-md border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-medium"
+                    onClick={() => router.push('/dashboard/classes')}
+                    aria-label="إنشاء فصل جديد"
+                  >
                     إنشاء فصل جديد
                   </button>
-                  <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/20 dark:hover:to-orange-950/20 transition-all hover:shadow-md border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-medium">
+                  <button 
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/20 dark:hover:to-orange-950/20 transition-all hover:shadow-md border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-medium"
+                    onClick={() => router.push('/dashboard/teachers')}
+                    aria-label="إضافة معلم جديد"
+                  >
                     إضافة معلم جديد
                   </button>
                 </CardContent>

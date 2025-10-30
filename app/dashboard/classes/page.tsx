@@ -612,7 +612,6 @@ GRANT ALL ON classes TO authenticated;`;
                       <TableHead className="font-semibold font-sans">Class</TableHead>
                       <TableHead className="font-semibold font-sans">Code</TableHead>
                       <TableHead className="font-semibold font-sans">Level</TableHead>
-                      <TableHead className="font-semibold font-sans">Teacher</TableHead>
                       <TableHead className="font-semibold font-sans">Students</TableHead>
                       <TableHead className="font-semibold font-sans">Duration</TableHead>
                       <TableHead className="font-semibold font-sans">Status</TableHead>
@@ -657,11 +656,7 @@ GRANT ALL ON classes TO authenticated;`;
                             Level {cls.level}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-sans">
-                            {cls.teacher_name || 'Unassigned'}
-                          </div>
-                        </TableCell>
+                        
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm font-sans">
                             <Users className="h-4 w-4 text-slate-400" />
