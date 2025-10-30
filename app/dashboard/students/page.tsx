@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { StudentsTable } from '@/components/EnhancedTable';
+// import { StudentsTable } from '@/components/EnhancedTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,6 +90,13 @@ export default function StudentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createPhone, setCreatePhone] = useState('');
+  const [createLang, setCreateLang] = useState('ar');
+  const [savingCreate, setSavingCreate] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -107,6 +114,31 @@ export default function StudentsPage() {
       fetchStudents();
     }
   }, [profile, authLoading, router]);
+
+  // Realtime updates for profiles → keep list in sync without manual refresh
+  useEffect(() => {
+    if (!profile || !['admin', 'teacher', 'supervisor'].includes(profile.role)) return;
+    const channel = supabase
+      .channel('profiles-updates-students')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE') {
+          const row = payload.new;
+          setStudents(prev => prev.map(s => s.id === row.id ? { ...s, ...row } : s));
+        } else if (payload.eventType === 'INSERT') {
+          const row = payload.new;
+          if (row.role === 'student') {
+            setStudents(prev => [{ ...row }, ...prev]);
+          }
+        } else if (payload.eventType === 'DELETE') {
+          const row = payload.old;
+          setStudents(prev => prev.filter(s => s.id !== row.id));
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
 
   const fetchStudents = async () => {
     try {
@@ -234,7 +266,7 @@ export default function StudentsPage() {
               <Users className="h-4 w-4" />
             </Button>
             {profile.role === 'admin' && (
-              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg">
+              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Student
               </Button>
@@ -326,8 +358,133 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
+        {/* Create Student Dialog */}
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-display">Add Student</DialogTitle>
+              <DialogDescription className="font-sans">Create a new student profile</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium font-sans">Full Name</label>
+                <Input value={createName} onChange={(e) => setCreateName(e.target.value)} className="mt-1 font-sans" />
+              </div>
+              <div>
+                <label className="text-sm font-medium font-sans">Email</label>
+                <Input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} className="mt-1 font-sans" />
+              </div>
+              <div>
+                <label className="text-sm font-medium font-sans">Phone (optional)</label>
+                <Input value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} className="mt-1 font-sans" />
+              </div>
+              <div>
+                <label className="text-sm font-medium font-sans">Language</label>
+                <Select value={createLang} onValueChange={setCreateLang}>
+                  <SelectTrigger className="mt-1 font-sans">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ar">العربية</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans">Cancel</Button>
+              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-sans" disabled={savingCreate}
+                onClick={async () => {
+                  if (!createName.trim() || !createEmail.trim()) { toast.error('Name and email are required'); return; }
+                  try {
+                    setSavingCreate(true);
+                    const { error } = await supabase.from('profiles').insert([
+                      {
+                        full_name: createName.trim(),
+                        email: createEmail.trim(),
+                        role: 'student',
+                        phone: createPhone.trim() || null,
+                        language_preference: createLang as any,
+                      }
+                    ]);
+                    if (error) { toast.error('Create failed'); return; }
+                    toast.success('Student created');
+                    setCreateOpen(false);
+                    setCreateName(''); setCreateEmail(''); setCreatePhone(''); setCreateLang('ar');
+                    await fetchStudents();
+                  } finally { setSavingCreate(false); }
+                }}
+              >
+                {savingCreate ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Students List */}
-        <StudentsTable />
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="font-display">Students ({filteredStudents.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredStudents.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No students found</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Enrolled</TableHead>
+                      <TableHead>Avg Grade</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStudents.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={s.avatar_url} />
+                              <AvatarFallback>{(s.full_name||'?').charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{s.full_name}</div>
+                              <div className="text-xs text-slate-500">{s.id.slice(0,8)}...</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{s.email}</TableCell>
+                        <TableCell>{s.phone || '—'}</TableCell>
+                        <TableCell>{s.enrolled_classes ?? 0}</TableCell>
+                        <TableCell>{s.average_grade ?? '—'}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { setSelectedStudent(s); setIsDialogOpen(true); }}>Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedStudent(s); setDeleteConfirmOpen(true); }}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -340,20 +497,19 @@ export default function StudentsPage() {
             </DialogHeader>
             {selectedStudent && (
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <form id="edit-student-form" className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium font-sans">Full Name</label>
-                    <Input defaultValue={selectedStudent.full_name} className="mt-1 font-sans" />
+                    <Input name="full_name" defaultValue={selectedStudent.full_name} className="mt-1 font-sans" />
                   </div>
                   <div>
                     <label className="text-sm font-medium font-sans">Email</label>
-                    <Input defaultValue={selectedStudent.email} className="mt-1 font-sans" />
+                    <Input name="email" defaultValue={selectedStudent.email} className="mt-1 font-sans" />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 col-span-2">
                   <div>
                     <label className="text-sm font-medium font-sans">Phone</label>
-                    <Input defaultValue={selectedStudent.phone} className="mt-1 font-sans" />
+                    <Input name="phone" defaultValue={selectedStudent.phone} className="mt-1 font-sans" />
                   </div>
                   <div>
                     <label className="text-sm font-medium font-sans">Language</label>
@@ -369,14 +525,47 @@ export default function StudentsPage() {
                     </Select>
                   </div>
                 </div>
+                </form>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
                 Cancel
               </Button>
-              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-sans">
-                Save Changes
+              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-sans" disabled={savingEdit}
+                onClick={async () => {
+                  if (!selectedStudent) return;
+                  try {
+                    setSavingEdit(true);
+                    // Simple update: only example fields
+                    const form = document.querySelector('#edit-student-form') as HTMLFormElement | null;
+                    const full_name = (form?.querySelector('[name="full_name"]') as HTMLInputElement | null)?.value || selectedStudent.full_name;
+                    const email = (form?.querySelector('[name="email"]') as HTMLInputElement | null)?.value || selectedStudent.email;
+                    const phone = (form?.querySelector('[name="phone"]') as HTMLInputElement | null)?.value || selectedStudent.phone || null;
+                    const { error } = await supabase.rpc('admin_update_profile', {
+                      p_id: selectedStudent.id,
+                      p_full_name: full_name || null,
+                      p_email: email || null,
+                      p_phone: phone || null,
+                      p_language: null,
+                      p_role: null,
+                    });
+                    if (error) { toast.error('Save failed'); return; }
+                    // Optimistic UI update
+                    setStudents(prev => prev.map(s => s.id === selectedStudent.id ? {
+                      ...s,
+                      full_name,
+                      email,
+                      phone: phone || undefined,
+                    } : s));
+                    toast.success('Student updated');
+                    setIsDialogOpen(false);
+                    setSelectedStudent(null);
+                    // Avoid immediate refetch to prevent stale overwrite when Realtime is off
+                  } finally { setSavingEdit(false); }
+                }}
+              >
+                {savingEdit ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </DialogContent>

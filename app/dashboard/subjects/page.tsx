@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, Users } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -25,6 +26,7 @@ interface SubjectRow {
   created_at: string;
   class_name?: string;
   teacher_name?: string;
+  published?: boolean;
 }
 
 interface ClassRow { id: string; class_name: string; }
@@ -72,7 +74,7 @@ export default function SubjectsPage() {
         supabase.from('classes').select('id, class_name').order('created_at', { ascending: false }),
         supabase
           .from('class_subjects')
-          .select(`id, class_id, subject_name, teacher_id, created_at, classes(class_name), teacher:profiles!teacher_id(full_name)`) // left join to not filter out subjects
+          .select(`id, class_id, subject_name, teacher_id, created_at, published, classes(class_name), teacher:profiles!teacher_id(full_name)`) // include published
           .order('created_at', { ascending: false }),
       ]);
 
@@ -119,6 +121,7 @@ export default function SubjectsPage() {
         subject_name: s.subject_name,
         teacher_id: s.teacher_id,
         created_at: s.created_at,
+        published: s.published,
         class_name: s.classes?.class_name ?? classNameById[s.class_id],
         teacher_name: s.teacher?.full_name ?? (s.teacher_id ? teacherNameById[s.teacher_id] : undefined),
       }));
@@ -294,6 +297,7 @@ export default function SubjectsPage() {
                       <TableHead className="font-semibold font-sans">Subject</TableHead>
                       <TableHead className="font-semibold font-sans">Class</TableHead>
                       <TableHead className="font-semibold font-sans">Teacher</TableHead>
+                      <TableHead className="font-semibold font-sans">Published</TableHead>
                       <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -305,6 +309,22 @@ export default function SubjectsPage() {
                           <Badge variant="outline" className="font-sans">{s.class_name || '—'}</Badge>
                         </TableCell>
                         <TableCell className="font-sans">{s.teacher_name || 'Unassigned'}</TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={(s as any).published === true}
+                            onCheckedChange={async (val) => {
+                              const { error } = await supabase
+                                .from('class_subjects')
+                                .update({ published: val })
+                                .eq('id', s.id);
+                              if (error) {
+                                toast.error('Failed to update');
+                              } else {
+                                setSubjects(prev => prev.map(x => x.id === s.id ? { ...x, published: val } as any : x));
+                              }
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

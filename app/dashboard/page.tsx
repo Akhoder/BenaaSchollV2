@@ -8,7 +8,7 @@ import { StatCard } from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, Calendar, TrendingUp } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchPublishedSubjects, fetchMySubjectEnrollments, enrollInSubject, cancelSubjectEnrollment } from '@/lib/supabase';
 import { getStatsOptimized } from '@/lib/optimizedQueries';
 import { ChartsWithSuspense } from '@/components/LazyComponents';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,9 @@ export default function DashboardPage() {
     totalClasses: 0,
     totalSubjects: 0,
   });
+  const [publishedSubjects, setPublishedSubjects] = useState<any[]>([]);
+  const [myEnrollments, setMyEnrollments] = useState<Record<string, boolean>>({});
+  const [enrollingIds, setEnrollingIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,6 +38,9 @@ export default function DashboardPage() {
       fetchStats().catch(err => {
         console.error('Error fetching stats:', err);
       });
+      if (profile.role === 'student') {
+        void loadStudentData();
+      }
     }
   }, [profile]);
 
@@ -89,6 +95,21 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Error fetching stats:', err);
+    }
+  };
+
+  const loadStudentData = async () => {
+    try {
+      const [pub, mine] = await Promise.all([
+        fetchPublishedSubjects(),
+        fetchMySubjectEnrollments(),
+      ]);
+      if (!pub.error && pub.data) setPublishedSubjects(pub.data as any[]);
+      const enrolled: Record<string, boolean> = {};
+      (mine.data || []).forEach((e: any) => { enrolled[e.subject_id] = true; });
+      setMyEnrollments(enrolled);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -231,6 +252,101 @@ export default function DashboardPage() {
             </div>
 
                    <ChartsWithSuspense />
+          </>
+        )}
+
+        {profile.role === 'student' && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('availableCourses') || 'Available Courses'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {publishedSubjects.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">{t('noData') || 'No published courses yet.'}</div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {publishedSubjects.map((s: any) => (
+                      <div key={s.id} className="p-4 border rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{s.subject_name}</div>
+                          <div className="text-xs text-muted-foreground">{t('class') || 'Class'}: {s.class_id}</div>
+                        </div>
+                        {myEnrollments[s.id] ? (
+                          <button
+                            className="px-3 h-9 rounded bg-emerald-600 text-white disabled:opacity-50"
+                            disabled
+                          >
+                            {t('enrolled') || 'Enrolled'}
+                          </button>
+                        ) : (
+                          <button
+                            className="px-3 h-9 rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                            disabled={!!enrollingIds[s.id]}
+                            onClick={async () => {
+                              try {
+                                setEnrollingIds(prev => ({ ...prev, [s.id]: true }));
+                                const { error } = await enrollInSubject(s.id);
+                                if (error) {
+                                  console.error(error);
+                                  return;
+                                }
+                                setMyEnrollments(prev => ({ ...prev, [s.id]: true }));
+                              } finally {
+                                setEnrollingIds(prev => ({ ...prev, [s.id]: false }));
+                              }
+                            }}
+                          >
+                            {t('enroll') || 'Enroll'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('myCourses') || 'My Courses'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Object.keys(myEnrollments).length === 0 ? (
+                  <div className="text-sm text-muted-foreground">{t('noData') || 'No enrollments yet.'}</div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {publishedSubjects.filter((s: any) => myEnrollments[s.id]).map((s: any) => (
+                      <div key={s.id} className="p-4 border rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{s.subject_name}</div>
+                          <div className="text-xs text-muted-foreground">{t('class') || 'Class'}: {s.class_id}</div>
+                        </div>
+                        <button
+                          className="px-3 h-9 rounded border border-red-600 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          disabled={!!enrollingIds[`c-${s.id}`]}
+                          onClick={async () => {
+                            try {
+                              setEnrollingIds(prev => ({ ...prev, [`c-${s.id}`]: true }));
+                              const { error } = await cancelSubjectEnrollment(s.id);
+                              if (error) {
+                                console.error(error);
+                                return;
+                              }
+                              setMyEnrollments(prev => ({ ...prev, [s.id]: false }));
+                            } finally {
+                              setEnrollingIds(prev => ({ ...prev, [`c-${s.id}`]: false }));
+                            }
+                          }}
+                        >
+                          {t('cancel') || 'Cancel'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
 

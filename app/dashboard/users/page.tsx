@@ -73,6 +73,14 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState<UserProfile['role']>('student');
+  const [editPhone, setEditPhone] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [newPw, setNewPw] = useState('');
+  const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -89,6 +97,29 @@ export default function UsersPage() {
       fetchUsers();
     }
   }, [profile, authLoading, router]);
+
+  // Realtime updates for profiles
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return;
+    const channel = supabase
+      .channel('profiles-updates-users')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE') {
+          const row = payload.new;
+          setUsers(prev => prev.map(u => u.id === row.id ? { ...u, ...row } : u));
+        } else if (payload.eventType === 'INSERT') {
+          const row = payload.new;
+          setUsers(prev => [{ ...row }, ...prev]);
+        } else if (payload.eventType === 'DELETE') {
+          const row = payload.old;
+          setUsers(prev => prev.filter(u => u.id !== row.id));
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
 
   const fetchUsers = async () => {
     try {
@@ -387,11 +418,27 @@ export default function UsersPage() {
                               className="hover:bg-blue-50 dark:hover:bg-blue-950/20"
                               onClick={() => {
                                 setSelectedUser(user);
+                                setEditName(user.full_name || '');
+                                setEditEmail(user.email || '');
+                                setEditRole(user.role);
+                                setEditPhone(user.phone || '');
                                 setIsDialogOpen(true);
                               }}
                             >
                               <Edit className="h-4 w-4 text-blue-600" />
                             </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setPwOpen(true);
+                            }}
+                          >
+                            {/* reuse icon */}
+                            <Shield className="h-4 w-4 text-amber-600" />
+                          </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -429,17 +476,17 @@ export default function UsersPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Full Name</label>
-                      <Input defaultValue={selectedUser.full_name} className="mt-1" />
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Email</label>
-                      <Input defaultValue={selectedUser.email} className="mt-1" />
+                      <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="mt-1" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Role</label>
-                      <Select defaultValue={selectedUser.role}>
+                      <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
@@ -453,7 +500,7 @@ export default function UsersPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium">Phone</label>
-                      <Input defaultValue={selectedUser.phone} className="mt-1" />
+                      <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
                     </div>
                   </div>
                 </div>
@@ -463,8 +510,95 @@ export default function UsersPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                Save Changes
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                disabled={savingEdit || !selectedUser}
+                onClick={async () => {
+                  if (!selectedUser) return;
+                  try {
+                    setSavingEdit(true);
+                    const { error } = await supabase.rpc('admin_update_profile', {
+                      p_id: selectedUser.id,
+                      p_full_name: editName || null,
+                      p_email: editEmail || null,
+                      p_phone: editPhone || null,
+                      p_language: null,
+                      p_role: editRole || null,
+                    });
+                    if (error) {
+                      console.error(error);
+                      toast.error('Failed to save changes');
+                      return;
+                    }
+                    // Optimistic UI update
+                    setUsers(prev => prev.map(u => u.id === selectedUser.id ? {
+                      ...u,
+                      full_name: editName,
+                      email: editEmail,
+                      role: editRole,
+                      phone: editPhone || undefined,
+                    } : u));
+                    toast.success('User updated');
+                    setIsDialogOpen(false);
+                    setSelectedUser(null);
+                    // Avoid immediate refetch to prevent stale overwrite when Realtime is off
+                  } finally {
+                    setSavingEdit(false);
+                  }
+                }}
+              >
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Password Dialog */}
+        <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-display">Change Password</DialogTitle>
+              <DialogDescription>Set a new password for the selected user</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input
+                type="password"
+                placeholder="New password (min 6 chars)"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
+              <Button disabled={savingPw || !selectedUser || newPw.length < 6}
+                onClick={async () => {
+                  if (!selectedUser) return;
+                  try {
+                    setSavingPw(true);
+                    const { data: session } = await supabase.auth.getSession();
+                    const token = session.session?.access_token;
+                    const res = await fetch('/api/admin/change-password', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                      },
+                      body: JSON.stringify({ userId: selectedUser.id, newPassword: newPw })
+                    });
+                    if (!res.ok) {
+                      const j = await res.json().catch(() => ({}));
+                      toast.error(j.error || 'Failed to change password');
+                      return;
+                    }
+                    toast.success('Password updated');
+                    setPwOpen(false);
+                    setNewPw('');
+                  } finally {
+                    setSavingPw(false);
+                  }
+                }}
+              >
+                {savingPw ? 'Saving...' : 'Save'}
               </Button>
             </DialogFooter>
           </DialogContent>

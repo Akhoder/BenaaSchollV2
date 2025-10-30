@@ -42,6 +42,66 @@ export interface LessonAttachment {
   created_by: string;
 }
 
+export interface SubjectRow {
+  id: string;
+  class_id: string;
+  subject_name: string;
+  teacher_id: string | null;
+  published?: boolean;
+  created_at: string;
+}
+
+export interface SubjectEnrollment {
+  id: string;
+  subject_id: string;
+  student_id: string;
+  status: 'active' | 'cancelled';
+  created_at: string;
+}
+
+export async function fetchPublishedSubjects() {
+  return await supabase
+    .from('class_subjects')
+    .select('id, class_id, subject_name, teacher_id, published, created_at')
+    .eq('published', true)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchMySubjectEnrollments() {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  return await supabase
+    .from('subject_enrollments')
+    .select('id, subject_id, student_id, status, created_at')
+    .eq('student_id', uid)
+    .eq('status', 'active');
+}
+
+export async function enrollInSubject(subjectId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const student_id = userRes.user.id;
+  return await supabase
+    .from('subject_enrollments')
+    .insert([{ subject_id: subjectId, student_id, status: 'active' }])
+    .select('*')
+    .single();
+}
+
+export async function cancelSubjectEnrollment(subjectId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const student_id = userRes.user.id;
+  return await supabase
+    .from('subject_enrollments')
+    .update({ status: 'cancelled' })
+    .eq('subject_id', subjectId)
+    .eq('student_id', student_id)
+    .select('*')
+    .single();
+}
+
 export async function fetchLessonsBySubject(subjectId: string) {
   return await supabase
     .from('lessons')
