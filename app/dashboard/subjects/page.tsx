@@ -318,6 +318,9 @@ export default function SubjectsPage() {
                               <DropdownMenuItem onClick={() => openEdit(s)}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/subjects/${s.id}/lessons`)}>
+                                <BookOpen className="mr-2 h-4 w-4" /> Lessons
+                              </DropdownMenuItem>
                               <DropdownMenuItem className="text-red-600" onClick={() => onDelete(s.id)}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>

@@ -14,7 +14,7 @@ import { ChartsWithSuspense } from '@/components/LazyComponents';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const { profile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
   const [stats, setStats] = useState({
@@ -25,10 +25,10 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (!loading && !profile) {
+    if (!loading && !user) {
       router.push('/login');
     }
-  }, [profile, loading, router]);
+  }, [user, loading, router]);
 
   useEffect(() => {
     if (profile) {
