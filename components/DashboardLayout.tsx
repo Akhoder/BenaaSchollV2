@@ -36,11 +36,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navigation = [
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
+    { name: 'My Classes', href: '/dashboard/my-classes', icon: School, roles: ['student'] },
+    { name: 'My Assignments', href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
     { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
     { name: t('classes'), href: '/dashboard/classes', icon: School, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
-    { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin'] },
+    { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher', 'student'] },
     { name: t('announcements'), href: '/dashboard/announcements', icon: FileText, roles: ['admin', 'teacher', 'student', 'supervisor'] },

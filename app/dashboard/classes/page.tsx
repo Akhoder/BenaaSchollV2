@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search,
@@ -81,6 +82,7 @@ interface ClassData {
   teacher_name?: string;
   supervisor_name?: string;
   student_count?: number;
+  published?: boolean;
 }
 
 export default function ClassesPage() {
@@ -615,6 +617,7 @@ GRANT ALL ON classes TO authenticated;`;
                       <TableHead className="font-semibold font-sans">Students</TableHead>
                       <TableHead className="font-semibold font-sans">Duration</TableHead>
                       <TableHead className="font-semibold font-sans">Status</TableHead>
+                      <TableHead className="font-semibold font-sans">Published</TableHead>
                       {profile.role === 'admin' && (
                         <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
                       )}
@@ -688,6 +691,22 @@ GRANT ALL ON classes TO authenticated;`;
                           >
                             {cls.end_date && new Date(cls.end_date) <= new Date() ? 'Completed' : 'Active'}
                           </Badge>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Switch
+                            checked={cls.published === true}
+                            onCheckedChange={async (val) => {
+                              const { error } = await supabase
+                                .from('classes')
+                                .update({ published: val })
+                                .eq('id', cls.id);
+                              if (error) {
+                                toast.error('Failed to update');
+                              } else {
+                                setClasses(prev => prev.map(c => c.id === cls.id ? { ...c, published: val } : c));
+                              }
+                            }}
+                          />
                         </TableCell>
                         {profile.role === 'admin' && (
                           <TableCell onClick={(e) => e.stopPropagation()}>

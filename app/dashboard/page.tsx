@@ -8,10 +8,11 @@ import { StatCard } from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, Calendar, TrendingUp } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
-import { supabase, fetchPublishedSubjects, fetchMySubjectEnrollments, enrollInSubject, cancelSubjectEnrollment } from '@/lib/supabase';
+import { supabase, fetchPublishedClasses, fetchMyClassEnrollments, enrollInClass, cancelClassEnrollment } from '@/lib/supabase';
 import { getStatsOptimized } from '@/lib/optimizedQueries';
 import { ChartsWithSuspense } from '@/components/LazyComponents';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth();
@@ -23,8 +24,8 @@ export default function DashboardPage() {
     totalClasses: 0,
     totalSubjects: 0,
   });
-  const [publishedSubjects, setPublishedSubjects] = useState<any[]>([]);
-  const [myEnrollments, setMyEnrollments] = useState<Record<string, boolean>>({});
+  const [publishedClasses, setPublishedClasses] = useState<any[]>([]);
+  const [myClassEnrollments, setMyClassEnrollments] = useState<Record<string, boolean>>({});
   const [enrollingIds, setEnrollingIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -101,13 +102,13 @@ export default function DashboardPage() {
   const loadStudentData = async () => {
     try {
       const [pub, mine] = await Promise.all([
-        fetchPublishedSubjects(),
-        fetchMySubjectEnrollments(),
+        fetchPublishedClasses(),
+        fetchMyClassEnrollments(),
       ]);
-      if (!pub.error && pub.data) setPublishedSubjects(pub.data as any[]);
+      if (!pub.error && pub.data) setPublishedClasses(pub.data as any[]);
       const enrolled: Record<string, boolean> = {};
-      (mine.data || []).forEach((e: any) => { enrolled[e.subject_id] = true; });
-      setMyEnrollments(enrolled);
+      (mine.data || []).forEach((e: any) => { enrolled[e.class_id] = true; });
+      setMyClassEnrollments(enrolled);
     } catch (e) {
       console.error(e);
     }
@@ -259,20 +260,20 @@ export default function DashboardPage() {
           <>
             <Card>
               <CardHeader>
-                <CardTitle>{t('availableCourses') || 'Available Courses'}</CardTitle>
+                <CardTitle>{t('availableClasses') || 'Available Classes'}</CardTitle>
               </CardHeader>
               <CardContent>
-                {publishedSubjects.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">{t('noData') || 'No published courses yet.'}</div>
+                {publishedClasses.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">{t('noData') || 'No published classes yet.'}</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
-                    {publishedSubjects.map((s: any) => (
-                      <div key={s.id} className="p-4 border rounded-lg flex items-center justify-between">
+                    {publishedClasses.map((c: any) => (
+                      <div key={c.id} className="p-4 border rounded-lg flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{s.subject_name}</div>
-                          <div className="text-xs text-muted-foreground">{t('class') || 'Class'}: {s.class_id}</div>
+                          <div className="font-medium">{c.class_name}</div>
+                          <div className="text-xs text-muted-foreground">Class ID: {c.id.slice(0, 8)}...</div>
                         </div>
-                        {myEnrollments[s.id] ? (
+                        {myClassEnrollments[c.id] ? (
                           <button
                             className="px-3 h-9 rounded bg-emerald-600 text-white disabled:opacity-50"
                             disabled
@@ -282,18 +283,21 @@ export default function DashboardPage() {
                         ) : (
                           <button
                             className="px-3 h-9 rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                            disabled={!!enrollingIds[s.id]}
+                            disabled={!!enrollingIds[c.id]}
                             onClick={async () => {
                               try {
-                                setEnrollingIds(prev => ({ ...prev, [s.id]: true }));
-                                const { error } = await enrollInSubject(s.id);
+                                setEnrollingIds(prev => ({ ...prev, [c.id]: true }));
+                                const { error } = await enrollInClass(c.id);
                                 if (error) {
                                   console.error(error);
+                                  toast.error(t('enrollFailed') || 'Enrollment failed');
                                   return;
                                 }
-                                setMyEnrollments(prev => ({ ...prev, [s.id]: true }));
+                                setMyClassEnrollments(prev => ({ ...prev, [c.id]: true }));
+                                toast.success(t('enrolled') || 'Enrolled successfully');
+                                await loadStudentData();
                               } finally {
-                                setEnrollingIds(prev => ({ ...prev, [s.id]: false }));
+                                setEnrollingIds(prev => ({ ...prev, [c.id]: false }));
                               }
                             }}
                           >
@@ -309,33 +313,36 @@ export default function DashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t('myCourses') || 'My Courses'}</CardTitle>
+                <CardTitle>{t('myClasses') || 'My Classes'}</CardTitle>
               </CardHeader>
               <CardContent>
-                {Object.keys(myEnrollments).length === 0 ? (
+                {Object.keys(myClassEnrollments).length === 0 ? (
                   <div className="text-sm text-muted-foreground">{t('noData') || 'No enrollments yet.'}</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
-                    {publishedSubjects.filter((s: any) => myEnrollments[s.id]).map((s: any) => (
-                      <div key={s.id} className="p-4 border rounded-lg flex items-center justify-between">
+                    {publishedClasses.filter((c: any) => myClassEnrollments[c.id]).map((c: any) => (
+                      <div key={c.id} className="p-4 border rounded-lg flex items-center justify-between">
                         <div>
-                          <div className="font-medium">{s.subject_name}</div>
-                          <div className="text-xs text-muted-foreground">{t('class') || 'Class'}: {s.class_id}</div>
+                          <div className="font-medium">{c.class_name}</div>
+                          <div className="text-xs text-muted-foreground">Class ID: {c.id.slice(0, 8)}...</div>
                         </div>
                         <button
                           className="px-3 h-9 rounded border border-red-600 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                          disabled={!!enrollingIds[`c-${s.id}`]}
+                          disabled={!!enrollingIds[`c-${c.id}`]}
                           onClick={async () => {
                             try {
-                              setEnrollingIds(prev => ({ ...prev, [`c-${s.id}`]: true }));
-                              const { error } = await cancelSubjectEnrollment(s.id);
+                              setEnrollingIds(prev => ({ ...prev, [`c-${c.id}`]: true }));
+                              const { error } = await cancelClassEnrollment(c.id);
                               if (error) {
                                 console.error(error);
+                                toast.error(t('cancelFailed') || 'Cancel failed');
                                 return;
                               }
-                              setMyEnrollments(prev => ({ ...prev, [s.id]: false }));
+                              setMyClassEnrollments(prev => ({ ...prev, [c.id]: false }));
+                              toast.success(t('cancelled') || 'Cancelled');
+                              await loadStudentData();
                             } finally {
-                              setEnrollingIds(prev => ({ ...prev, [`c-${s.id}`]: false }));
+                              setEnrollingIds(prev => ({ ...prev, [`c-${c.id}`]: false }));
                             }
                           }}
                         >

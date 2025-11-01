@@ -59,6 +59,43 @@ export interface SubjectEnrollment {
   created_at: string;
 }
 
+export type AssignmentType = 'homework' | 'quiz' | 'test' | 'project';
+export type AssignmentStatus = 'draft' | 'published' | 'closed';
+export type SubmissionStatus = 'submitted' | 'graded' | 'returned' | 'late';
+
+export interface Assignment {
+  id: string;
+  subject_id: string;
+  title: string;
+  description?: string | null;
+  assignment_type: AssignmentType;
+  grade_weight: number;
+  start_date?: string | null;
+  due_date?: string | null;
+  status: AssignmentStatus;
+  instructions?: string | null;
+  total_points: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  submission_content?: string | null;
+  submission_files: any[];
+  status: SubmissionStatus;
+  submitted_at: string;
+  graded_at?: string | null;
+  score?: number | null;
+  feedback?: string | null;
+  graded_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function fetchPublishedSubjects() {
   return await supabase
     .from('class_subjects')
@@ -98,6 +135,258 @@ export async function cancelSubjectEnrollment(subjectId: string) {
     .update({ status: 'cancelled' })
     .eq('subject_id', subjectId)
     .eq('student_id', student_id)
+    .select('*')
+    .single();
+}
+
+export interface ClassRow {
+  id: string;
+  class_name: string;
+  teacher_id: string | null;
+  published?: boolean;
+  created_at: string;
+}
+
+export interface ClassEnrollment {
+  id: string;
+  class_id: string;
+  student_id: string;
+  status: 'active' | 'inactive' | 'completed' | 'dropped';
+  enrolled_at: string;
+}
+
+export async function fetchPublishedClasses() {
+  return await supabase
+    .from('classes')
+    .select('id, class_name, teacher_id, published, created_at')
+    .eq('published', true)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchMyClassEnrollments() {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  return await supabase
+    .from('student_enrollments')
+    .select('id, class_id, student_id, status, enrolled_at')
+    .eq('student_id', uid)
+    .eq('status', 'active');
+}
+
+export async function enrollInClass(classId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const student_id = userRes.user.id;
+  
+  // Check if already enrolled
+  const { data: existing } = await supabase
+    .from('student_enrollments')
+    .select('id, status')
+    .eq('class_id', classId)
+    .eq('student_id', student_id)
+    .maybeSingle();
+  
+  if (existing) {
+    if (existing.status === 'active') {
+      return { data: existing, error: null };
+    }
+    // Re-activate if dropped/inactive/completed
+    return await supabase
+      .from('student_enrollments')
+      .update({ status: 'active' })
+      .eq('id', existing.id)
+      .select('*')
+      .single();
+  }
+  
+  // Insert new enrollment; trigger will auto-enroll in all subjects
+  return await supabase
+    .from('student_enrollments')
+    .insert([{ class_id: classId, student_id, status: 'active' }])
+    .select('*')
+    .single();
+}
+
+export async function cancelClassEnrollment(classId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const student_id = userRes.user.id;
+  return await supabase
+    .from('student_enrollments')
+    .update({ status: 'dropped' })
+    .eq('class_id', classId)
+    .eq('student_id', student_id)
+    .select('*')
+    .single();
+}
+
+export async function fetchMyEnrolledClassesWithDetails() {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  // Get enrollments
+  const { data: enrollments, error: eErr } = await supabase
+    .from('student_enrollments')
+    .select('class_id, enrolled_at')
+    .eq('student_id', uid)
+    .eq('status', 'active');
+  
+  if (eErr || !enrollments || enrollments.length === 0) {
+    return { data: [], error: eErr };
+  }
+  
+  const classIds = enrollments.map(e => e.class_id);
+  
+  // Get classes details
+  const { data: classes, error: cErr } = await supabase
+    .from('classes')
+    .select('id, class_name, teacher_id, level, image_url, teacher:profiles!teacher_id(full_name)')
+    .in('id', classIds);
+  
+  if (cErr) return { data: [], error: cErr };
+  
+  return { data: classes || [], error: null };
+}
+
+export async function fetchSubjectsForClass(classId: string) {
+  return await supabase
+    .from('class_subjects')
+    .select('id, subject_name, teacher_id, created_at, teacher:profiles!teacher_id(full_name)')
+    .eq('class_id', classId)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchAssignmentsForSubject(subjectId: string) {
+  return await supabase
+    .from('assignments')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchMyAssignmentsForSubject(subjectId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  return await supabase
+    .from('assignments')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .in('status', ['published', 'closed'])
+    .order('due_date', { ascending: false });
+}
+
+export async function createAssignment(input: Omit<Assignment, 'id' | 'created_at' | 'updated_at'>) {
+  return await supabase
+    .from('assignments')
+    .insert([input])
+    .select('*')
+    .single();
+}
+
+export async function updateAssignment(id: string, fields: Partial<Assignment>) {
+  return await supabase
+    .from('assignments')
+    .update(fields)
+    .eq('id', id)
+    .select('*')
+    .single();
+}
+
+export async function deleteAssignment(id: string) {
+  return await supabase
+    .from('assignments')
+    .delete()
+    .eq('id', id);
+}
+
+export async function submitAssignment(assignmentId: string, content: string, files: any[]) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const student_id = userRes.user.id;
+  
+  // Check if already submitted
+  const { data: existing } = await supabase
+    .from('assignment_submissions')
+    .select('id, status')
+    .eq('assignment_id', assignmentId)
+    .eq('student_id', student_id)
+    .maybeSingle();
+  
+  if (existing) {
+    // Update existing
+    return await supabase
+      .from('assignment_submissions')
+      .update({ submission_content: content, submission_files: files, status: 'submitted', submitted_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .select('*')
+      .single();
+  }
+  
+  return await supabase
+    .from('assignment_submissions')
+    .insert([{ assignment_id: assignmentId, student_id, submission_content: content, submission_files: files, status: 'submitted' }])
+    .select('*')
+    .single();
+}
+
+export async function fetchSubmissionForAssignment(assignmentId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: null } as any;
+  
+  return await supabase
+    .from('assignment_submissions')
+    .select('*')
+    .eq('assignment_id', assignmentId)
+    .eq('student_id', uid)
+    .maybeSingle();
+}
+
+export async function fetchAllSubmissionsForAssignment(assignmentId: string) {
+  const { data: subs, error: e1 } = await supabase
+    .from('assignment_submissions')
+    .select('*')
+    .eq('assignment_id', assignmentId)
+    .order('submitted_at', { ascending: false });
+  
+  if (e1 || !subs || subs.length === 0) {
+    return { data: [], error: e1 };
+  }
+  
+  // Fetch student profiles separately
+  const studentIds = subs.map(s => s.student_id);
+  const { data: students, error: e2 } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', studentIds);
+  
+  if (e2) {
+    return { data: subs, error: e2 };
+  }
+  
+  // Map students to submissions
+  const studentsMap = new Map((students || []).map((s: any) => [s.id, s]));
+  const enriched = (subs || []).map(sub => ({
+    ...sub,
+    student: studentsMap.get(sub.student_id) || { id: sub.student_id, full_name: 'Unknown', email: '' }
+  }));
+  
+  return { data: enriched, error: null };
+}
+
+export async function gradeSubmission(submissionId: string, score: number, feedback: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  const graded_by = userRes.user.id;
+  
+  return await supabase
+    .from('assignment_submissions')
+    .update({ score, feedback, graded_by, graded_at: new Date().toISOString(), status: 'graded' })
+    .eq('id', submissionId)
     .select('*')
     .single();
 }

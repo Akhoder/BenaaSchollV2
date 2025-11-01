@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, Users } from 'lucide-react';
+import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, Users, FileText } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -81,6 +81,17 @@ export default function SubjectsPage() {
       if (classesRes.error) throw classesRes.error;
       if (subjectsRes.error) throw subjectsRes.error;
 
+      // Filter subjects based on role
+      let subjectsToShow = subjectsRes.data;
+      if (profile?.role === 'teacher') {
+        // Teachers see only their assigned subjects
+        subjectsToShow = (subjectsRes.data || []).filter((s: any) => s.teacher_id === profile.id);
+      } else if (profile?.role === 'supervisor') {
+        // Supervisors see all subjects (or can be filtered to their classes)
+        subjectsToShow = subjectsRes.data;
+      }
+      // Admins see all subjects
+
       // Load teachers using admin RPC first, fallback to direct query
       let teachersList: TeacherRow[] = [];
       try {
@@ -115,7 +126,7 @@ export default function SubjectsPage() {
         if (c.id) classNameById[c.id] = c.class_name;
       });
 
-      const subjectsWithNames: SubjectRow[] = (subjectsRes.data || []).map((s: any) => ({
+      const subjectsWithNames: SubjectRow[] = (subjectsToShow || []).map((s: any) => ({
         id: s.id,
         class_id: s.class_id,
         subject_name: s.subject_name,
@@ -243,15 +254,17 @@ export default function SubjectsPage() {
               Manage class subjects and assignments
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
-              onClick={openCreate}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subject
-            </Button>
-          </div>
+          {profile?.role === 'admin' && (
+            <div className="flex gap-2">
+              <Button 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
+                onClick={openCreate}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Subject
+              </Button>
+            </div>
+          )}
         </div>
 
         <Card className="border-slate-200 dark:border-slate-800">
@@ -335,14 +348,22 @@ export default function SubjectsPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel className="font-display">Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => openEdit(s)}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
+                              {profile?.role === 'admin' && (
+                                <>
+                                  <DropdownMenuItem onClick={() => openEdit(s)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600" onClick={() => onDelete(s.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
                               <DropdownMenuItem onClick={() => router.push(`/dashboard/subjects/${s.id}/lessons`)}>
                                 <BookOpen className="mr-2 h-4 w-4" /> Lessons
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600" onClick={() => onDelete(s.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/subjects/${s.id}/assignments`)}>
+                                <FileText className="mr-2 h-4 w-4" /> Assignments
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
