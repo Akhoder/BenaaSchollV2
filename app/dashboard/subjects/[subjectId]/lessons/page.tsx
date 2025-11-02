@@ -59,7 +59,7 @@ export default function SubjectLessonsPage() {
     const { data, error } = await api.fetchLessonsBySubject(subjectId);
     if (error) {
       console.error(error);
-      toast.error(t('errorLoading') || 'Error loading lessons');
+      toast.error('Error loading lessons');
       return;
     }
     const list = (data || []) as Lesson[];
@@ -95,7 +95,7 @@ export default function SubjectLessonsPage() {
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      toast.error(t('required') || 'Title is required');
+      toast.error('Title is required');
       return;
     }
     setSubmitting(true);
@@ -108,7 +108,7 @@ export default function SubjectLessonsPage() {
       });
       if (error || !newLesson) {
         console.error(error);
-        toast.error(t('saveFailed') || 'Failed to create lesson');
+        toast.error('Failed to create lesson');
         setSubmitting(false);
         return;
       }
@@ -129,11 +129,11 @@ export default function SubjectLessonsPage() {
         const anyError = results.find(r => r.error);
         if (anyError) {
           console.error(anyError.error);
-          toast.error(t('savePartial') || 'Lesson saved, some attachments failed');
+          toast.error('Lesson saved, some attachments failed');
         }
       }
 
-      toast.success(t('saved') || 'Lesson created');
+      toast.success('Lesson created');
       setTitle('');
       setDescription('');
       setVideoUrl('');
@@ -146,14 +146,14 @@ export default function SubjectLessonsPage() {
 
   const onUploadAttachmentFile = async (file: File, idx: number) => {
     if (!user) {
-      toast.error(t('loginRequired') || 'Please login first');
+      toast.error('Please login first');
       return;
     }
     try {
       setIsUploadingIdx(idx);
       const { data, error } = await api.uploadLessonAttachmentFile(file, user.id);
       if (error || !data) {
-        toast.error((error as any)?.message || t('uploadFailed') || 'Upload failed');
+        toast.error((error as any)?.message || 'Upload failed');
         return;
       }
       onChangeAttachment(idx, 'file_url', data.publicUrl);
@@ -163,9 +163,9 @@ export default function SubjectLessonsPage() {
       const ext = (file.name.split('.').pop() || '').toLowerCase();
       const typeMap: Record<string, AttachmentType> = { 'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 'webp': 'image', 'pdf': 'pdf', 'ppt': 'ppt', 'pptx': 'ppt', 'doc': 'word', 'docx': 'word' };
       onChangeAttachment(idx, 'file_type', typeMap[ext] || 'pdf');
-      toast.success(t('uploaded') || 'Uploaded');
+      toast.success('Uploaded');
     } catch (e: any) {
-      toast.error(e?.message || (t('uploadFailed') || 'Upload failed'));
+      toast.error(e?.message || 'Upload failed');
     } finally {
       setIsUploadingIdx(null);
     }
@@ -173,14 +173,14 @@ export default function SubjectLessonsPage() {
 
   const uploadAttachmentForLesson = async (lessonId: string, file: File) => {
     if (!user) {
-      toast.error(t('loginRequired') || 'Please login first');
+      toast.error('Please login first');
       return;
     }
     try {
       setLessonUploadBusy(prev => ({ ...prev, [lessonId]: true }));
       const { data, error } = await api.uploadLessonAttachmentFile(file, user.id);
       if (error || !data) {
-        toast.error((error as any)?.message || t('uploadFailed') || 'Upload failed');
+        toast.error((error as any)?.message || 'Upload failed');
         return;
       }
       const ext = (file.name.split('.').pop() || '').toLowerCase();
@@ -192,10 +192,10 @@ export default function SubjectLessonsPage() {
         file_type: typeMap[ext] || 'pdf',
       });
       if (addErr) {
-        toast.error(t('saveFailed') || 'Failed to save attachment');
+        toast.error('Failed to save attachment');
         return;
       }
-      toast.success(t('saved') || 'Saved');
+      toast.success('Saved');
       await loadLessons();
     } finally {
       setLessonUploadBusy(prev => ({ ...prev, [lessonId]: false }));
@@ -205,7 +205,7 @@ export default function SubjectLessonsPage() {
   const addAttachmentUrlForLesson = async (lessonId: string) => {
     const url = (addUrlByLesson[lessonId] || '').trim();
     if (!url) {
-      toast.error(t('required') || 'URL is required');
+      toast.error('URL is required');
       return;
     }
     const lower = url.toLowerCase();
@@ -220,10 +220,10 @@ export default function SubjectLessonsPage() {
       file_type: fileType,
     });
     if (error) {
-      toast.error(t('saveFailed') || 'Failed to save attachment');
+      toast.error('Failed to save attachment');
       return;
     }
-    toast.success(t('saved') || 'Saved');
+    toast.success('Saved');
     setAddUrlByLesson(prev => ({ ...prev, [lessonId]: '' }));
     await loadLessons();
   };
@@ -289,10 +289,10 @@ export default function SubjectLessonsPage() {
       video_url: editVideoUrl.trim() || null as any,
     });
     if (error) {
-      toast.error(t('saveFailed') || 'Failed to save');
+      toast.error('Failed to save');
       return;
     }
-    toast.success(t('saved') || 'Saved');
+    toast.success('Saved');
     cancelEdit();
     await loadLessons();
   };
@@ -300,20 +300,20 @@ export default function SubjectLessonsPage() {
   const removeLesson = async (id: string) => {
     const { error } = await api.deleteLesson(id);
     if (error) {
-      toast.error(t('deleteFailed') || 'Delete failed');
+      toast.error('Delete failed');
       return;
     }
-    toast.success(t('deleted') || 'Deleted');
+    toast.success('Deleted');
     await loadLessons();
   };
 
   const removeAttachment = async (id: string) => {
     const { error } = await api.deleteLessonAttachment(id);
     if (error) {
-      toast.error(t('deleteFailed') || 'Delete failed');
+      toast.error('Delete failed');
       return;
     }
-    toast.success(t('deleted') || 'Deleted');
+    toast.success('Deleted');
     await loadLessons();
   };
 
@@ -384,7 +384,7 @@ export default function SubjectLessonsPage() {
                           const file = e.target.files[0];
                           const maxBytes = 20 * 1024 * 1024;
                           if (file.size > maxBytes) {
-                            toast.error(t('fileTooLarge') || 'File too large (max 20MB)');
+                            toast.error('File too large (max 20MB)');
                             return;
                           }
                           void onUploadAttachmentFile(file, idx);
@@ -540,7 +540,7 @@ export default function SubjectLessonsPage() {
                               const file = e.target.files[0];
                               const maxBytes = 20 * 1024 * 1024;
                               if (file.size > maxBytes) {
-                                toast.error(t('fileTooLarge') || 'File too large (max 20MB)');
+                                toast.error('File too large (max 20MB)');
                                 return;
                               }
                               void uploadAttachmentForLesson(l.id, file);

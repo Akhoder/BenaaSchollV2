@@ -627,11 +627,7 @@ GRANT ALL ON classes TO authenticated;`;
                     {filteredClasses.map((cls) => (
                       <TableRow
                         key={cls.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          // Navigate to class detail page
-                          console.log('View class:', cls.id);
-                        }}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">

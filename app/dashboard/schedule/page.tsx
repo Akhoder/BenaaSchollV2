@@ -24,7 +24,7 @@ export default function SchedulePage() {
   const [filters, setFilters] = useState({ class_id: '', teacher_id: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
-  const [form, setForm] = useState({ title: '', class_id: '', teacher_id: '', start_at: '', end_at: '', room: '', notes: '', recurrence_rule: 'NONE', mode: 'in_person', zoom_url: '' });
+  const [form, setForm] = useState({ title: '', class_id: '', teacher_id: '', start_at: '', end_at: '', room: '', notes: '', recurrence_rule: 'NONE', recurrence_end_at: '', mode: 'in_person', zoom_url: '' });
   
   // fetch classes and teachers once
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function SchedulePage() {
   }, [profile, weekStart, classes, teachers]);
 
   const resetForm = () => {
-    setForm({ title: '', class_id: '', teacher_id: '', start_at: '', end_at: '', room: '', notes: '', recurrence_rule: 'NONE', mode: 'in_person', zoom_url: '' });
+    setForm({ title: '', class_id: '', teacher_id: '', start_at: '', end_at: '', room: '', notes: '', recurrence_rule: 'NONE', recurrence_end_at: '', mode: 'in_person', zoom_url: '' });
   };
 
   const onEdit = (e: any) => {
@@ -101,6 +101,7 @@ export default function SchedulePage() {
   };
 
   const onSave = async () => {
+    if (!profile) return;
     try {
       const payload: any = {
         title: form.title,

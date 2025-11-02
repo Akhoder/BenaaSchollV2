@@ -260,11 +260,11 @@ export default function DashboardPage() {
           <>
             <Card>
               <CardHeader>
-                <CardTitle>{t('availableClasses') || 'Available Classes'}</CardTitle>
+                <CardTitle>Available Classes</CardTitle>
               </CardHeader>
               <CardContent>
                 {publishedClasses.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">{t('noData') || 'No published classes yet.'}</div>
+                  <div className="text-sm text-muted-foreground">No published classes yet.</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {publishedClasses.map((c: any) => (
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                             className="px-3 h-9 rounded bg-emerald-600 text-white disabled:opacity-50"
                             disabled
                           >
-                            {t('enrolled') || 'Enrolled'}
+                            Enrolled
                           </button>
                         ) : (
                           <button
@@ -290,18 +290,18 @@ export default function DashboardPage() {
                                 const { error } = await enrollInClass(c.id);
                                 if (error) {
                                   console.error(error);
-                                  toast.error(t('enrollFailed') || 'Enrollment failed');
+                                  toast.error('Enrollment failed');
                                   return;
                                 }
                                 setMyClassEnrollments(prev => ({ ...prev, [c.id]: true }));
-                                toast.success(t('enrolled') || 'Enrolled successfully');
+                                toast.success('Enrolled successfully');
                                 await loadStudentData();
                               } finally {
                                 setEnrollingIds(prev => ({ ...prev, [c.id]: false }));
                               }
                             }}
                           >
-                            {t('enroll') || 'Enroll'}
+                            Enroll
                           </button>
                         )}
                       </div>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {Object.keys(myClassEnrollments).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">{t('noData') || 'No enrollments yet.'}</div>
+                  <div className="text-sm text-muted-foreground">No enrollments yet.</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {publishedClasses.filter((c: any) => myClassEnrollments[c.id]).map((c: any) => (
@@ -335,18 +335,18 @@ export default function DashboardPage() {
                               const { error } = await cancelClassEnrollment(c.id);
                               if (error) {
                                 console.error(error);
-                                toast.error(t('cancelFailed') || 'Cancel failed');
+                                toast.error('Cancel failed');
                                 return;
                               }
                               setMyClassEnrollments(prev => ({ ...prev, [c.id]: false }));
-                              toast.success(t('cancelled') || 'Cancelled');
+                              toast.success('Cancelled');
                               await loadStudentData();
                             } finally {
                               setEnrollingIds(prev => ({ ...prev, [`c-${c.id}`]: false }));
                             }
                           }}
                         >
-                          {t('cancel') || 'Cancel'}
+                          Cancel
                         </button>
                       </div>
                     ))}

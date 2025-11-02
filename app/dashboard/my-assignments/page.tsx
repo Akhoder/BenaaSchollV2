@@ -60,7 +60,6 @@ export default function MyAssignmentsPage() {
         for (const subject of subjectsByClass[clsId]) {
           const { data: assignments, error: assErr } = await api.fetchMyAssignmentsForSubject(subject.id);
           if (assErr) {
-            console.error('[MyAssignments] Error loading assignments for subject:', subject.subject_name, assErr);
             continue;
           }
           if (assignments && assignments.length > 0) {

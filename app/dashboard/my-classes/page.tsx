@@ -46,7 +46,7 @@ export default function MyClassesPage() {
       const { data: myClasses, error: cErr } = await fetchMyEnrolledClassesWithDetails();
       if (cErr) {
         console.error(cErr);
-        toast.error(t('errorLoading') || 'Error loading classes');
+        toast.error('Error loading classes');
         return;
       }
       setClasses((myClasses || []) as any[]);
@@ -80,7 +80,7 @@ export default function MyClassesPage() {
       setAttachmentsByLesson(atts);
     } catch (e) {
       console.error(e);
-      toast.error(t('errorLoading') || 'Error loading data');
+      toast.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -146,7 +146,7 @@ export default function MyClassesPage() {
             {t('myClasses') || 'My Classes'}
           </h1>
           <p className="text-muted-foreground mt-2">
-            {t('viewYourClasses') || 'View your enrolled classes, subjects, and lessons'}
+            View your enrolled classes, subjects, and lessons
           </p>
         </div>
 
@@ -154,9 +154,9 @@ export default function MyClassesPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <School className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{t('noEnrolledClasses') || 'You are not enrolled in any classes yet.'}</p>
+              <p className="text-muted-foreground">You are not enrolled in any classes yet.</p>
               <Button className="mt-4" onClick={() => router.push('/dashboard')}>
-                {t('browseClasses') || 'Browse Available Classes'}
+                Browse Available Classes
               </Button>
             </CardContent>
           </Card>
@@ -178,13 +178,13 @@ export default function MyClassesPage() {
                           <div className="text-left">
                             <CardTitle className="text-xl">{cls.class_name}</CardTitle>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {t('level') || 'Level'}: {cls.level} | {cls.teacher?.full_name || 'No teacher'}
+                              Level: {cls.level} | {cls.teacher?.full_name || 'No teacher'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">
-                            {(subjectsByClass[cls.id] || []).length} {t('subjects') || 'Subjects'}
+                            {(subjectsByClass[cls.id] || []).length} Subjects
                           </Badge>
                           <ChevronRight className={`h-5 w-5 transition-transform ${expandedClasses[cls.id] ? 'rotate-90' : ''}`} />
                         </div>
@@ -194,7 +194,7 @@ export default function MyClassesPage() {
                   <CollapsibleContent>
                     <CardContent className="pt-0 space-y-4">
                       {(subjectsByClass[cls.id] || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4">{t('noSubjects') || 'No subjects in this class.'}</p>
+                        <p className="text-sm text-muted-foreground py-4">No subjects in this class.</p>
                       ) : (
                         (subjectsByClass[cls.id] || []).map((sub: any) => (
                           <Card key={sub.id} className="border-l-4 border-l-primary">
@@ -211,7 +211,7 @@ export default function MyClassesPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <Badge variant="secondary">
-                                        {(lessonsBySubject[sub.id] || []).length} {t('lessons') || 'Lessons'}
+                                        {(lessonsBySubject[sub.id] || []).length} Lessons
                                       </Badge>
                                       <ChevronRight className={`h-4 w-4 transition-transform ${expandedSubjects[sub.id] ? 'rotate-90' : ''}`} />
                                     </div>
@@ -221,7 +221,7 @@ export default function MyClassesPage() {
                               <CollapsibleContent>
                                 <CardContent className="pt-0 space-y-3">
                                   {(lessonsBySubject[sub.id] || []).length === 0 ? (
-                                    <p className="text-sm text-muted-foreground py-2">{t('noLessons') || 'No lessons yet.'}</p>
+                                    <p className="text-sm text-muted-foreground py-2">No lessons yet.</p>
                                   ) : (
                                     (lessonsBySubject[sub.id] || []).map((lesson: Lesson) => {
                                       const embed = getVideoEmbedUrl(lesson.video_url);
@@ -250,13 +250,13 @@ export default function MyClassesPage() {
                                             {lesson.video_url && !embed && (
                                               <a href={lesson.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-sm text-primary underline">
                                                 <Video className="h-4 w-4 mr-1" />
-                                                {t('watchVideo') || 'Watch Video'}
+                                                Watch Video
                                                 <ExternalLink className="h-3 w-3 ml-1" />
                                               </a>
                                             )}
                                             {(attachmentsByLesson[lesson.id] || []).length > 0 && (
                                               <div>
-                                                <p className="text-xs font-medium mb-2">{t('attachments') || 'Attachments'}:</p>
+                                                <p className="text-xs font-medium mb-2">Attachments:</p>
                                                 <div className="space-y-2">
                                                   {(attachmentsByLesson[lesson.id] || []).map((att: any) => {
                                                     const type = (att.file_type || '').toLowerCase();

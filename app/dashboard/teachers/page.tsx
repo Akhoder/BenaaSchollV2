@@ -161,7 +161,7 @@ export default function TeachersPage() {
           }
           const { error } = await supabase
             .from('profiles')
-            .update({ role: 'teacher' }, { returning: 'minimal' })
+            .update({ role: 'teacher' })
             .eq('email', promoteEmail);
           if (error) throw error;
           toast.success('User promoted to teacher');
