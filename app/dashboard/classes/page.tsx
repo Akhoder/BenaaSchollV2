@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface ClassData {
   id: string;
@@ -352,6 +362,18 @@ export default function ClassesPage() {
     return matchesSearch;
   });
 
+  // ✅ PAGINATION: Add pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const stats = {
     total: classes.length,
     active: classes.filter((c) => !c.end_date || new Date(c.end_date) > new Date()).length,
@@ -466,43 +488,36 @@ GRANT ALL ON classes TO authenticated;`;
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
-                <School className="h-6 w-6 text-white" />
-              </div>
-              Classes Management
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2 font-sans">
-              Manage and organize all classes in the system
-            </p>
-          </div>
-          <div className="flex gap-2">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={School}
+          title="Classes Management"
+          description="Manage and organize all classes in the system"
+          gradient="from-blue-600 via-purple-600 to-blue-700"
+        >
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+            className="border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Toggle View
+          </Button>
+          {profile.role === 'admin' && (
             <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-              className="border-slate-200 dark:border-slate-800"
+              onClick={() => {
+                setSelectedClass(null);
+                setIsViewing(false);
+                setIsDialogOpen(true);
+              }}
+              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
             >
-              <Users className="h-4 w-4" />
+              <Plus className="h-4 w-4 mr-2" />
+              Add Class
             </Button>
-            {profile.role === 'admin' && (
-              <Button 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                onClick={() => {
-                  setSelectedClass(null);
-                  setIsViewing(false);
-                  setIsDialogOpen(true);
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Class
-              </Button>
-            )}
-          </div>
-        </div>
+          )}
+        </PageHeader>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -624,7 +639,7 @@ GRANT ALL ON classes TO authenticated;`;
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClasses.map((cls) => (
+                    {paginatedClasses.map((cls) => (
                       <TableRow
                         key={cls.id}
                         className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
@@ -758,6 +773,76 @@ GRANT ALL ON classes TO authenticated;`;
               </div>
             )}
           </CardContent>
+          
+          {/* ✅ PAGINATION: Add pagination UI */}
+          {filteredClasses.length > itemsPerPage && (
+            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredClasses.length)} of {filteredClasses.length} classes
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="cursor-pointer"
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Create/Edit Class Dialog */}

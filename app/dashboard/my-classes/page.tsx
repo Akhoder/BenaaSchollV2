@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { School, BookOpen, ChevronRight, Loader2, Video, FileText, Image as ImageIcon, ExternalLink } from 'lucide-react';
@@ -139,23 +140,21 @@ export default function MyClassesPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <School className="h-8 w-8" />
-            {t('myClasses') || 'My Classes'}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            View your enrolled classes, subjects, and lessons
-          </p>
-        </div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={School}
+          title={t('myClasses') || 'My Classes'}
+          description="View your enrolled classes, subjects, and lessons"
+          gradient="from-blue-600 via-cyan-600 to-blue-700"
+        />
 
         {classes.length === 0 ? (
-          <Card>
+          <Card className="border-slate-200 dark:border-slate-800">
             <CardContent className="py-12 text-center">
-              <School className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">You are not enrolled in any classes yet.</p>
-              <Button className="mt-4" onClick={() => router.push('/dashboard')}>
+              <School className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+              <p className="text-slate-500 dark:text-slate-400 font-sans">You are not enrolled in any classes yet.</p>
+              <Button className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" onClick={() => router.push('/dashboard')}>
                 Browse Available Classes
               </Button>
             </CardContent>
@@ -163,7 +162,7 @@ export default function MyClassesPage() {
         ) : (
           <div className="space-y-4">
             {classes.map((cls: any) => (
-              <Card key={cls.id} className="overflow-hidden">
+              <Card key={cls.id} className="overflow-hidden border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <Collapsible
                   open={expandedClasses[cls.id] || false}
                   onOpenChange={(open) => setExpandedClasses(prev => ({ ...prev, [cls.id]: open }))}

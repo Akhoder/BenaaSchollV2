@@ -236,7 +236,7 @@ export default function AssignmentSubmissionsPage() {
           <DialogHeader>
             <DialogTitle>Grade Submission</DialogTitle>
             <DialogDescription>
-              Provide a score and feedback for this student's work
+              Provide a score and feedback for this student&apos;s work
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

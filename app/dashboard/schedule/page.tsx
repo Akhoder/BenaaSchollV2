@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -161,14 +162,15 @@ export default function SchedulePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
-            <Calendar className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-3xl font-display font-bold tracking-tight">Schedule</h1>
-        </div>
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={Calendar}
+          title="Schedule"
+          description="View and manage your weekly schedule"
+          gradient="from-indigo-600 via-purple-600 to-indigo-700"
+        />
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="font-display">Week View</CardTitle>

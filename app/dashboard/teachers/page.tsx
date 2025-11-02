@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Users, Plus, MoreVertical, Edit, Search, Mail, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface TeacherProfile {
   id: string;
@@ -97,6 +107,18 @@ export default function TeachersPage() {
       (t.phone || '').toLowerCase().includes(q)
     );
   }, [teachers, search]);
+
+  // ✅ PAGINATION: Add pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTeachers = filtered.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const openEdit = (t: TeacherProfile) => {
     setSelected(t);
@@ -199,28 +221,24 @@ export default function TeachersPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              Teachers
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2 font-sans">Manage teacher accounts</p>
-          </div>
+        <PageHeader 
+          icon={Users}
+          title="Teachers"
+          description="Manage teacher accounts"
+          gradient="from-purple-600 via-pink-600 to-purple-700"
+        >
           <Button 
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg"
             onClick={() => {
               setSelected(null);
               setPromoteEmail('');
               setForm({ full_name: '', phone: '', avatar_url: '', language_preference: 'en' });
               setIsDialogOpen(true);
             }}
+            className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
           >
             <Plus className="mr-2 h-4 w-4" /> Promote User to Teacher
           </Button>
-        </div>
+        </PageHeader>
 
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>
@@ -256,7 +274,7 @@ export default function TeachersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((t) => (
+                  {paginatedTeachers.map((t) => (
                     <TableRow key={t.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -297,6 +315,76 @@ export default function TeachersPage() {
               </Table>
             </div>
           </CardContent>
+          
+          {/* ✅ PAGINATION: Add pagination UI */}
+          {filtered.length > itemsPerPage && (
+            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} teachers
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="cursor-pointer"
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </Card>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

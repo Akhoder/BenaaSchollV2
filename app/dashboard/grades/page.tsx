@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, TrendingUp } from 'lucide-react';
@@ -113,64 +114,74 @@ export default function GradesPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <FileText className="h-8 w-8" />
-            My Grades
-          </h1>
-          <p className="text-muted-foreground mt-2">View your grades and feedback</p>
-        </div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={FileText}
+          title="My Grades"
+          description="View your grades and feedback"
+          gradient="from-emerald-600 via-teal-600 to-emerald-700"
+        />
 
-        {/* Stats Cards */}
+        {/* ✅ Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Graded</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-                <FileText className="h-12 w-12 text-blue-600 opacity-20" />
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+                Total Graded
+              </CardTitle>
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                <FileText className="h-4 w-4 text-white" />
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold font-display text-blue-600">{stats.total}</div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Assignments graded</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Average Grade</p>
-                  <p className="text-2xl font-bold">{stats.average}%</p>
-                </div>
-                <TrendingUp className="h-12 w-12 text-emerald-600 opacity-20" />
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+                Average Grade
+              </CardTitle>
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-white" />
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold font-display text-emerald-600">{stats.average}%</div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Overall average</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Graded Assignments</p>
-                  <p className="text-2xl font-bold">{stats.graded}</p>
-                </div>
-                <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>
-              </div>
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+                Status
+              </CardTitle>
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">Active</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold font-display text-emerald-600">{stats.graded}</div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Graded assignments</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Grades List */}
+        {/* ✅ Grades List */}
         {grades.length === 0 ? (
-          <Card>
+          <Card className="border-slate-200 dark:border-slate-800">
             <CardContent className="py-12 text-center">
-              <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No graded assignments yet</p>
+              <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+              <p className="text-slate-500 dark:text-slate-400 font-sans">No graded assignments yet</p>
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="border-slate-200 dark:border-slate-800">
             <CardHeader>
-              <CardTitle>Grade Details</CardTitle>
+              <CardTitle className="flex items-center gap-2 font-display">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+                Grade Details
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

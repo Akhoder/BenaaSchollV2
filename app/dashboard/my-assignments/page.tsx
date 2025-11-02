@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -136,17 +137,17 @@ export default function MyAssignmentsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <FileText className="h-8 w-8" />
-            My Assignments
-          </h1>
-          <p className="text-muted-foreground mt-2">View and submit your assignments</p>
-        </div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={FileText}
+          title="My Assignments"
+          description="View and submit your assignments"
+          gradient="from-green-600 via-teal-600 to-green-700"
+        />
 
         {assignments.length === 0 ? (
-          <Card>
+          <Card className="border-slate-200 dark:border-slate-800">
             <CardContent className="py-12 text-center">
               <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No assignments yet</p>

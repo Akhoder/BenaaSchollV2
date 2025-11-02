@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 // import { StudentsTable } from '@/components/EnhancedTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -272,36 +273,32 @@ export default function StudentsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-xl">
-                <GraduationCap className="h-6 w-6 text-white" />
-              </div>
-              {t('students')} Management
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2 font-sans">
-              Manage and track all students in the system
-            </p>
-          </div>
-          <div className="flex gap-2">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={GraduationCap}
+          title={`${t('students')} Management`}
+          description="Manage and track all students in the system"
+          gradient="from-emerald-600 via-teal-600 to-emerald-700"
+        >
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+            className="border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Toggle View
+          </Button>
+          {profile.role === 'admin' && (
             <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-              className="border-slate-200 dark:border-slate-800"
+              onClick={() => setCreateOpen(true)}
+              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
             >
-              <Users className="h-4 w-4" />
+              <Plus className="h-4 w-4 mr-2" />
+              Add Student
             </Button>
-            {profile.role === 'admin' && (
-              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg" onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Student
-              </Button>
-            )}
-          </div>
-        </div>
+          )}
+        </PageHeader>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -532,7 +529,7 @@ export default function StudentsPage() {
                     
                     {/* Page numbers */}
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
+                      let pageNum: number;
                       if (totalPages <= 5) {
                         pageNum = i + 1;
                       } else if (currentPage <= 3) {

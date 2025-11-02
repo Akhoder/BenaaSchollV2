@@ -11,9 +11,9 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'sans-serif'],
         arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        poppins: ['var(--font-poppins)', 'sans-serif'],
         cairo: ['var(--font-cairo)', 'sans-serif'],
       },
       backgroundImage: {

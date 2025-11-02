@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,15 @@ import {
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 interface UserProfile {
   id: string;
@@ -196,6 +206,18 @@ export default function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
+  // ✅ PAGINATION: Add pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
+
   const stats = {
     total: users.length,
     admins: users.filter((u) => u.role === 'admin').length,
@@ -224,24 +246,28 @@ export default function UsersPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              Users Management
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
-              Manage all users in the system
-            </p>
-          </div>
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
+        {/* Enhanced Header */}
+        <PageHeader 
+          icon={User}
+          title="Users Management"
+          description="Manage all users in the system"
+          gradient="from-blue-600 via-purple-600 to-blue-700"
+        >
+          <Button 
+            onClick={() => {
+              setSelectedUser(null);
+              setEditName('');
+              setEditEmail('');
+              setEditRole('student');
+              setEditPhone('');
+              setIsDialogOpen(true);
+            }}
+            className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add User
           </Button>
-        </div>
+        </PageHeader>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -362,7 +388,7 @@ export default function UsersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.map((user) => (
+                    {paginatedUsers.map((user) => (
                       <TableRow
                         key={user.id}
                         className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
@@ -459,52 +485,127 @@ export default function UsersPage() {
               </div>
             )}
           </CardContent>
+          
+          {/* ✅ PAGINATION: Add pagination UI */}
+          {filteredUsers.length > itemsPerPage && (
+            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="cursor-pointer"
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </Card>
 
-        {/* Edit Dialog */}
+        {/* Edit/Create Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Edit User</DialogTitle>
+              <DialogTitle className="text-2xl font-display">
+                {selectedUser ? 'Edit User' : 'Create New User'}
+              </DialogTitle>
               <DialogDescription>
-                Update user information and permissions
+                {selectedUser ? 'Update user information and permissions' : 'Add a new user to the system'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {selectedUser && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Full Name</label>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="mt-1" />
-                    </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Full Name</label>
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Role</label>
-                      <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="student">Student</SelectItem>
-                          <SelectItem value="supervisor">Supervisor</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium">Email</label>
+                    <Input 
+                      value={editEmail} 
+                      onChange={(e) => setEditEmail(e.target.value)} 
+                      className="mt-1"
+                      disabled={!!selectedUser}
+                    />
                   </div>
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Role</label>
+                    <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Phone</label>
+                    <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -512,42 +613,63 @@ export default function UsersPage() {
               </Button>
               <Button
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                disabled={savingEdit || !selectedUser}
+                disabled={savingEdit}
                 onClick={async () => {
-                  if (!selectedUser) return;
                   try {
                     setSavingEdit(true);
-                    const { error } = await supabase.rpc('admin_update_profile', {
-                      p_id: selectedUser.id,
-                      p_full_name: editName || null,
-                      p_email: editEmail || null,
-                      p_phone: editPhone || null,
-                      p_language: null,
-                      p_role: editRole || null,
-                    });
-                    if (error) {
-                      console.error(error);
-                      toast.error('Failed to save changes');
-                      return;
+                    if (selectedUser) {
+                      // Edit existing user
+                      const { error } = await supabase.rpc('admin_update_profile', {
+                        p_id: selectedUser.id,
+                        p_full_name: editName || null,
+                        p_email: editEmail || null,
+                        p_phone: editPhone || null,
+                        p_language: null,
+                        p_role: editRole || null,
+                      });
+                      if (error) {
+                        console.error(error);
+                        toast.error('Failed to save changes');
+                        return;
+                      }
+                      // Optimistic UI update
+                      setUsers(prev => prev.map(u => u.id === selectedUser.id ? {
+                        ...u,
+                        full_name: editName,
+                        email: editEmail,
+                        role: editRole,
+                        phone: editPhone || undefined,
+                      } : u));
+                      toast.success('User updated');
+                    } else {
+                      // Create new user
+                      if (!editName.trim() || !editEmail.trim()) {
+                        toast.error('Name and email are required');
+                        return;
+                      }
+                      const { error } = await supabase.from('profiles').insert([{
+                        full_name: editName.trim(),
+                        email: editEmail.trim(),
+                        role: editRole,
+                        phone: editPhone.trim() || null,
+                        language_preference: 'en',
+                      }]);
+                      if (error) {
+                        console.error(error);
+                        toast.error('Failed to create user');
+                        return;
+                      }
+                      toast.success('User created');
+                      await fetchUsers();
                     }
-                    // Optimistic UI update
-                    setUsers(prev => prev.map(u => u.id === selectedUser.id ? {
-                      ...u,
-                      full_name: editName,
-                      email: editEmail,
-                      role: editRole,
-                      phone: editPhone || undefined,
-                    } : u));
-                    toast.success('User updated');
                     setIsDialogOpen(false);
                     setSelectedUser(null);
-                    // Avoid immediate refetch to prevent stale overwrite when Realtime is off
                   } finally {
                     setSavingEdit(false);
                   }
                 }}
               >
-                {savingEdit ? 'Saving...' : 'Save Changes'}
+                {savingEdit ? (selectedUser ? 'Saving...' : 'Creating...') : (selectedUser ? 'Save Changes' : 'Create User')}
               </Button>
             </DialogFooter>
           </DialogContent>
