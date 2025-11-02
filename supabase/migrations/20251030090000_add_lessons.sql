@@ -10,7 +10,7 @@ create extension if not exists pgcrypto;
 -- Lessons table
 create table if not exists public.lessons (
   id uuid primary key default gen_random_uuid(),
-  subject_id uuid not null references public.subjects(id) on delete cascade,
+  subject_id uuid not null references public.class_subjects(id) on delete cascade,
   title text not null,
   description text,
   video_url text, -- optional YouTube/Drive/etc

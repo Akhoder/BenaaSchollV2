@@ -4,6 +4,21 @@ import { useEffect, useState } from 'react';
 
 export function useServiceWorker() {
   useEffect(() => {
+    // ✅ DISABLE IN DEVELOPMENT: Service Worker causes build issues in dev mode
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      console.log('Service Worker disabled in development mode');
+      // Unregister any existing service workers
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+          });
+        });
+      }
+      return;
+    }
+
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       // تسجيل Service Worker
       navigator.serviceWorker.register('/sw.js')

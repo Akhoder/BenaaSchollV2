@@ -42,6 +42,28 @@ export interface LessonAttachment {
   created_by: string;
 }
 
+export interface LessonProgress {
+  id: string;
+  student_id: string;
+  lesson_id: string;
+  status: 'not_started' | 'in_progress' | 'completed';
+  progress_percentage: number;
+  last_accessed_at?: string | null;
+  completed_at?: string | null;
+  video_position: number;
+  time_spent_seconds: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubjectProgressStats {
+  total_lessons: number;
+  completed_lessons: number;
+  in_progress_lessons: number;
+  not_started_lessons: number;
+  overall_progress: number;
+}
+
 export interface SubjectRow {
   id: string;
   class_id: string;
@@ -462,4 +484,134 @@ export async function uploadLessonAttachmentFile(file: File, userId: string) {
   }
   const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
   return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+// ============================================
+// LESSON PROGRESS FUNCTIONS
+// ============================================
+
+export async function fetchLessonProgressForStudent(lessonId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: null } as any;
+  
+  const { data: progress } = await supabase
+    .from('lesson_progress')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .eq('student_id', uid)
+    .maybeSingle();
+  
+  return { data: progress, error: null };
+}
+
+export async function fetchAllLessonProgressForSubject(subjectId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  // Get all lessons for the subject
+  const { data: lessons } = await supabase
+    .from('lessons')
+    .select('id')
+    .eq('subject_id', subjectId);
+  
+  if (!lessons || lessons.length === 0) {
+    return { data: [], error: null };
+  }
+  
+  const lessonIds = lessons.map(l => l.id);
+  
+  // Get all progress for these lessons
+  const { data: progress } = await supabase
+    .from('lesson_progress')
+    .select('*')
+    .eq('student_id', uid)
+    .in('lesson_id', lessonIds);
+  
+  return { data: progress || [], error: null };
+}
+
+export async function getSubjectProgressStats(subjectId: string): Promise<{ data: SubjectProgressStats | null, error: any }> {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: null } as any;
+  
+  const { data, error } = await supabase.rpc('get_subject_progress', {
+    p_student_id: uid,
+    p_subject_id: subjectId
+  });
+  
+  if (error) {
+    console.error('Error fetching subject progress:', error);
+    return { data: null, error };
+  }
+  
+  // Transform the result to match our interface
+  if (data && data.length > 0) {
+    const stats = data[0];
+    return {
+      data: {
+        total_lessons: Number(stats.total_lessons) || 0,
+        completed_lessons: Number(stats.completed_lessons) || 0,
+        in_progress_lessons: Number(stats.in_progress_lessons) || 0,
+        not_started_lessons: Number(stats.not_started_lessons) || 0,
+        overall_progress: Number(stats.overall_progress) || 0
+      },
+      error: null
+    };
+  }
+  
+  return { data: null, error: null };
+}
+
+export async function updateLessonProgress(
+  lessonId: string,
+  progressPercentage: number,
+  status?: 'not_started' | 'in_progress' | 'completed',
+  videoPosition?: number,
+  timeSpent?: number
+) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  const student_id = userRes.user.id;
+  
+  // Use the RPC function to handle the upsert and auto-logic
+  const { data, error } = await supabase.rpc('update_lesson_progress', {
+    p_student_id: student_id,
+    p_lesson_id: lessonId,
+    p_progress_percentage: Math.max(0, Math.min(100, progressPercentage)),
+    p_status: status || null,
+    p_video_position: videoPosition || null,
+    p_time_spent: timeSpent || null
+  });
+  
+  if (error) {
+    console.error('Error updating lesson progress:', error);
+    return { data: null, error };
+  }
+  
+  return { data, error: null };
+}
+
+export async function getOrCreateLessonProgress(lessonId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  const student_id = userRes.user.id;
+  
+  const { data, error } = await supabase.rpc('get_or_create_lesson_progress', {
+    p_student_id: student_id,
+    p_lesson_id: lessonId
+  });
+  
+  if (error) {
+    console.error('Error getting/creating lesson progress:', error);
+    return { data: null, error };
+  }
+  
+  return { data, error: null };
 }
