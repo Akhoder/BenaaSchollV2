@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { translations, Language, TranslationKey } from '@/lib/translations';
 
 interface LanguageContextType {
@@ -21,24 +21,32 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setLanguage = (lang: Language) => {
+  // ✅ PERFORMANCE: Use useCallback to prevent unnecessary re-renders
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
-  };
+  }, []);
 
-  const t = (key: TranslationKey): string => {
+  const t = useCallback((key: TranslationKey): string => {
     return translations[language][key] || translations.en[key] || key;
-  };
+  }, [language]);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 
+  // ✅ PERFORMANCE: Memoize context value to prevent re-renders
+  const value = useMemo(() => ({
+    language,
+    setLanguage,
+    t
+  }), [language, setLanguage, t]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

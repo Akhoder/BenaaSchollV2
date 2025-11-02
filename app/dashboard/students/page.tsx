@@ -63,6 +63,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 // duplicate import removed
 
 interface StudentProfile {
@@ -97,6 +106,10 @@ export default function StudentsPage() {
   const [createLang, setCreateLang] = useState('ar');
   const [savingCreate, setSavingCreate] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  
+  // ✅ PAGINATION: Add pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -158,22 +171,27 @@ export default function StudentsPage() {
       }
       
       if (allStudents && allStudents.length > 0) {
-        // معالجة البيانات المحسنة
-        const processedStudents = await Promise.all(
-          allStudents.map(async (student: any) => {
-            // الحصول على عدد الفصول المسجل فيها الطالب
-            const { data: enrollments } = await supabase
-              .from('student_enrollments')
-              .select('class_id')
-              .eq('student_id', student.id);
-            
-            return {
-              ...student,
-              enrolled_classes: enrollments?.length || 0,
-              average_grade: '85.5', // يمكن تحسين هذا لاحقاً
-            };
-          })
-        );
+        // ✅ FIX: Get all enrollments in ONE query instead of N queries
+        const studentIds = allStudents.map((s: any) => s.id);
+        
+        // Single query to get all enrollments for all students
+        const { data: allEnrollments } = await supabase
+          .from('student_enrollments')
+          .select('student_id')
+          .in('student_id', studentIds);
+        
+        // Count enrollments per student
+        const enrollCounts = (allEnrollments || []).reduce((acc: Record<string, number>, row: any) => {
+          acc[row.student_id] = (acc[row.student_id] || 0) + 1;
+          return acc;
+        }, {});
+        
+        // Map enrollments to students
+        const processedStudents = allStudents.map((student: any) => ({
+          ...student,
+          enrolled_classes: enrollCounts[student.id] || 0,
+          average_grade: '85.5', // يمكن تحسين هذا لاحقاً
+        }));
         
         setStudents(processedStudents);
       } else {
@@ -215,6 +233,17 @@ export default function StudentsPage() {
       (student.phone && student.phone.includes(searchQuery));
     return matchesSearch;
   });
+
+  // ✅ PAGINATION: Calculate pagination
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const stats = {
     total: students.length,
@@ -444,7 +473,7 @@ export default function StudentsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredStudents.map((s) => (
+                    {paginatedStudents.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center gap-3">
@@ -484,6 +513,76 @@ export default function StudentsPage() {
               </div>
             )}
           </CardContent>
+          
+          {/* ✅ PAGINATION: Add pagination UI */}
+          {filteredStudents.length > itemsPerPage && (
+            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} students
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="cursor-pointer"
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Edit Dialog */}

@@ -202,32 +202,32 @@ export default function ClassesPage() {
         return;
       }
 
-      // إضافة عدد الطلاب لكل فصل
-      const classesWithCounts = await Promise.all(
-        (data || []).map(async (cls) => {
-          try {
-            const { count } = await supabase
-              .from('student_enrollments')
-              .select('*', { count: 'exact', head: true })
-              .eq('class_id', cls.id);
-            
-            return {
-              ...cls,
-              teacher_name: cls.teacher?.full_name || 'Unassigned',
-              supervisor_name: cls.supervisor?.full_name || 'Unassigned',
-              student_count: count || 0,
-            };
-          } catch (err) {
-            // إذا فشل استعلام student_enrollments، استخدم القيم الافتراضية
-            return {
-              ...cls,
-              teacher_name: cls.teacher?.full_name || 'Unassigned',
-              supervisor_name: cls.supervisor?.full_name || 'Unassigned',
-              student_count: 0,
-            };
-          }
-        })
-      );
+      // ✅ FIX: Get all enrollment counts in ONE query instead of N queries
+      const classIds = (data || []).map(cls => cls.id);
+      
+      let enrollmentCounts: Record<string, number> = {};
+      
+      if (classIds.length > 0) {
+        // Single query to get all enrollment counts for all classes
+        const { data: enrollments } = await supabase
+          .from('student_enrollments')
+          .select('class_id')
+          .in('class_id', classIds);
+        
+        // Count enrollments per class
+        enrollmentCounts = (enrollments || []).reduce((acc: Record<string, number>, row: any) => {
+          acc[row.class_id] = (acc[row.class_id] || 0) + 1;
+          return acc;
+        }, {});
+      }
+      
+      // Map counts to classes
+      const classesWithCounts = (data || []).map(cls => ({
+        ...cls,
+        teacher_name: cls.teacher?.full_name || 'Unassigned',
+        supervisor_name: cls.supervisor?.full_name || 'Unassigned',
+        student_count: enrollmentCounts[cls.id] || 0,
+      }));
       
       setClasses(classesWithCounts);
     } catch (err) {

@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 // ذاكرة تخزين مؤقت بسيطة للاستعلامات
 const queryCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 دقائق
+const CACHE_DURATION = 2 * 60 * 1000; // ✅ OPTIMIZED: 2 دقائق بدلاً من 5 (reduced stale data risk)
 
 // دالة مساعدة لتنظيف الذاكرة المؤقتة
 const cleanupCache = () => {

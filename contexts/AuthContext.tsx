@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, Profile } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -74,7 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  // ✅ PERFORMANCE: Use useCallback to prevent unnecessary re-renders
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -85,9 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { error };
-  };
+  }, [router]);
 
-  const signUp = async (email: string, password: string, fullName: string, role: string, language: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: string, language: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -120,16 +121,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Unexpected error during signup:', err);
       return { error: err };
     }
-  };
+  }, [router]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
     router.push('/login');
-  };
+  }, [router]);
+
+  // ✅ PERFORMANCE: Memoize context value to prevent re-renders
+  const value = useMemo(() => ({
+    user,
+    profile,
+    loading,
+    signIn,
+    signUp,
+    signOut
+  }), [user, profile, loading, signIn, signUp, signOut]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

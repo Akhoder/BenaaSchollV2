@@ -1,7 +1,9 @@
 export const translations = {
   en: {
-    appName: 'BenaaSchool',
-    welcome: 'Welcome to BenaaSchool',
+    appName: 'Madrasat Al-Binaa Al-Ilmi',
+    welcome: 'Welcome to Madrasat Al-Binaa Al-Ilmi',
+    schoolName: 'Madrasat Al-Binaa Al-Ilmi',
+    schoolLocation: 'Al-Beddawi - Tripoli',
     login: 'Login',
     register: 'Register',
     email: 'Email',
@@ -88,8 +90,10 @@ export const translations = {
     add: 'Add',
   },
   ar: {
-    appName: 'مدرسة بناء',
-    welcome: 'مرحباً بك في مدرسة بناء',
+    appName: 'مدرسة البناء العلمي',
+    welcome: 'مرحباً بك في مدرسة البناء العلمي',
+    schoolName: 'مدرسة البناء العلمي',
+    schoolLocation: 'البداوي - طرابلس',
     login: 'تسجيل الدخول',
     register: 'إنشاء حساب',
     email: 'البريد الإلكتروني',
@@ -176,8 +180,10 @@ export const translations = {
     add: 'إضافة',
   },
   fr: {
-    appName: 'BenaaSchool',
-    welcome: 'Bienvenue à BenaaSchool',
+    appName: 'Madrasat Al-Binaa Al-Ilmi',
+    welcome: 'Bienvenue à Madrasat Al-Binaa Al-Ilmi',
+    schoolName: 'Madrasat Al-Binaa Al-Ilmi',
+    schoolLocation: 'Al-Beddawi - Tripoli',
     login: 'Connexion',
     register: 'Inscription',
     email: 'Email',

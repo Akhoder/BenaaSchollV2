@@ -258,31 +258,31 @@ export default function DashboardPage() {
 
         {profile.role === 'student' && (
           <>
-            <Card>
+            <Card className="card-elegant">
               <CardHeader>
-                <CardTitle>Available Classes</CardTitle>
+                <CardTitle className="text-[hsl(var(--primary))]">{language === 'ar' ? 'الفصول المتاحة' : 'Available Classes'}</CardTitle>
               </CardHeader>
               <CardContent>
                 {publishedClasses.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No published classes yet.</div>
+                  <div className="text-sm text-muted-foreground">{language === 'ar' ? 'لا توجد فصول منشورة بعد.' : 'No published classes yet.'}</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {publishedClasses.map((c: any) => (
-                      <div key={c.id} className="p-4 border rounded-lg flex items-center justify-between">
+                      <div key={c.id} className="p-4 border border-[hsl(var(--border))] rounded-lg flex items-center justify-between card-elegant">
                         <div>
-                          <div className="font-medium">{c.class_name}</div>
-                          <div className="text-xs text-muted-foreground">Class ID: {c.id.slice(0, 8)}...</div>
+                          <div className="font-medium text-[hsl(var(--foreground))]">{c.class_name}</div>
+                          <div className="text-xs text-muted-foreground">ID: {c.id.slice(0, 8)}...</div>
                         </div>
                         {myClassEnrollments[c.id] ? (
                           <button
-                            className="px-3 h-9 rounded bg-emerald-600 text-white disabled:opacity-50"
+                            className="px-3 h-9 rounded bg-[hsl(var(--primary))] text-white disabled:opacity-50 font-medium"
                             disabled
                           >
-                            Enrolled
+                            {language === 'ar' ? 'مسجل' : 'Enrolled'}
                           </button>
                         ) : (
                           <button
-                            className="px-3 h-9 rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                            className="px-3 h-9 rounded border border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-light))] disabled:opacity-50 font-medium transition-colors"
                             disabled={!!enrollingIds[c.id]}
                             onClick={async () => {
                               try {
@@ -290,18 +290,18 @@ export default function DashboardPage() {
                                 const { error } = await enrollInClass(c.id);
                                 if (error) {
                                   console.error(error);
-                                  toast.error('Enrollment failed');
+                                  toast.error(language === 'ar' ? 'فشل التسجيل' : 'Enrollment failed');
                                   return;
                                 }
                                 setMyClassEnrollments(prev => ({ ...prev, [c.id]: true }));
-                                toast.success('Enrolled successfully');
+                                toast.success(language === 'ar' ? 'تم التسجيل بنجاح' : 'Enrolled successfully');
                                 await loadStudentData();
                               } finally {
                                 setEnrollingIds(prev => ({ ...prev, [c.id]: false }));
                               }
                             }}
                           >
-                            Enroll
+                            {language === 'ar' ? 'التسجيل' : 'Enroll'}
                           </button>
                         )}
                       </div>
@@ -311,23 +311,23 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-elegant">
               <CardHeader>
-                <CardTitle>{t('myClasses') || 'My Classes'}</CardTitle>
+                <CardTitle className="text-[hsl(var(--primary))]">{t('myClasses') || 'My Classes'}</CardTitle>
               </CardHeader>
               <CardContent>
                 {Object.keys(myClassEnrollments).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No enrollments yet.</div>
+                  <div className="text-sm text-muted-foreground">{language === 'ar' ? 'لا توجد تسجيلات بعد.' : 'No enrollments yet.'}</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {publishedClasses.filter((c: any) => myClassEnrollments[c.id]).map((c: any) => (
-                      <div key={c.id} className="p-4 border rounded-lg flex items-center justify-between">
+                      <div key={c.id} className="p-4 border border-[hsl(var(--border))] rounded-lg flex items-center justify-between card-elegant">
                         <div>
-                          <div className="font-medium">{c.class_name}</div>
-                          <div className="text-xs text-muted-foreground">Class ID: {c.id.slice(0, 8)}...</div>
+                          <div className="font-medium text-[hsl(var(--foreground))]">{c.class_name}</div>
+                          <div className="text-xs text-muted-foreground">ID: {c.id.slice(0, 8)}...</div>
                         </div>
                         <button
-                          className="px-3 h-9 rounded border border-red-600 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          className="px-3 h-9 rounded border border-red-600 text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-medium transition-colors"
                           disabled={!!enrollingIds[`c-${c.id}`]}
                           onClick={async () => {
                             try {
@@ -335,18 +335,18 @@ export default function DashboardPage() {
                               const { error } = await cancelClassEnrollment(c.id);
                               if (error) {
                                 console.error(error);
-                                toast.error('Cancel failed');
+                                toast.error(language === 'ar' ? 'فشل الإلغاء' : 'Cancel failed');
                                 return;
                               }
                               setMyClassEnrollments(prev => ({ ...prev, [c.id]: false }));
-                              toast.success('Cancelled');
+                              toast.success(language === 'ar' ? 'تم الإلغاء' : 'Cancelled');
                               await loadStudentData();
                             } finally {
                               setEnrollingIds(prev => ({ ...prev, [`c-${c.id}`]: false }));
                             }
                           }}
                         >
-                          Cancel
+                          {language === 'ar' ? 'إلغاء' : 'Cancel'}
                         </button>
                       </div>
                     ))}
