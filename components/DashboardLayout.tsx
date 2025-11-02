@@ -17,7 +17,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  UserCircle
+  UserCircle,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,6 +39,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: 'My Classes', href: '/dashboard/my-classes', icon: School, roles: ['student'] },
     { name: 'My Assignments', href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
+    { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
     { name: t('classes'), href: '/dashboard/classes', icon: School, roles: ['admin', 'teacher', 'supervisor'] },

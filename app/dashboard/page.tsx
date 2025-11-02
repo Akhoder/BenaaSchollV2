@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatCard } from '@/components/StatCard';
+import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, Calendar, TrendingUp } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
@@ -461,7 +462,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -476,19 +477,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                    {t('recentActivity')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    No recent activity to display
-                  </p>
-                </CardContent>
-              </Card>
+              <SmartRecommendations />
             </div>
           </>
         )}

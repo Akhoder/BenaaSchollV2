@@ -615,3 +615,304 @@ export async function getOrCreateLessonProgress(lessonId: string) {
   
   return { data, error: null };
 }
+
+// ============================================
+// CHAT FUNCTIONS
+// ============================================
+
+export interface Conversation {
+  id: string;
+  name?: string | null;
+  type: 'direct' | 'class' | 'subject';
+  class_id?: string | null;
+  subject_id?: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  last_message_at?: string | null;
+}
+
+export interface ConversationParticipant {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  last_read_at?: string | null;
+  joined_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  message_type: 'text' | 'file' | 'image';
+  file_url?: string | null;
+  is_edited: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MessageWithSender extends Message {
+  sender: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  read_count?: number;
+  is_read_by_me?: boolean;
+}
+
+// Get all conversations for the current user
+export async function getMyConversations() {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  const { data: conversations, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .order('last_message_at', { ascending: false, nullsLast: true })
+    .limit(50);
+  
+  if (error) {
+    return { data: [], error };
+  }
+  
+  // Filter to only conversations where user is a participant
+  const participantConversationIds: string[] = [];
+  for (const conv of conversations || []) {
+    const { data: isParticipant } = await supabase
+      .from('conversation_participants')
+      .select('id')
+      .eq('conversation_id', conv.id)
+      .eq('user_id', uid)
+      .maybeSingle();
+    
+    if (isParticipant) {
+      participantConversationIds.push(conv.id);
+    }
+  }
+  
+  const myConversations = (conversations || []).filter((c: any) => 
+    participantConversationIds.includes(c.id)
+  );
+  
+  return { data: myConversations, error: null };
+}
+
+// Get conversation messages with sender info
+export async function getConversationMessages(conversationId: string, limit = 50) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select(`
+      *,
+      sender:profiles!sender_id(id, full_name, email)
+    `)
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  
+  if (error) {
+    return { data: [], error };
+  }
+  
+  // Get read status for current user
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  
+  if (uid && data) {
+    const messageIds = data.map((m: any) => m.id);
+    const { data: reads } = await supabase
+      .from('message_reads')
+      .select('message_id')
+      .in('message_id', messageIds)
+      .eq('user_id', uid);
+    
+    const readMessageIds = new Set((reads || []).map((r: any) => r.message_id));
+    
+    const enrichedMessages = data.map((msg: any) => ({
+      ...msg,
+      is_read_by_me: readMessageIds.has(msg.id)
+    }));
+    
+    return { data: enrichedMessages.reverse(), error: null };
+  }
+  
+  return { data: (data || []).reverse(), error: null };
+}
+
+// Send a message
+export async function sendMessage(
+  conversationId: string,
+  content: string,
+  messageType: 'text' | 'file' | 'image' = 'text',
+  fileUrl?: string
+) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: uid,
+      content,
+      message_type: messageType,
+      file_url: fileUrl || null
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  // Mark as read by sender
+  if (data) {
+    await supabase
+      .from('message_reads')
+      .insert({
+        message_id: data.id,
+        user_id: uid
+      });
+  }
+  
+  return { data, error: null };
+}
+
+// Mark messages as read
+export async function markMessagesAsRead(conversationId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  // Get unread messages in this conversation
+  const { data: unreadMessages } = await supabase
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .not('sender_id', 'eq', uid);
+  
+  if (!unreadMessages || unreadMessages.length === 0) {
+    return { data: true, error: null };
+  }
+  
+  // Check which ones aren't read yet
+  const messageIds = unreadMessages.map((m: any) => m.id);
+  const { data: reads } = await supabase
+    .from('message_reads')
+    .select('message_id')
+    .in('message_id', messageIds)
+    .eq('user_id', uid);
+  
+  const readMessageIds = new Set((reads || []).map((r: any) => r.message_id));
+  const newReads = unreadMessages
+    .filter((m: any) => !readMessageIds.has(m.id))
+    .map((m: any) => ({
+      message_id: m.id,
+      user_id: uid
+    }));
+  
+  if (newReads.length > 0) {
+    const { error } = await supabase
+      .from('message_reads')
+      .insert(newReads);
+    
+    if (error) {
+      return { data: null, error };
+    }
+  }
+  
+  return { data: true, error: null };
+}
+
+// Create a direct conversation with another user
+export async function createDirectConversation(otherUserId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  if (uid === otherUserId) {
+    return { data: null, error: new Error('Cannot create conversation with yourself') } as any;
+  }
+  
+  // Check if conversation already exists
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('type', 'direct')
+    .or(`created_by.eq.${uid},created_by.eq.${otherUserId}`);
+  
+  // TODO: Better check for existing direct conversation
+  
+  // Create conversation
+  const { data: conv, error: convError } = await supabase
+    .from('conversations')
+    .insert({
+      type: 'direct',
+      created_by: uid
+    })
+    .select()
+    .single();
+  
+  if (convError) {
+    return { data: null, error: convError };
+  }
+  
+  // Add participants
+  const { error: partError } = await supabase
+    .from('conversation_participants')
+    .insert([
+      { conversation_id: conv.id, user_id: uid, role: 'admin' },
+      { conversation_id: conv.id, user_id: otherUserId, role: 'member' }
+    ]);
+  
+  if (partError) {
+    // Clean up conversation if participants failed
+    await supabase.from('conversations').delete().eq('id', conv.id);
+    return { data: null, error: partError };
+  }
+  
+  return { data: conv, error: null };
+}
+
+// Subscribe to new messages in a conversation
+export function subscribeToMessages(
+  conversationId: string,
+  callback: (message: MessageWithSender) => void
+) {
+  const channel = supabase
+    .channel(`messages:${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversationId}`
+      },
+      async (payload) => {
+        const message = payload.new as Message;
+        
+        // Fetch sender info
+        const { data: sender } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('id', message.sender_id)
+          .single();
+        
+        callback({
+          ...message,
+          sender: sender || { id: message.sender_id, full_name: 'Unknown', email: '' }
+        } as MessageWithSender);
+      }
+    )
+    .subscribe();
+  
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
