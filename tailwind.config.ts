@@ -13,8 +13,9 @@ const config: Config = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'system-ui', 'sans-serif'],
         display: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'sans-serif'],
-        arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        cairo: ['var(--font-cairo)', 'sans-serif'],
+        arabic: ['var(--font-tajawal)', 'var(--font-almarai)', 'system-ui', 'sans-serif'],
+        tajawal: ['var(--font-tajawal)', 'sans-serif'],
+        almarai: ['var(--font-almarai)', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
