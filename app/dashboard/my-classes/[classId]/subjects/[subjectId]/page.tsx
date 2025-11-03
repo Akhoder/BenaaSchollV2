@@ -36,6 +36,7 @@ import {
   LessonProgress
 } from '@/lib/supabase';
 import { fetchMyAssignmentsForSubject, fetchSubmissionForAssignment } from '@/lib/supabase';
+import { fetchQuizzesForSubject, fetchQuizzesForLesson } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,8 @@ export default function SubjectLessonsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [lessonQuizzes, setLessonQuizzes] = useState<any[]>([]);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -71,6 +74,18 @@ export default function SubjectLessonsPage() {
       loadData().catch(() => {});
     }
   }, [profile, authLoading, router, classId, subjectId]);
+
+  // Keep lesson quizzes in sync with the active lesson
+  useEffect(() => {
+    const current = lessons[activeLessonIndex];
+    if (current?.id) {
+      fetchQuizzesForLesson(current.id).then(({ data }) => {
+        setLessonQuizzes(data || []);
+      });
+    } else {
+      setLessonQuizzes([]);
+    }
+  }, [activeLessonIndex, lessons]);
 
   const loadData = async () => {
     try {
@@ -123,6 +138,10 @@ export default function SubjectLessonsPage() {
         if (sub) subs[a.id] = sub;
       }
       setSubmissions(subs);
+
+      // Load quizzes for this subject
+      const { data: qz } = await fetchQuizzesForSubject(subjectId);
+      setQuizzes(qz || []);
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');
@@ -183,7 +202,7 @@ export default function SubjectLessonsPage() {
           setLessonsProgress(progressMap);
         }
       }
-    }
+    };
   };
 
   const handleMarkComplete = async (lessonId: string) => {
@@ -252,6 +271,8 @@ export default function SubjectLessonsPage() {
   const embed = getVideoEmbedUrl(activeLesson.video_url);
   const hasAttachments = (attachmentsByLesson[activeLesson.id] || []).length > 0;
   const hasAssignments = assignments.length > 0;
+  const hasQuizzes = quizzes.length > 0;
+  
 
   const LessonSidebar = () => (
     <div className="space-y-2" ref={sidebarRef}>
@@ -586,6 +607,70 @@ export default function SubjectLessonsPage() {
                         </div>
                       );
                     })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Subject Quizzes */}
+            {hasQuizzes && (
+              <Card className="border-gray-200 dark:border-gray-800">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Quizzes
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {quizzes.map((q: any) => (
+                      <div key={q.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{q.title}</h4>
+                            {q.description && <p className="text-sm text-muted-foreground line-clamp-2">{q.description}</p>}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {q.time_limit_minutes ? `Time: ${q.time_limit_minutes} min` : ''}
+                            </p>
+                          </div>
+                          <div>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}>
+                              Start
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Lesson Quizzes (for active lesson) */}
+            {lessonQuizzes.length > 0 && (
+              <Card className="border-gray-200 dark:border-gray-800">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Lesson Quizzes
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {lessonQuizzes.map((q: any) => (
+                      <div key={q.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{q.title}</h4>
+                            {q.description && <p className="text-sm text-muted-foreground line-clamp-2">{q.description}</p>}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {q.time_limit_minutes ? `Time: ${q.time_limit_minutes} min` : ''}
+                            </p>
+                          </div>
+                          <div>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}>
+                              Start
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

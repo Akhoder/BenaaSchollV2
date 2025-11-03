@@ -983,12 +983,17 @@ export async function fetchMyNotifications(limit = 20) {
   const { data: userRes } = await supabase.auth.getUser();
   const uid = userRes?.user?.id;
   if (!uid) return { data: [], error: null } as any;
-  return await supabase
+  const res = await supabase
     .from('notifications')
     .select('*')
     .or(`recipient_id.eq.${uid},recipient_id.is.null`)
     .order('created_at', { ascending: false })
     .limit(limit);
+  // If table not found (migration not run yet), return empty instead of 404 surfacing
+  if ((res as any)?.error && ((res as any).error.code === '42P01' || (res as any).status === 404)) {
+    return { data: [], error: null } as any;
+  }
+  return res as any;
 }
 
 export async function markNotificationRead(id: string) {
@@ -1009,4 +1014,257 @@ export async function createNotification(input: { recipient_id?: string | null; 
     .insert([row])
     .select('*')
     .single();
+}
+
+// ==== QUIZZES HELPERS ====
+export async function createQuiz(input: {
+  subject_id?: string | null;
+  lesson_id?: string | null;
+  title: string;
+  description?: string | null;
+  time_limit_minutes?: number | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  attempts_allowed?: number | null;
+  shuffle_questions?: boolean | null;
+  shuffle_options?: boolean | null;
+  show_results_policy?: 'immediate' | 'after_close' | 'never';
+}) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const created_by = userRes?.user?.id || null;
+  const row: any = { ...input, created_by };
+  return await supabase.from('quizzes').insert([row]).select('*').single();
+}
+
+export async function updateQuiz(id: string, fields: Partial<{ title: string; description: string | null; time_limit_minutes: number | null; start_at: string | null; end_at: string | null; attempts_allowed: number; shuffle_questions: boolean; shuffle_options: boolean; show_results_policy: 'immediate' | 'after_close' | 'never'; }>) {
+  return await supabase
+    .from('quizzes')
+    .update(fields as any)
+    .eq('id', id)
+    .select('*')
+    .single();
+}
+
+export async function deleteQuiz(id: string) {
+  return await supabase
+    .from('quizzes')
+    .delete()
+    .eq('id', id);
+}
+
+export async function fetchQuizzesForSubject(subjectId: string) {
+  return await supabase
+    .from('quizzes')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchQuizzesForLesson(lessonId: string) {
+  return await supabase
+    .from('quizzes')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .order('created_at', { ascending: false });
+}
+
+export async function addQuizQuestion(input: {
+  quiz_id: string;
+  type: 'mcq_single' | 'mcq_multi' | 'true_false' | 'short_text' | 'numeric' | 'ordering' | 'matching';
+  text: string;
+  media_url?: string | null;
+  points?: number;
+  order_index?: number;
+}) {
+  return await supabase.from('quiz_questions').insert([input]).select('*').single();
+}
+
+export async function addQuizOptions(questionId: string, options: Array<{ text: string; is_correct?: boolean; order_index?: number }>) {
+  const rows = options.map(o => ({ question_id: questionId, text: o.text, is_correct: !!o.is_correct, order_index: o.order_index ?? 0 }));
+  return await supabase.from('quiz_options').insert(rows).select('*');
+}
+
+export async function fetchQuizBundle(quizId: string) {
+  // fetch quiz, questions, options
+  const { data: quiz } = await supabase.from('quizzes').select('*').eq('id', quizId).single();
+  const { data: questions } = await supabase.from('quiz_questions').select('*').eq('quiz_id', quizId).order('order_index');
+  const qIds = (questions || []).map((q: any) => q.id);
+  const { data: options } = qIds.length > 0 ? await supabase.from('quiz_options').select('*').in('question_id', qIds).order('order_index') : { data: [] as any[] } as any;
+  const optsByQ = new Map<string, any[]>();
+  (options || []).forEach((o: any) => { const arr = optsByQ.get(o.question_id) || []; arr.push(o); optsByQ.set(o.question_id, arr); });
+  return { quiz, questions: questions || [], optionsByQuestion: optsByQ };
+}
+
+export async function startQuizAttempt(quizId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  // Determine attempt number
+  const { data: prev } = await supabase
+    .from('quiz_attempts')
+    .select('attempt_number')
+    .eq('quiz_id', quizId)
+    .eq('student_id', uid)
+    .order('attempt_number', { ascending: false })
+    .limit(1);
+  const attempt_number = (prev && prev[0]?.attempt_number ? prev[0].attempt_number + 1 : 1);
+  return await supabase
+    .from('quiz_attempts')
+    .insert([{ quiz_id: quizId, student_id: uid, attempt_number }])
+    .select('*')
+    .single();
+}
+
+export async function saveQuizAnswer(attemptId: string, questionId: string, answer_payload: any) {
+  // upsert-like: remove existing then insert to keep one row per question
+  const { error: delErr } = await supabase
+    .from('quiz_answers')
+    .delete()
+    .eq('attempt_id', attemptId)
+    .eq('question_id', questionId);
+  if (delErr) return { data: null, error: delErr } as any;
+  return await supabase
+    .from('quiz_answers')
+    .insert([{ attempt_id: attemptId, question_id: questionId, answer_payload }])
+    .select('*')
+    .single();
+}
+
+export async function submitQuizAttempt(attemptId: string, durationSeconds?: number) {
+  return await supabase
+    .from('quiz_attempts')
+    .update({ status: 'submitted', submitted_at: new Date().toISOString(), duration_seconds: durationSeconds ?? null })
+    .eq('id', attemptId)
+    .select('*')
+    .single();
+}
+
+export async function fetchAnswersForAttempt(attemptId: string) {
+  return await supabase
+    .from('quiz_answers')
+    .select('id, question_id, answer_payload, is_correct, points_awarded')
+    .eq('attempt_id', attemptId);
+}
+
+export async function updateAttemptScore(attemptId: string, score: number) {
+  return await supabase
+    .from('quiz_attempts')
+    .update({ status: 'graded', score })
+    .eq('id', attemptId)
+    .select('*')
+    .single();
+}
+
+export async function gradeAnswersBulk(rows: Array<{ id: string; is_correct: boolean; points_awarded: number }>) {
+  // Update each row; Supabase lacks bulk update by different rows in one call, do sequential minimal
+  for (const r of rows) {
+    await supabase.from('quiz_answers').update({ is_correct: r.is_correct, points_awarded: r.points_awarded }).eq('id', r.id);
+  }
+}
+// ==== END QUIZZES HELPERS ====
+
+export async function fetchStaffQuizzes() {
+  return await supabase
+    .from('quizzes')
+    .select('id, subject_id, lesson_id, title, start_at, end_at, attempts_allowed, created_at')
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchAttemptsForQuiz(quizId: string) {
+  return await supabase
+    .from('quiz_attempts')
+    .select('id, student_id, started_at, submitted_at, status, score')
+    .eq('quiz_id', quizId)
+    .order('started_at', { ascending: false });
+}
+
+export async function fetchAttemptsWithAnswers(quizId: string) {
+  const { data: attempts } = await supabase
+    .from('quiz_attempts')
+    .select('id, student_id, started_at, submitted_at, status, score')
+    .eq('quiz_id', quizId)
+    .order('started_at', { ascending: false });
+  const ids = (attempts || []).map((a: any) => a.id);
+  const { data: answers } = ids.length > 0
+    ? await supabase.from('quiz_answers').select('*').in('attempt_id', ids)
+    : { data: [] as any[] } as any;
+  const answersByAttempt = new Map<string, any[]>();
+  (answers || []).forEach((r: any) => { const arr = answersByAttempt.get(r.attempt_id) || []; arr.push(r); answersByAttempt.set(r.attempt_id, arr); });
+  return { attempts: attempts || [], answersByAttempt };
+}
+
+export async function updateAnswerGrade(answerId: string, is_correct: boolean | null, points_awarded: number | null) {
+  return await supabase
+    .from('quiz_answers')
+    .update({ is_correct, points_awarded, graded_at: new Date().toISOString() } as any)
+    .eq('id', answerId)
+    .select('*')
+    .single();
+}
+
+export async function updateAnswerPayload(answerId: string, partial: Record<string, any>) {
+  // Fetch current payload
+  const { data: row } = await supabase.from('quiz_answers').select('answer_payload').eq('id', answerId).single();
+  const payload = { ...(row?.answer_payload || {}), ...partial };
+  return await supabase
+    .from('quiz_answers')
+    .update({ answer_payload: payload as any, updated_at: new Date().toISOString() } as any)
+    .eq('id', answerId)
+    .select('*')
+    .single();
+}
+
+export async function recalcAttemptScore(attemptId: string) {
+  const { data: answers } = await supabase
+    .from('quiz_answers')
+    .select('points_awarded')
+    .eq('attempt_id', attemptId);
+  const total = (answers || []).reduce((acc: number, r: any) => acc + (Number(r.points_awarded) || 0), 0);
+  return await supabase
+    .from('quiz_attempts')
+    .update({ score: total, status: 'graded', submitted_at: new Date().toISOString() } as any)
+    .eq('id', attemptId)
+    .select('*')
+    .single();
+}
+
+export async function fetchEnrolledStudentsForSubject(subjectId: string) {
+  // subject -> class_subjects.id -> class_id, fetch student_enrollments
+  const { data: subj } = await supabase.from('class_subjects').select('id, class_id').eq('id', subjectId).single();
+  if (!subj?.class_id) return { data: [], error: null } as any;
+  const { data: enrolls } = await supabase
+    .from('student_enrollments')
+    .select('student_id')
+    .eq('class_id', subj.class_id)
+    .eq('status', 'active');
+  const ids = (enrolls || []).map((e: any) => e.student_id);
+  if (ids.length === 0) return { data: [], error: null } as any;
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', ids);
+  return { data: profiles || [], error: null } as any;
+}
+
+export async function fetchQuestionsForQuiz(quizId: string) {
+  const { data: questions } = await supabase.from('quiz_questions').select('*').eq('quiz_id', quizId).order('order_index');
+  const qIds = (questions || []).map((q: any) => q.id);
+  const { data: options } = qIds.length > 0 ? await supabase.from('quiz_options').select('*').in('question_id', qIds).order('order_index') : { data: [] as any[] } as any;
+  const optionsByQ = new Map<string, any[]>();
+  (options || []).forEach((o: any) => { const arr = optionsByQ.get(o.question_id) || []; arr.push(o); optionsByQ.set(o.question_id, arr); });
+  return { questions: questions || [], optionsByQuestion: optionsByQ };
+}
+
+export async function updateQuestion(id: string, fields: Partial<{ text: string; points: number; order_index: number; type: string; media_url: string | null }>) {
+  return await supabase.from('quiz_questions').update(fields as any).eq('id', id).select('*').single();
+}
+
+export async function deleteQuestion(id: string) {
+  return await supabase.from('quiz_questions').delete().eq('id', id);
+}
+
+export async function replaceOptions(questionId: string, options: Array<{ text: string; is_correct?: boolean; order_index?: number }>) {
+  await supabase.from('quiz_options').delete().eq('question_id', questionId);
+  const rows = options.map(o => ({ question_id: questionId, text: o.text, is_correct: !!o.is_correct, order_index: o.order_index ?? 0 }));
+  return await supabase.from('quiz_options').insert(rows).select('*');
 }

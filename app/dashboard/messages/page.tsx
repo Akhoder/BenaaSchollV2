@@ -116,10 +116,10 @@ export default function MessagesPage() {
                 </div>
                 <div>
                   <Label className="text-sm">{language === 'ar' ? 'الفصل (اختياري)' : 'Class (optional)'}</Label>
-                  <Select value={form.class_id} onValueChange={(v) => setForm({ ...form, class_id: v })}>
+                  <Select value={form.class_id || 'ALL'} onValueChange={(v) => setForm({ ...form, class_id: v === 'ALL' ? '' : v })}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder={language === 'ar' ? 'لكل الطلاب' : 'All students'} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{language === 'ar' ? 'لكل الطلاب' : 'All students'}</SelectItem>
+                      <SelectItem value="ALL">{language === 'ar' ? 'لكل الطلاب' : 'All students'}</SelectItem>
                       {classes.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>{c.class_name}</SelectItem>
                       ))}
@@ -171,14 +171,14 @@ export default function MessagesPage() {
                             <ExternalLink className="h-3 w-3 mr-1" /> {language === 'ar' ? 'فتح' : 'Open'}
                           </Button>
                         )}
-                      </div>
-                    </div>
+                          </div>
+                        </div>
                   </div>
                 ))}
               </div>
             )}
           </CardContent>
-        </Card>
+          </Card>
       </div>
     </DashboardLayout>
   );
