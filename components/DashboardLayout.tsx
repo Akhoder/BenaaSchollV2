@@ -46,7 +46,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin', 'teacher', 'supervisor'] },
     { name: language === 'ar' ? 'المسابقات' : 'Quizzes', href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
-    { name: language === 'ar' ? 'المسابقات (جديد)' : 'New Quiz', href: '/dashboard/quizzes/new', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher', 'student'] },
     { name: language === 'ar' ? 'الحضور' : 'Attendance', href: '/dashboard/attendance', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },

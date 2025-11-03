@@ -10,6 +10,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { fetchQuizBundle, startQuizAttempt, saveQuizAnswer, submitQuizAttempt, supabase, fetchAnswersForAttempt, updateAttemptScore, gradeAnswersBulk } from '@/lib/supabase';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AlertTriangle } from 'lucide-react';
 
 export default function TakeQuizPage() {
   const params = useParams();
@@ -33,6 +44,7 @@ export default function TakeQuizPage() {
   const [attemptsUsed, setAttemptsUsed] = useState(0);
   const [attemptsAllowed, setAttemptsAllowed] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -171,14 +183,18 @@ export default function TakeQuizPage() {
     }
   };
 
+  const handleSubmitClick = () => {
+    if (readOnly || submitting) return;
+    setSubmitDialogOpen(true);
+  };
+
   const onSubmit = async (auto?: boolean) => {
     try {
-      if (!auto && !readOnly) {
-        const confirmed = window.confirm('Are you sure you want to submit? You cannot change answers after submitting.');
-        if (!confirmed) return;
-      }
       if (submitting) return;
       setSubmitting(true);
+      if (!auto) {
+        setSubmitDialogOpen(false);
+      }
       const duration = (bundle?.quiz?.time_limit_minutes ? (bundle.quiz.time_limit_minutes * 60 - (timeLeft || 0)) : undefined);
       const { error } = await submitQuizAttempt(attempt!.id, duration);
       if (error) { toast.error('Submit failed'); return; }
@@ -295,7 +311,9 @@ export default function TakeQuizPage() {
                   <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-3 py-1 rounded-full">{Math.max(0, timeLeft || 0)}s</Badge>
                 )}
                 {!readOnly && (
-                  <Button onClick={() => onSubmit(false)} disabled={submitting}> {submitting ? 'Submitting...' : 'Submit'} </Button>
+                  <Button onClick={handleSubmitClick} disabled={submitting || readOnly}>
+                    {submitting ? 'Submitting...' : 'Submit'}
+                  </Button>
                 )}
               </div>
             </div>
@@ -373,6 +391,39 @@ export default function TakeQuizPage() {
             
           </CardContent>
         </Card>
+
+        {/* Submit Quiz Confirmation Dialog */}
+        <AlertDialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                Submit Quiz
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to submit this quiz? You cannot change your answers after submitting.
+                {bundle && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Progress: {answeredCount} of {(bundle.questions as any[]).length} questions answered
+                    </p>
+                    {(bundle.questions as any[]).length - answeredCount > 0 && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        {(bundle.questions as any[]).length - answeredCount} questions remain unanswered
+                      </p>
+                    )}
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onSubmit(false)} className="bg-blue-600 hover:bg-blue-700">
+                Submit Quiz
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

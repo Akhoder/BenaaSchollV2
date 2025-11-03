@@ -1006,8 +1006,28 @@ export async function markNotificationRead(id: string) {
 }
 
 export async function createNotification(input: { recipient_id?: string | null; class_id?: string | null; role_target?: string | null; title: string; body?: string | null; type?: string | null; link_url?: string | null; }) {
-  const { data: userRes } = await supabase.auth.getUser();
-  const created_by = userRes?.user?.id || null;
+  const { data: userRes, error: userError } = await supabase.auth.getUser();
+  if (userError || !userRes?.user?.id) {
+    return { data: null, error: { message: 'User not authenticated', code: 'UNAUTHENTICATED' } } as any;
+  }
+  
+  const created_by = userRes.user.id;
+  
+  // Verify user has permission to create notifications (admin, teacher, or supervisor)
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', created_by)
+    .single();
+  
+  if (profileError || !profile) {
+    return { data: null, error: { message: 'User profile not found', code: 'PROFILE_NOT_FOUND' } } as any;
+  }
+  
+  if (!['admin', 'teacher', 'supervisor'].includes(profile.role)) {
+    return { data: null, error: { message: 'Insufficient permissions to create notifications', code: 'FORBIDDEN' } } as any;
+  }
+  
   const row = { ...input, created_by } as any;
   return await supabase
     .from('notifications')
@@ -1036,7 +1056,7 @@ export async function createQuiz(input: {
   return await supabase.from('quizzes').insert([row]).select('*').single();
 }
 
-export async function updateQuiz(id: string, fields: Partial<{ title: string; description: string | null; time_limit_minutes: number | null; start_at: string | null; end_at: string | null; attempts_allowed: number; shuffle_questions: boolean; shuffle_options: boolean; show_results_policy: 'immediate' | 'after_close' | 'never'; }>) {
+export async function updateQuiz(id: string, fields: Partial<{ subject_id?: string | null; lesson_id?: string | null; title: string; description: string | null; time_limit_minutes: number | null; start_at: string | null; end_at: string | null; attempts_allowed: number; shuffle_questions: boolean; shuffle_options: boolean; show_results_policy: 'immediate' | 'after_close' | 'never'; }>) {
   return await supabase
     .from('quizzes')
     .update(fields as any)
@@ -1086,13 +1106,16 @@ export async function addQuizOptions(questionId: string, options: Array<{ text: 
 
 export async function fetchQuizBundle(quizId: string) {
   // fetch quiz, questions, options
-  const { data: quiz } = await supabase.from('quizzes').select('*').eq('id', quizId).single();
+  const { data: quiz, error: quizError } = await supabase.from('quizzes').select('*').eq('id', quizId).single();
+  if (quizError) {
+    return { quiz: null, questions: [], optionsByQuestion: new Map(), error: quizError };
+  }
   const { data: questions } = await supabase.from('quiz_questions').select('*').eq('quiz_id', quizId).order('order_index');
   const qIds = (questions || []).map((q: any) => q.id);
   const { data: options } = qIds.length > 0 ? await supabase.from('quiz_options').select('*').in('question_id', qIds).order('order_index') : { data: [] as any[] } as any;
   const optsByQ = new Map<string, any[]>();
   (options || []).forEach((o: any) => { const arr = optsByQ.get(o.question_id) || []; arr.push(o); optsByQ.set(o.question_id, arr); });
-  return { quiz, questions: questions || [], optionsByQuestion: optsByQ };
+  return { quiz, questions: questions || [], optionsByQuestion: optsByQ, error: null };
 }
 
 export async function startQuizAttempt(quizId: string) {
@@ -1166,7 +1189,19 @@ export async function gradeAnswersBulk(rows: Array<{ id: string; is_correct: boo
 export async function fetchStaffQuizzes() {
   return await supabase
     .from('quizzes')
-    .select('id, subject_id, lesson_id, title, start_at, end_at, attempts_allowed, created_at')
+    .select(`
+      id,
+      subject_id,
+      lesson_id,
+      title,
+      description,
+      start_at,
+      end_at,
+      attempts_allowed,
+      created_at,
+      subject:class_subjects!subject_id(id, subject_name),
+      lesson:lessons!lesson_id(id, title)
+    `)
     .order('created_at', { ascending: false });
 }
 

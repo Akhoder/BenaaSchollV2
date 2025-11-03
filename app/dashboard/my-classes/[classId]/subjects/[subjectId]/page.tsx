@@ -1,15 +1,25 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Input } from '@/components/ui/input';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { 
   BookOpen, 
   Loader2, 
@@ -24,7 +34,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  User
+  User,
+  GraduationCap,
+  Clock,
+  Calendar,
+  Play,
+  Lock,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import { 
   fetchSubjectsForClass, 
@@ -44,7 +62,7 @@ export default function SubjectLessonsPage() {
   const params = useParams();
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const classId = (params?.classId as string) || '';
   const subjectId = (params?.subjectId as string) || '';
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -60,6 +78,9 @@ export default function SubjectLessonsPage() {
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [lessonQuizzes, setLessonQuizzes] = useState<any[]>([]);
+  const [quizzesByLesson, setQuizzesByLesson] = useState<Record<string, any[]>>({});
+  const [lessonSearchQuery, setLessonSearchQuery] = useState('');
+  const [lessonStatusFilter, setLessonStatusFilter] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -79,13 +100,58 @@ export default function SubjectLessonsPage() {
   useEffect(() => {
     const current = lessons[activeLessonIndex];
     if (current?.id) {
-      fetchQuizzesForLesson(current.id).then(({ data }) => {
-        setLessonQuizzes(data || []);
-      });
+      // Use cached quizzes if available, otherwise fetch
+      if (quizzesByLesson[current.id]) {
+        setLessonQuizzes(quizzesByLesson[current.id]);
+      } else {
+        fetchQuizzesForLesson(current.id).then(({ data }) => {
+          setLessonQuizzes(data || []);
+          // Update cache
+          setQuizzesByLesson((prev) => ({
+            ...prev,
+            [current.id]: data || []
+          }));
+        });
+      }
     } else {
       setLessonQuizzes([]);
     }
-  }, [activeLessonIndex, lessons]);
+  }, [activeLessonIndex, lessons, quizzesByLesson]);
+
+  // Calculate subject progress
+  const subjectProgress = useMemo(() => {
+    const completed = lessons.filter(l => lessonsProgress[l.id]?.status === 'completed').length;
+    const inProgress = lessons.filter(l => lessonsProgress[l.id]?.status === 'in_progress').length;
+    const total = lessons.length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { completed, inProgress, total, percentage };
+  }, [lessons, lessonsProgress]);
+
+  // Filter lessons based on search and status
+  const filteredLessons = useMemo(() => {
+    let filtered = lessons;
+    
+    // Search filter
+    if (lessonSearchQuery.trim()) {
+      filtered = filtered.filter(lesson =>
+        lesson.title.toLowerCase().includes(lessonSearchQuery.toLowerCase()) ||
+        (lesson.description?.toLowerCase().includes(lessonSearchQuery.toLowerCase()) || false)
+      );
+    }
+    
+    // Status filter
+    if (lessonStatusFilter !== 'all') {
+      filtered = filtered.filter(lesson => {
+        const lessonProgress = lessonsProgress[lesson.id];
+        if (lessonStatusFilter === 'completed') return lessonProgress?.status === 'completed';
+        if (lessonStatusFilter === 'in_progress') return lessonProgress?.status === 'in_progress';
+        if (lessonStatusFilter === 'not_started') return !lessonProgress || lessonProgress.status === 'not_started';
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [lessons, lessonSearchQuery, lessonStatusFilter, lessonsProgress]);
 
   const loadData = async () => {
     try {
@@ -142,6 +208,33 @@ export default function SubjectLessonsPage() {
       // Load quizzes for this subject
       const { data: qz } = await fetchQuizzesForSubject(subjectId);
       setQuizzes(qz || []);
+
+      // Load quizzes for all lessons
+      if (lessonsList.length > 0) {
+        const lessonIds = lessonsList.map(l => l.id);
+        const quizzesMap: Record<string, any[]> = {};
+        
+        // Fetch quizzes for all lessons in parallel
+        const quizPromises = lessonIds.map(async (lessonId) => {
+          const { data } = await fetchQuizzesForLesson(lessonId);
+          return { lessonId, quizzes: data || [] };
+        });
+        
+        const quizResults = await Promise.all(quizPromises);
+        quizResults.forEach(({ lessonId, quizzes: qzs }) => {
+          if (qzs.length > 0) {
+            quizzesMap[lessonId] = qzs;
+          }
+        });
+        
+        setQuizzesByLesson(quizzesMap);
+        
+        // Set active lesson quizzes
+        if (lessonsList.length > 0 && activeLessonIndex === 0) {
+          const firstLessonId = lessonsList[0].id;
+          setLessonQuizzes(quizzesMap[firstLessonId] || []);
+        }
+      }
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');
@@ -274,9 +367,18 @@ export default function SubjectLessonsPage() {
   const hasQuizzes = quizzes.length > 0;
   
 
-  const LessonSidebar = () => (
-    <div className="space-y-2" ref={sidebarRef}>
-      {lessons.map((lesson, idx) => {
+  const LessonSidebar = () => {
+    const lessonsToShow = lessonSearchQuery || lessonStatusFilter !== 'all' ? filteredLessons : lessons;
+    
+    return (
+      <div className="space-y-2" ref={sidebarRef}>
+        {lessonsToShow.length === 0 ? (
+          <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+            {language === 'ar' ? 'لا توجد دروس مطابقة' : 'No lessons found'}
+          </div>
+        ) : (
+          lessonsToShow.map((lesson) => {
+            const idx = lessons.findIndex(l => l.id === lesson.id);
         const lessonProgress = lessonsProgress[lesson.id];
         const isLessonCompleted = lessonProgress?.status === 'completed';
         const isLessonInProgress = lessonProgress?.status === 'in_progress';
@@ -307,12 +409,49 @@ export default function SubjectLessonsPage() {
 
               {/* Lesson Info */}
               <div className="flex-1 min-w-0">
-                <h4 className={cn(
-                  "font-semibold text-sm mb-1 line-clamp-2 transition-colors",
-                  isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-white"
-                )}>
-                  {lesson.title}
-                </h4>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className={cn(
+                    "font-semibold text-sm line-clamp-2 transition-colors flex-1",
+                    isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-white"
+                  )}>
+                    {lesson.title}
+                  </h4>
+                  {/* Quiz Notification Badge */}
+                  {quizzesByLesson[lesson.id] && quizzesByLesson[lesson.id].length > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering lesson click
+                        const availableQuizzes = quizzesByLesson[lesson.id].filter((q: any) => {
+                          const isActive = !q.end_at || new Date(q.end_at) > new Date();
+                          const isStarted = !q.start_at || new Date(q.start_at) <= new Date();
+                          return isActive && isStarted;
+                        });
+                        
+                        if (availableQuizzes.length > 0) {
+                          // Go to first available quiz
+                          router.push(`/dashboard/quizzes/${availableQuizzes[0].id}/take?classId=${classId}&subjectId=${subjectId}`);
+                        } else {
+                          // If no active quiz, switch to lesson to show quizzes
+                          const lessonIndex = lessons.findIndex(l => l.id === lesson.id);
+                          if (lessonIndex !== -1) {
+                            setActiveLessonIndex(lessonIndex);
+                            handleVideoPlay(lesson.id);
+                            setSheetOpen(false); // Close sheet on mobile
+                          }
+                        }
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Badge 
+                        className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer"
+                        title={language === 'ar' ? `${quizzesByLesson[lesson.id].length} اختبار متاح لهذا الدرس - اضغط للانتقال` : `${quizzesByLesson[lesson.id].length} quiz${quizzesByLesson[lesson.id].length > 1 ? 'zes' : ''} available - Click to go to quiz`}
+                      >
+                        <GraduationCap className="h-3 w-3 mr-1" />
+                        {quizzesByLesson[lesson.id].length}
+                      </Badge>
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   {isLessonCompleted ? (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -331,13 +470,25 @@ export default function SubjectLessonsPage() {
                     </span>
                   )}
                 </div>
+                {/* Lesson Progress Bar */}
+                {lessonProgress && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">{lessonProgress.progress_percentage || 0}%</span>
+                    </div>
+                    <Progress value={lessonProgress.progress_percentage || 0} className="h-1.5" />
+                  </div>
+                )}
               </div>
             </div>
           </button>
-        );
-      })}
-    </div>
-  );
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -407,7 +558,7 @@ export default function SubjectLessonsPage() {
                   Back to Subjects
                 </Button>
                 <div className="p-4 bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 rounded-xl border border-cyan-200 dark:border-cyan-800">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
                       <BookOpen className="h-6 w-6 text-white" />
                     </div>
@@ -419,15 +570,67 @@ export default function SubjectLessonsPage() {
                           <span className="truncate">{subject.teacher.full_name}</span>
                         </div>
                       )}
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} Lessons</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                    </div>
+                  </div>
+                  {/* Subject Progress */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{subjectProgress.percentage}%</span>
+                    </div>
+                    <Progress value={subjectProgress.percentage} className="h-2" />
+                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                      <span>{subjectProgress.completed} {language === 'ar' ? 'مكتمل' : 'Completed'}</span>
+                      <span>{subjectProgress.inProgress} {language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span>
+                      <span>{subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress} {language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <Card className="border-gray-200 dark:border-gray-800 overflow-hidden">
-                <CardContent className="p-4 max-h-[calc(100vh-280px)] overflow-y-auto">
-                  <LessonSidebar />
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-3">
+                  {/* Search and Filter */}
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <Input
+                        placeholder={language === 'ar' ? 'بحث في الدروس...' : 'Search lessons...'}
+                        value={lessonSearchQuery}
+                        onChange={(e) => setLessonSearchQuery(e.target.value)}
+                        className="pl-10 h-9 text-sm"
+                      />
+                      {lessonSearchQuery && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                          onClick={() => setLessonSearchQuery('')}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <Select value={lessonStatusFilter} onValueChange={(v) => setLessonStatusFilter(v as any)}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <Filter className="h-3.5 w-3.5 mr-2" />
+                        <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{language === 'ar' ? 'جميع الدروس' : 'All Lessons'}</SelectItem>
+                        <SelectItem value="completed">{language === 'ar' ? 'مكتملة' : 'Completed'}</SelectItem>
+                        <SelectItem value="in_progress">{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</SelectItem>
+                        <SelectItem value="not_started">{language === 'ar' ? 'لم تبدأ' : 'Not Started'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+                    <LessonSidebar />
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -489,7 +692,7 @@ export default function SubjectLessonsPage() {
                       className="flex-1"
                     >
                       <ChevronLeft className="h-4 w-4 mr-2" />
-                      Previous
+                      {language === 'ar' ? 'السابق' : 'Previous'}
                     </Button>
                     <Button
                       variant="outline"
@@ -497,7 +700,7 @@ export default function SubjectLessonsPage() {
                       disabled={activeLessonIndex === lessons.length - 1}
                       className="flex-1"
                     >
-                      Next
+                      {language === 'ar' ? 'التالي' : 'Next'}
                       <ChevronRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
@@ -511,23 +714,73 @@ export default function SubjectLessonsPage() {
                       onClick={() => handleMarkComplete(activeLesson.id)}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Mark Complete
+                      {language === 'ar' ? 'تمييز كمكتمل' : 'Mark Complete'}
                     </Button>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Attachments */}
-            {hasAttachments && (
-              <Card className="border-gray-200 dark:border-gray-800">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Lesson Resources
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {(attachmentsByLesson[activeLesson.id] || []).map((att: any) => {
+            {/* Content Tabs */}
+            <Card className="border-gray-200 dark:border-gray-800">
+              <CardContent className="p-0">
+                <Tabs defaultValue="video" className="w-full">
+                  <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
+                    <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
+                      <Video className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'الفيديو' : 'Video'}
+                    </TabsTrigger>
+                    {hasAttachments && (
+                      <TabsTrigger value="resources" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
+                        <FileText className="h-4 w-4 mr-2" />
+                        {language === 'ar' ? 'الموارد' : 'Resources'}
+                      </TabsTrigger>
+                    )}
+                    {hasAssignments && (
+                      <TabsTrigger value="assignments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
+                        <FileText className="h-4 w-4 mr-2" />
+                        {language === 'ar' ? 'الواجبات' : 'Assignments'}
+                      </TabsTrigger>
+                    )}
+                    {(hasQuizzes || lessonQuizzes.length > 0) && (
+                      <TabsTrigger value="quizzes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
+                        <GraduationCap className="h-4 w-4 mr-2" />
+                        {language === 'ar' ? 'الاختبارات' : 'Quizzes'}
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  {/* Video Tab */}
+                  <TabsContent value="video" className="p-6 space-y-4">
+                    {activeLesson.description && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{language === 'ar' ? 'الوصف' : 'Description'}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{activeLesson.description}</p>
+                      </div>
+                    )}
+                    {/* Progress Bar for this lesson */}
+                    {progress && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'تقدم الدرس' : 'Lesson Progress'}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{progress.progress_percentage || 0}%</span>
+                        </div>
+                        <Progress value={progress.progress_percentage || 0} className="h-2" />
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Resources Tab */}
+                  {hasAttachments && (
+                    <TabsContent value="resources" className="p-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            {language === 'ar' ? 'موارد الدرس' : 'Lesson Resources'}
+                          </h3>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {(attachmentsByLesson[activeLesson.id] || []).map((att: any) => {
                       const type = (att.file_type || '').toLowerCase();
                       const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(att.file_url || '');
                       const isPdf = type === 'pdf' || /\.pdf(\?|$)/i.test(att.file_url || '');
@@ -559,122 +812,287 @@ export default function SubjectLessonsPage() {
                         </a>
                       );
                     })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Subject Assignments */}
-            {hasAssignments && (
-              <Card className="border-gray-200 dark:border-gray-800">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Assignments
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {assignments.map((a: any) => {
-                      const sub = submissions[a.id];
-                      const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString() : '';
-                      return (
-                        <div key={a.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{a.title}</h4>
-                              <p className="text-xs text-muted-foreground">{dueStr && `Due: ${dueStr}`}</p>
-                              {a.description && (
-                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
-                              )}
-                              {sub ? (
-                                <div className="mt-2">
-                                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Submitted</Badge>
-                                  {sub.status === 'graded' && (
-                                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{sub.score}/{a.total_points}</Badge>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="mt-2">
-                                  <Badge variant="outline">Pending</Badge>
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)}>
-                                {sub ? 'View' : 'Submit'}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Subject Quizzes */}
-            {hasQuizzes && (
-              <Card className="border-gray-200 dark:border-gray-800">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Quizzes
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {quizzes.map((q: any) => (
-                      <div key={q.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{q.title}</h4>
-                            {q.description && <p className="text-sm text-muted-foreground line-clamp-2">{q.description}</p>}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {q.time_limit_minutes ? `Time: ${q.time_limit_minutes} min` : ''}
-                            </p>
-                          </div>
-                          <div>
-                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}>
-                              Start
-                            </Button>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    </TabsContent>
+                  )}
 
-            {/* Lesson Quizzes (for active lesson) */}
-            {lessonQuizzes.length > 0 && (
-              <Card className="border-gray-200 dark:border-gray-800">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Lesson Quizzes
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {lessonQuizzes.map((q: any) => (
-                      <div key={q.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{q.title}</h4>
-                            {q.description && <p className="text-sm text-muted-foreground line-clamp-2">{q.description}</p>}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {q.time_limit_minutes ? `Time: ${q.time_limit_minutes} min` : ''}
-                            </p>
-                          </div>
-                          <div>
-                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}>
-                              Start
-                            </Button>
+                  {/* Assignments Tab */}
+                  {hasAssignments && (
+                    <TabsContent value="assignments" className="p-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            {language === 'ar' ? 'واجبات المادة' : 'Subject Assignments'}
+                          </h3>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {assignments.map((a: any) => {
+                              const sub = submissions[a.id];
+                              const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString() : '';
+                              return (
+                                <div key={a.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{a.title}</h4>
+                                      <p className="text-xs text-muted-foreground">{dueStr && `${language === 'ar' ? 'موعد التسليم: ' : 'Due: '}${dueStr}`}</p>
+                                      {a.description && (
+                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
+                                      )}
+                                      {sub ? (
+                                        <div className="mt-2">
+                                          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{language === 'ar' ? 'تم التسليم' : 'Submitted'}</Badge>
+                                          {sub.status === 'graded' && (
+                                            <Badge className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{sub.score}/{a.total_points}</Badge>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="mt-2">
+                                          <Badge variant="outline">{language === 'ar' ? 'معلق' : 'Pending'}</Badge>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)}>
+                                        {sub ? (language === 'ar' ? 'عرض' : 'View') : (language === 'ar' ? 'تسليم' : 'Submit')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    </TabsContent>
+                  )}
+
+                  {/* Quizzes Tab */}
+                  {(hasQuizzes || lessonQuizzes.length > 0) && (
+                    <TabsContent value="quizzes" className="p-6">
+                      <div className="space-y-6">
+                        {/* Lesson Quizzes */}
+                        {lessonQuizzes.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50">
+                                <GraduationCap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {language === 'ar' ? 'اختبار الدرس' : 'Lesson Quiz'}
+                                </h3>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
+                                  <span className="font-medium text-purple-600 dark:text-purple-400">{activeLesson.title}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {lessonQuizzes.map((q: any) => {
+                                const isActive = !q.end_at || new Date(q.end_at) > new Date();
+                                const isStarted = q.start_at && new Date(q.start_at) > new Date();
+                                return (
+                                  <div 
+                                    key={q.id} 
+                                    className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg transition-all group"
+                                  >
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <h4 className="font-semibold text-gray-900 dark:text-white">{q.title}</h4>
+                                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs">
+                                            <GraduationCap className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'درس' : 'Lesson'}
+                                          </Badge>
+                                        </div>
+                                        {q.description && (
+                                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                                            {q.description}
+                                          </p>
+                                        )}
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                          {q.time_limit_minutes && (
+                                            <div className="flex items-center gap-1">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              <span>{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
+                                            </div>
+                                          )}
+                                          {q.attempts_allowed && (
+                                            <div className="flex items-center gap-1">
+                                              <FileText className="h-3.5 w-3.5" />
+                                              <span>
+                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? 'محاولات' : 'محاولة') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-purple-100 dark:border-purple-900">
+                                      <Badge 
+                                        className={cn(
+                                          isActive && !isStarted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
+                                          isActive && isStarted ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
+                                          "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                        )}
+                                      >
+                                        {isActive && !isStarted ? (
+                                          <>
+                                            <Play className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'متاح' : 'Available'}
+                                          </>
+                                        ) : isActive && isStarted ? (
+                                          <>
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Lock className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'مغلق' : 'Closed'}
+                                          </>
+                                        )}
+                                      </Badge>
+                                      <Button 
+                                        variant={isActive && !isStarted ? "default" : "outline"} 
+                                        size="sm" 
+                                        onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                        disabled={!isActive || isStarted}
+                                        className={cn(
+                                          isActive && !isStarted && "bg-purple-600 hover:bg-purple-700 text-white",
+                                          "group-hover:scale-105 transition-transform"
+                                        )}
+                                      >
+                                        <Play className="h-3.5 w-3.5 mr-1.5" />
+                                        {isActive && !isStarted 
+                                          ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
+                                          : isStarted 
+                                            ? (language === 'ar' ? 'غير متاح' : 'Not Available') 
+                                            : (language === 'ar' ? 'مغلق' : 'Closed')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Subject Quizzes */}
+                        {hasQuizzes && (
+                          <div>
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {language === 'ar' ? 'اختبار المادة' : 'Subject Quiz'}
+                                </h3>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
+                                  <span className="font-medium text-blue-600 dark:text-blue-400">{subject.subject_name}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {quizzes.map((q: any) => {
+                                const isActive = !q.end_at || new Date(q.end_at) > new Date();
+                                const isStarted = q.start_at && new Date(q.start_at) > new Date();
+                                return (
+                                  <div 
+                                    key={q.id} 
+                                    className="p-4 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all group"
+                                  >
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <h4 className="font-semibold text-gray-900 dark:text-white">{q.title}</h4>
+                                          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                                            <BookOpen className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'مادة' : 'Subject'}
+                                          </Badge>
+                                        </div>
+                                        {q.description && (
+                                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                                            {q.description}
+                                          </p>
+                                        )}
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                          {q.time_limit_minutes && (
+                                            <div className="flex items-center gap-1">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              <span>{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
+                                            </div>
+                                          )}
+                                          {q.attempts_allowed && (
+                                            <div className="flex items-center gap-1">
+                                              <FileText className="h-3.5 w-3.5" />
+                                              <span>
+                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? 'محاولات' : 'محاولة') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-blue-100 dark:border-blue-900">
+                                      <Badge 
+                                        className={cn(
+                                          isActive && !isStarted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
+                                          isActive && isStarted ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
+                                          "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                        )}
+                                      >
+                                        {isActive && !isStarted ? (
+                                          <>
+                                            <Play className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'متاح' : 'Available'}
+                                          </>
+                                        ) : isActive && isStarted ? (
+                                          <>
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Lock className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'مغلق' : 'Closed'}
+                                          </>
+                                        )}
+                                      </Badge>
+                                      <Button 
+                                        variant={isActive && !isStarted ? "default" : "outline"} 
+                                        size="sm" 
+                                        onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                        disabled={!isActive || isStarted}
+                                        className={cn(
+                                          isActive && !isStarted && "bg-blue-600 hover:bg-blue-700 text-white",
+                                          "group-hover:scale-105 transition-transform"
+                                        )}
+                                      >
+                                        <Play className="h-3.5 w-3.5 mr-1.5" />
+                                        {isActive && !isStarted 
+                                          ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
+                                          : isStarted 
+                                            ? (language === 'ar' ? 'غير متاح' : 'Not Available') 
+                                            : (language === 'ar' ? 'مغلق' : 'Closed')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
