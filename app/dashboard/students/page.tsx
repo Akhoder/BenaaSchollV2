@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-// import { StudentsTable } from '@/components/EnhancedTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getStudentsOptimized } from '@/lib/optimizedQueries';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { usePagination } from '@/hooks/usePagination';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { filterBySearch } from '@/lib/tableUtils';
+import { getErrorMessage } from '@/lib/errorHandler';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Select,
   SelectContent,
@@ -90,9 +92,10 @@ interface StudentProfile {
 }
 
 export default function StudentsPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, isAuthorized } = useAuthCheck({
+    requiredRole: ['admin', 'teacher', 'supervisor'],
+  });
   const { t } = useLanguage();
-  const router = useRouter();
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,79 +110,37 @@ export default function StudentsPage() {
   const [createLang, setCreateLang] = useState('ar');
   const [savingCreate, setSavingCreate] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  
-  // ✅ PAGINATION: Add pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-      return;
-    }
-
-    // Check if user has access (admin, teacher, or supervisor)
-    if (authLoading === false && profile && !['admin', 'teacher', 'supervisor'].includes(profile.role)) {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (profile && ['admin', 'teacher', 'supervisor'].includes(profile.role)) {
-      fetchStudents();
-    }
-  }, [profile, authLoading, router]);
-
-  // Realtime updates for profiles → keep list in sync without manual refresh
-  useEffect(() => {
-    if (!profile || !['admin', 'teacher', 'supervisor'].includes(profile.role)) return;
-    const channel = supabase
-      .channel('profiles-updates-students')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
-        if (payload.eventType === 'UPDATE') {
-          const row = payload.new;
-          setStudents(prev => prev.map(s => s.id === row.id ? { ...s, ...row } : s));
-        } else if (payload.eventType === 'INSERT') {
-          const row = payload.new;
-          if (row.role === 'student') {
-            setStudents(prev => [{ ...row }, ...prev]);
-          }
-        } else if (payload.eventType === 'DELETE') {
-          const row = payload.old;
-          setStudents(prev => prev.filter(s => s.id !== row.id));
-        }
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile]);
-
-  const fetchStudents = async () => {
+  // Fetch students function
+  const fetchStudents = useCallback(async () => {
+    if (!profile) return;
+    
     try {
       setLoading(true);
       
-      // استخدام الاستعلام المحسن
       const { data: allStudents, error } = await getStudentsOptimized(
-        profile?.role || 'student', 
-        profile?.id
+        profile.role || 'student', 
+        profile.id
       );
       
       if (error) {
         console.error('Error fetching students:', error);
-        toast.error('Failed to fetch students');
+        toast.error(getErrorMessage(error));
         setStudents([]);
         return;
       }
       
       if (allStudents && allStudents.length > 0) {
-        // ✅ FIX: Get all enrollments in ONE query instead of N queries
+        // ✅ OPTIMIZED: Single query for all enrollments
         const studentIds = allStudents.map((s: any) => s.id);
-        
-        // Single query to get all enrollments for all students
-        const { data: allEnrollments } = await supabase
+        const { data: allEnrollments, error: enrollError } = await supabase
           .from('student_enrollments')
           .select('student_id')
           .in('student_id', studentIds);
+        
+        if (enrollError) {
+          console.error('Error fetching enrollments:', enrollError);
+        }
         
         // Count enrollments per student
         const enrollCounts = (allEnrollments || []).reduce((acc: Record<string, number>, row: any) => {
@@ -191,7 +152,7 @@ export default function StudentsPage() {
         const processedStudents = allStudents.map((student: any) => ({
           ...student,
           enrolled_classes: enrollCounts[student.id] || 0,
-          average_grade: '85.5', // يمكن تحسين هذا لاحقاً
+          average_grade: '85.5',
         }));
         
         setStudents(processedStudents);
@@ -200,14 +161,45 @@ export default function StudentsPage() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error('An unexpected error occurred');
+      toast.error(getErrorMessage(err));
       setStudents([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
 
-  const handleDelete = async (studentId: string) => {
+  // Fetch students when authorized
+  useEffect(() => {
+    if (isAuthorized && profile) {
+      fetchStudents();
+    }
+  }, [isAuthorized, profile?.id, fetchStudents]);
+
+  // Realtime updates using custom hook
+  const handleUpdate = useCallback((row: any) => {
+    setStudents(prev => prev.map(s => s.id === row.id ? { ...s, ...row } : s));
+  }, []);
+  
+  const handleInsert = useCallback((row: any) => {
+    if (row.role === 'student') {
+      setStudents(prev => [{ ...row, enrolled_classes: 0, average_grade: '85.5' }, ...prev]);
+    }
+  }, []);
+  
+  const handleDeleteRealtime = useCallback((row: any) => {
+    setStudents(prev => prev.filter(s => s.id !== row.id));
+  }, []);
+
+  useRealtimeSubscription({
+    table: 'profiles',
+    event: '*',
+    enabled: isAuthorized,
+    onUpdate: handleUpdate,
+    onInsert: handleInsert,
+    onDelete: handleDeleteRealtime,
+  });
+
+  const handleDelete = useCallback(async (studentId: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -215,36 +207,38 @@ export default function StudentsPage() {
         .eq('id', studentId);
 
       if (error) {
-        toast.error('Failed to delete student');
+        toast.error(getErrorMessage(error));
       } else {
         toast.success('Student deleted successfully');
-        fetchStudents();
+        // Optimistic update - realtime will sync
+        setStudents(prev => prev.filter(s => s.id !== studentId));
       }
     } catch (err) {
-      toast.error('An error occurred');
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDeleteConfirmOpen(false);
+      setSelectedStudent(null);
     }
-    setDeleteConfirmOpen(false);
-    setSelectedStudent(null);
-  };
+  }, []);
 
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch =
-      student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student.phone && student.phone.includes(searchQuery));
-    return matchesSearch;
-  });
+  // Filter students using utility function
+  const filteredStudents = useMemo(() => {
+    return filterBySearch(students, searchQuery, (student) => [
+      student.full_name,
+      student.email,
+      student.phone || '',
+    ]);
+  }, [students, searchQuery]);
 
-  // ✅ PAGINATION: Calculate pagination
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  // Use pagination hook
+  const {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    paginatedItems: paginatedStudents,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredStudents, { itemsPerPage: 20 });
 
   const stats = {
     total: students.length,
@@ -266,7 +260,7 @@ export default function StudentsPage() {
     );
   }
 
-  if (!profile || !['admin', 'teacher', 'supervisor'].includes(profile.role)) {
+  if (!isAuthorized) {
     return null;
   }
 
