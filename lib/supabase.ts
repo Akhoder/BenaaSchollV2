@@ -1213,6 +1213,20 @@ export async function fetchAttemptsForQuiz(quizId: string) {
     .order('started_at', { ascending: false });
 }
 
+export async function fetchStudentAttemptsForQuiz(quizId: string) {
+  const { data: userRes, error: userError } = await supabase.auth.getUser();
+  if (userError || !userRes?.user?.id) {
+    return { data: [], error: userError } as any;
+  }
+  const uid = userRes.user.id;
+  return await supabase
+    .from('quiz_attempts')
+    .select('id, attempt_number, started_at, submitted_at, status, score, duration_seconds')
+    .eq('quiz_id', quizId)
+    .eq('student_id', uid)
+    .order('started_at', { ascending: false });
+}
+
 export async function fetchAttemptsWithAnswers(quizId: string) {
   const { data: attempts } = await supabase
     .from('quiz_attempts')

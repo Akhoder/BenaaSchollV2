@@ -54,7 +54,7 @@ import {
   LessonProgress
 } from '@/lib/supabase';
 import { fetchMyAssignmentsForSubject, fetchSubmissionForAssignment } from '@/lib/supabase';
-import { fetchQuizzesForSubject, fetchQuizzesForLesson } from '@/lib/supabase';
+import { fetchQuizzesForSubject, fetchQuizzesForLesson, fetchStudentAttemptsForQuiz } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -79,6 +79,7 @@ export default function SubjectLessonsPage() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [lessonQuizzes, setLessonQuizzes] = useState<any[]>([]);
   const [quizzesByLesson, setQuizzesByLesson] = useState<Record<string, any[]>>({});
+  const [quizAttempts, setQuizAttempts] = useState<Record<string, any[]>>({});
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [lessonStatusFilter, setLessonStatusFilter] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
 
@@ -210,6 +211,7 @@ export default function SubjectLessonsPage() {
       setQuizzes(qz || []);
 
       // Load quizzes for all lessons
+      const allQuizIds: string[] = [];
       if (lessonsList.length > 0) {
         const lessonIds = lessonsList.map(l => l.id);
         const quizzesMap: Record<string, any[]> = {};
@@ -224,6 +226,7 @@ export default function SubjectLessonsPage() {
         quizResults.forEach(({ lessonId, quizzes: qzs }) => {
           if (qzs.length > 0) {
             quizzesMap[lessonId] = qzs;
+            qzs.forEach((q: any) => allQuizIds.push(q.id));
           }
         });
         
@@ -234,6 +237,26 @@ export default function SubjectLessonsPage() {
           const firstLessonId = lessonsList[0].id;
           setLessonQuizzes(quizzesMap[firstLessonId] || []);
         }
+      }
+
+      // Collect all quiz IDs (subject + lesson quizzes)
+      (qz || []).forEach((q: any) => allQuizIds.push(q.id));
+
+      // Load student attempts for all quizzes in parallel
+      if (allQuizIds.length > 0) {
+        const attemptPromises = allQuizIds.map(async (quizId) => {
+          const { data } = await fetchStudentAttemptsForQuiz(quizId);
+          return { quizId, attempts: data || [] };
+        });
+        
+        const attemptResults = await Promise.all(attemptPromises);
+        const attemptsMap: Record<string, any[]> = {};
+        attemptResults.forEach(({ quizId, attempts }) => {
+          if (attempts.length > 0) {
+            attemptsMap[quizId] = attempts;
+          }
+        });
+        setQuizAttempts(attemptsMap);
       }
     } catch (e) {
       console.error(e);
@@ -893,10 +916,22 @@ export default function SubjectLessonsPage() {
                               {lessonQuizzes.map((q: any) => {
                                 const isActive = !q.end_at || new Date(q.end_at) > new Date();
                                 const isStarted = q.start_at && new Date(q.start_at) > new Date();
+                                const attempts = quizAttempts[q.id] || [];
+                                const completedAttempts = attempts.filter((a: any) => a.status === 'submitted' || a.status === 'graded');
+                                const isCompleted = completedAttempts.length > 0;
+                                const latestAttempt = completedAttempts[0] || null;
+                                const remainingAttempts = q.attempts_allowed - attempts.length;
+                                const hasRemainingAttempts = remainingAttempts > 0 && isActive && !isStarted;
+                                
                                 return (
                                   <div 
                                     key={q.id} 
-                                    className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg transition-all group"
+                                    className={cn(
+                                      "p-4 rounded-xl border-2 bg-white dark:bg-gray-800 hover:shadow-lg transition-all group",
+                                      isCompleted 
+                                        ? "border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700" 
+                                        : "border-purple-200 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-700"
+                                    )}
                                   >
                                     <div className="flex items-start justify-between gap-3 mb-3">
                                       <div className="flex-1">
@@ -906,13 +941,19 @@ export default function SubjectLessonsPage() {
                                             <GraduationCap className="h-3 w-3 mr-1" />
                                             {language === 'ar' ? 'درس' : 'Lesson'}
                                           </Badge>
+                                          {isCompleted && (
+                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs">
+                                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                                              {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            </Badge>
+                                          )}
                                         </div>
                                         {q.description && (
                                           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                                             {q.description}
                                           </p>
                                         )}
-                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
                                           {q.time_limit_minutes && (
                                             <div className="flex items-center gap-1">
                                               <Clock className="h-3.5 w-3.5" />
@@ -928,17 +969,55 @@ export default function SubjectLessonsPage() {
                                             </div>
                                           )}
                                         </div>
+                                        {isCompleted && latestAttempt && (
+                                          <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                                {language === 'ar' ? 'آخر نتيجة:' : 'Last Result:'}
+                                              </span>
+                                              {latestAttempt.score !== null && latestAttempt.score !== undefined ? (
+                                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                                                  {latestAttempt.score}%
+                                                </span>
+                                              ) : (
+                                                <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                  {latestAttempt.status === 'graded' 
+                                                    ? (language === 'ar' ? 'تم التصحيح' : 'Graded')
+                                                    : (language === 'ar' ? 'قيد التصحيح' : 'Pending')}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {latestAttempt.submitted_at && (
+                                              <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                                {new Date(latestAttempt.submitted_at).toLocaleDateString()}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        {!isCompleted && hasRemainingAttempts && (
+                                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                            {language === 'ar' 
+                                              ? `محاولات متبقية: ${remainingAttempts}` 
+                                              : `Remaining attempts: ${remainingAttempts}`}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t border-purple-100 dark:border-purple-900">
                                       <Badge 
                                         className={cn(
+                                          isCompleted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && !isStarted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && isStarted ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
                                           "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                                         )}
                                       >
-                                        {isActive && !isStarted ? (
+                                        {isCompleted ? (
+                                          <>
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                          </>
+                                        ) : isActive && !isStarted ? (
                                           <>
                                             <Play className="h-3 w-3 mr-1" />
                                             {language === 'ar' ? 'متاح' : 'Available'}
@@ -955,23 +1034,33 @@ export default function SubjectLessonsPage() {
                                           </>
                                         )}
                                       </Badge>
-                                      <Button 
-                                        variant={isActive && !isStarted ? "default" : "outline"} 
-                                        size="sm" 
-                                        onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
-                                        disabled={!isActive || isStarted}
-                                        className={cn(
-                                          isActive && !isStarted && "bg-purple-600 hover:bg-purple-700 text-white",
-                                          "group-hover:scale-105 transition-transform"
-                                        )}
-                                      >
-                                        <Play className="h-3.5 w-3.5 mr-1.5" />
-                                        {isActive && !isStarted 
-                                          ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
-                                          : isStarted 
-                                            ? (language === 'ar' ? 'غير متاح' : 'Not Available') 
-                                            : (language === 'ar' ? 'مغلق' : 'Closed')}
-                                      </Button>
+                                      {isCompleted ? (
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                        >
+                                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                                          {language === 'ar' ? 'عرض النتيجة' : 'View Results'}
+                                        </Button>
+                                      ) : (
+                                        <Button 
+                                          variant={hasRemainingAttempts ? "default" : "outline"} 
+                                          size="sm" 
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          disabled={!hasRemainingAttempts}
+                                          className={cn(
+                                            hasRemainingAttempts && "bg-purple-600 hover:bg-purple-700 text-white",
+                                            "group-hover:scale-105 transition-transform"
+                                          )}
+                                        >
+                                          <Play className="h-3.5 w-3.5 mr-1.5" />
+                                          {hasRemainingAttempts 
+                                            ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
+                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -1001,10 +1090,22 @@ export default function SubjectLessonsPage() {
                               {quizzes.map((q: any) => {
                                 const isActive = !q.end_at || new Date(q.end_at) > new Date();
                                 const isStarted = q.start_at && new Date(q.start_at) > new Date();
+                                const attempts = quizAttempts[q.id] || [];
+                                const completedAttempts = attempts.filter((a: any) => a.status === 'submitted' || a.status === 'graded');
+                                const isCompleted = completedAttempts.length > 0;
+                                const latestAttempt = completedAttempts[0] || null;
+                                const remainingAttempts = q.attempts_allowed - attempts.length;
+                                const hasRemainingAttempts = remainingAttempts > 0 && isActive && !isStarted;
+                                
                                 return (
                                   <div 
                                     key={q.id} 
-                                    className="p-4 rounded-xl border-2 border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all group"
+                                    className={cn(
+                                      "p-4 rounded-xl border-2 bg-white dark:bg-gray-800 hover:shadow-lg transition-all group",
+                                      isCompleted 
+                                        ? "border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700" 
+                                        : "border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700"
+                                    )}
                                   >
                                     <div className="flex items-start justify-between gap-3 mb-3">
                                       <div className="flex-1">
@@ -1014,13 +1115,19 @@ export default function SubjectLessonsPage() {
                                             <BookOpen className="h-3 w-3 mr-1" />
                                             {language === 'ar' ? 'مادة' : 'Subject'}
                                           </Badge>
+                                          {isCompleted && (
+                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs">
+                                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                                              {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            </Badge>
+                                          )}
                                         </div>
                                         {q.description && (
                                           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                                             {q.description}
                                           </p>
                                         )}
-                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
                                           {q.time_limit_minutes && (
                                             <div className="flex items-center gap-1">
                                               <Clock className="h-3.5 w-3.5" />
@@ -1036,17 +1143,55 @@ export default function SubjectLessonsPage() {
                                             </div>
                                           )}
                                         </div>
+                                        {isCompleted && latestAttempt && (
+                                          <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                                {language === 'ar' ? 'آخر نتيجة:' : 'Last Result:'}
+                                              </span>
+                                              {latestAttempt.score !== null && latestAttempt.score !== undefined ? (
+                                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                                                  {latestAttempt.score}%
+                                                </span>
+                                              ) : (
+                                                <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                  {latestAttempt.status === 'graded' 
+                                                    ? (language === 'ar' ? 'تم التصحيح' : 'Graded')
+                                                    : (language === 'ar' ? 'قيد التصحيح' : 'Pending')}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {latestAttempt.submitted_at && (
+                                              <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                                {new Date(latestAttempt.submitted_at).toLocaleDateString()}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        {!isCompleted && hasRemainingAttempts && (
+                                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                            {language === 'ar' 
+                                              ? `محاولات متبقية: ${remainingAttempts}` 
+                                              : `Remaining attempts: ${remainingAttempts}`}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t border-blue-100 dark:border-blue-900">
                                       <Badge 
                                         className={cn(
+                                          isCompleted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && !isStarted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && isStarted ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
                                           "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                                         )}
                                       >
-                                        {isActive && !isStarted ? (
+                                        {isCompleted ? (
+                                          <>
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                          </>
+                                        ) : isActive && !isStarted ? (
                                           <>
                                             <Play className="h-3 w-3 mr-1" />
                                             {language === 'ar' ? 'متاح' : 'Available'}
@@ -1063,23 +1208,33 @@ export default function SubjectLessonsPage() {
                                           </>
                                         )}
                                       </Badge>
-                                      <Button 
-                                        variant={isActive && !isStarted ? "default" : "outline"} 
-                                        size="sm" 
-                                        onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
-                                        disabled={!isActive || isStarted}
-                                        className={cn(
-                                          isActive && !isStarted && "bg-blue-600 hover:bg-blue-700 text-white",
-                                          "group-hover:scale-105 transition-transform"
-                                        )}
-                                      >
-                                        <Play className="h-3.5 w-3.5 mr-1.5" />
-                                        {isActive && !isStarted 
-                                          ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
-                                          : isStarted 
-                                            ? (language === 'ar' ? 'غير متاح' : 'Not Available') 
-                                            : (language === 'ar' ? 'مغلق' : 'Closed')}
-                                      </Button>
+                                      {isCompleted ? (
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                        >
+                                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                                          {language === 'ar' ? 'عرض النتيجة' : 'View Results'}
+                                        </Button>
+                                      ) : (
+                                        <Button 
+                                          variant={hasRemainingAttempts ? "default" : "outline"} 
+                                          size="sm" 
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          disabled={!hasRemainingAttempts}
+                                          className={cn(
+                                            hasRemainingAttempts && "bg-blue-600 hover:bg-blue-700 text-white",
+                                            "group-hover:scale-105 transition-transform"
+                                          )}
+                                        >
+                                          <Play className="h-3.5 w-3.5 mr-1.5" />
+                                          {hasRemainingAttempts 
+                                            ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
+                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                 );
