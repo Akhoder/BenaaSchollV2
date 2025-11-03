@@ -129,7 +129,7 @@ export interface ClassEnrollment {
 export async function fetchPublishedClasses() {
   return await supabase
     .from('classes')
-    .select('id, class_name, teacher_id, published, created_at')
+    .select('id, class_name, teacher_id, level, image_url, published, created_at')
     .eq('published', true)
     .order('created_at', { ascending: false });
 }
@@ -915,4 +915,98 @@ export function subscribeToMessages(
   return () => {
     supabase.removeChannel(channel);
   };
+}
+
+export async function fetchTeacherClasses(teacherId: string) {
+  return await supabase
+    .from('classes')
+    .select('id, class_name')
+    .or(`teacher_id.eq.${teacherId},supervisor_id.eq.${teacherId}`)
+    .order('class_name', { ascending: true });
+}
+
+export async function fetchStudentsInClass(classId: string) {
+  const { data: enrollments, error } = await supabase
+    .from('student_enrollments')
+    .select('student_id')
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) return { data: [], error } as any;
+  const studentIds = (enrollments || []).map((e: any) => e.student_id);
+  if (studentIds.length === 0) return { data: [], error: null } as any;
+  const { data: students, error: e2 } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', studentIds)
+    .order('full_name', { ascending: true });
+  return { data: students || [], error: e2 } as any;
+}
+
+export async function fetchAttendanceForClassDate(classId: string, dateIso: string) {
+  return await supabase
+    .from('attendance_records')
+    .select('student_id, status, notes')
+    .eq('class_id', classId)
+    .eq('attendance_date', dateIso);
+}
+
+export async function saveAttendanceBatch(classId: string, dateIso: string, rows: Array<{ student_id: string; status: string; notes?: string }>) {
+  const studentIds = rows.map(r => r.student_id);
+  // Delete existing rows for these students on that date/class
+  if (studentIds.length > 0) {
+    const { error: delErr } = await supabase
+      .from('attendance_records')
+      .delete()
+      .eq('class_id', classId)
+      .eq('attendance_date', dateIso)
+      .in('student_id', studentIds);
+    if (delErr) return { data: null, error: delErr } as any;
+  }
+  const insertRows = rows.map(r => ({ ...r, class_id: classId, attendance_date: dateIso }));
+  const { data, error } = await supabase
+    .from('attendance_records')
+    .insert(insertRows)
+    .select('*');
+  return { data, error } as any;
+}
+
+export async function fetchAttendanceRangeForClass(classId: string, fromIsoDate: string, toIsoDate: string) {
+  return await supabase
+    .from('attendance_records')
+    .select('student_id, attendance_date, status')
+    .eq('class_id', classId)
+    .gte('attendance_date', fromIsoDate)
+    .lte('attendance_date', toIsoDate);
+}
+
+export async function fetchMyNotifications(limit = 20) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  return await supabase
+    .from('notifications')
+    .select('*')
+    .or(`recipient_id.eq.${uid},recipient_id.is.null`)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+}
+
+export async function markNotificationRead(id: string) {
+  return await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*')
+    .single();
+}
+
+export async function createNotification(input: { recipient_id?: string | null; class_id?: string | null; role_target?: string | null; title: string; body?: string | null; type?: string | null; link_url?: string | null; }) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const created_by = userRes?.user?.id || null;
+  const row = { ...input, created_by } as any;
+  return await supabase
+    .from('notifications')
+    .insert([row])
+    .select('*')
+    .single();
 }

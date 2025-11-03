@@ -35,6 +35,7 @@ import {
   updateLessonProgress,
   LessonProgress
 } from '@/lib/supabase';
+import { fetchMyAssignmentsForSubject, fetchSubmissionForAssignment } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,8 @@ export default function SubjectLessonsPage() {
   const [loading, setLoading] = useState(true);
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -109,6 +112,17 @@ export default function SubjectLessonsPage() {
         });
       }
       setLessonsProgress(progressMap);
+
+      // Load assignments for this subject
+      const { data: assns } = await fetchMyAssignmentsForSubject(subjectId);
+      setAssignments(assns || []);
+      // Load submissions per assignment
+      const subs: Record<string, any> = {};
+      for (const a of (assns || [])) {
+        const { data: sub } = await fetchSubmissionForAssignment(a.id);
+        if (sub) subs[a.id] = sub;
+      }
+      setSubmissions(subs);
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');
@@ -237,6 +251,7 @@ export default function SubjectLessonsPage() {
   const isInProgress = progress?.status === 'in_progress';
   const embed = getVideoEmbedUrl(activeLesson.video_url);
   const hasAttachments = (attachmentsByLesson[activeLesson.id] || []).length > 0;
+  const hasAssignments = assignments.length > 0;
 
   const LessonSidebar = () => (
     <div className="space-y-2" ref={sidebarRef}>
@@ -521,6 +536,54 @@ export default function SubjectLessonsPage() {
                           </span>
                           <ExternalLink className="h-4 w-4 text-gray-400 opacity-0 group-hover/att:opacity-100 transition-opacity" />
                         </a>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Subject Assignments */}
+            {hasAssignments && (
+              <Card className="border-gray-200 dark:border-gray-800">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Assignments
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {assignments.map((a: any) => {
+                      const sub = submissions[a.id];
+                      const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString() : '';
+                      return (
+                        <div key={a.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{a.title}</h4>
+                              <p className="text-xs text-muted-foreground">{dueStr && `Due: ${dueStr}`}</p>
+                              {a.description && (
+                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
+                              )}
+                              {sub ? (
+                                <div className="mt-2">
+                                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Submitted</Badge>
+                                  {sub.status === 'graded' && (
+                                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{sub.score}/{a.total_points}</Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="mt-2">
+                                  <Badge variant="outline">Pending</Badge>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)}>
+                                {sub ? 'View' : 'Submit'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

@@ -1,364 +1,184 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MessageSquare, 
-  Send, 
-  Loader2, 
-  Search,
-  CircleDot,
-  User,
-  Users
-} from 'lucide-react';
-import { 
-  getMyConversations, 
-  Conversation,
-  getConversationMessages,
-  sendMessage as apiSendMessage,
-  subscribeToMessages,
-  MessageWithSender,
-  markMessagesAsRead
-} from '@/lib/supabase';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Bell, ExternalLink } from 'lucide-react';
+import { fetchMyNotifications, markNotificationRead, createNotification, supabase } from '@/lib/supabase';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function MessagesPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
   const router = useRouter();
-  
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<MessageWithSender[]>([]);
-  const [messageInput, setMessageInput] = useState('');
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [form, setForm] = useState({ title: '', body: '', link_url: '', class_id: '' });
 
   useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-      return;
+    if (!authLoading) {
+      if (!profile) { router.push('/login'); return; }
+      loadData().catch(() => {});
+      if (profile && ['admin','teacher','supervisor'].includes(profile.role)) {
+        loadClasses().catch(() => {});
+      }
     }
-    if (profile) {
-      loadConversations().catch(() => {});
-    }
-  }, [profile, authLoading, router]);
+  }, [authLoading, profile]);
 
-  useEffect(() => {
-    if (selectedConversation) {
-      loadMessages();
-      markAsRead();
-    }
-  }, [selectedConversation]);
-
-  const loadConversations = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await getMyConversations();
-      if (error) {
-        console.error(error);
-        toast.error('Error loading conversations');
-        return;
-      }
-      setConversations((data || []) as Conversation[]);
-      if (data && data.length > 0) {
-        setSelectedConversation(data[0]);
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error('Error loading conversations');
+      const { data, error } = await fetchMyNotifications(50);
+      if (error) return;
+      setItems(data || []);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMessages = async () => {
-    if (!selectedConversation) return;
-    
-    try {
-      const { data, error } = await getConversationMessages(selectedConversation.id);
-      if (error) {
-        console.error(error);
-        toast.error('Error loading messages');
-        return;
-      }
-      setMessages((data || []) as MessageWithSender[]);
-      
-      // Scroll to bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-      
-      // Subscribe to new messages
-      const unsubscribe = subscribeToMessages(selectedConversation.id, (newMessage) => {
-        setMessages((prev) => [...prev, newMessage]);
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-        markAsRead();
-      });
-      
-      return unsubscribe;
-    } catch (e) {
-      console.error(e);
-      toast.error('Error loading messages');
+  const loadClasses = async () => {
+    const { data } = await supabase.from('classes').select('id, class_name').order('class_name');
+    setClasses(data || []);
+  };
+
+  const onRead = async (id: string) => {
+    const idx = items.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    if (items[idx].read_at) return;
+    const { error } = await markNotificationRead(id);
+    if (!error) {
+      setItems(prev => prev.map(x => x.id === id ? { ...x, read_at: new Date().toISOString() } : x));
     }
   };
 
-  const markAsRead = async () => {
-    if (!selectedConversation) return;
-    await markMessagesAsRead(selectedConversation.id);
-  };
-
-  const handleSend = async () => {
-    if (!messageInput.trim() || !selectedConversation || sending) return;
-    
+  const onSend = async () => {
     try {
+      if (!form.title.trim()) return;
       setSending(true);
-      const { error } = await apiSendMessage(
-        selectedConversation.id,
-        messageInput.trim(),
-        'text'
-      );
-      if (error) {
-        console.error(error);
-        toast.error('Error sending message');
-        return;
-      }
-      setMessageInput('');
-    } catch (e) {
-      console.error(e);
-      toast.error('Error sending message');
+      const payload: any = {
+        title: form.title,
+        body: form.body || null,
+        link_url: form.link_url || null,
+        class_id: form.class_id || null,
+        recipient_id: null,
+        role_target: form.class_id ? null : 'student',
+        type: 'info',
+      };
+      const { error } = await createNotification(payload);
+      if (error) return;
+      setForm({ title: '', body: '', link_url: '', class_id: '' });
+      await loadData();
     } finally {
       setSending(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const getConversationTitle = (conv: Conversation) => {
-    if (conv.name) return conv.name;
-    if (conv.type === 'direct') return 'Direct Message';
-    if (conv.type === 'class') return 'Class Chat';
-    if (conv.type === 'subject') return 'Subject Chat';
-    return 'Conversation';
-  };
-
-  const filteredConversations = conversations.filter(conv => 
-    getConversationTitle(conv).toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        </div>
+        <div className="flex items-center justify-center h-96"><Skeleton className="h-12 w-12" /></div>
       </DashboardLayout>
     );
   }
-
-  if (!profile) {
-    return null;
-  }
+  if (!profile) return null;
 
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <PageHeader
-          title="Messages"
-          description="Chat with teachers and classmates"
-          icon={MessageSquare}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* Conversations List */}
+        {['admin','teacher','supervisor'].includes(profile.role) && (
           <Card className="border-slate-200 dark:border-slate-800">
-            <CardContent className="p-0">
-              {/* Search */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search conversations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 border-gray-300 dark:border-gray-700"
-                  />
+            <CardHeader>
+              <CardTitle>{language === 'ar' ? 'إرسال إشعار' : 'Send Notification'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Label className="text-sm">{language === 'ar' ? 'العنوان' : 'Title'}</Label>
+                  <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-sm">{language === 'ar' ? 'المحتوى' : 'Body'}</Label>
+                  <Input value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-sm">Link</Label>
+                  <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="https://..." className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-sm">{language === 'ar' ? 'الفصل (اختياري)' : 'Class (optional)'}</Label>
+                  <Select value={form.class_id} onValueChange={(v) => setForm({ ...form, class_id: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder={language === 'ar' ? 'لكل الطلاب' : 'All students'} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{language === 'ar' ? 'لكل الطلاب' : 'All students'}</SelectItem>
+                      {classes.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.class_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-
-              {/* Conversations */}
-              <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-[calc(100vh-280px)] overflow-y-auto">
-                {filteredConversations.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      No conversations yet
-                    </p>
-                  </div>
-                ) : (
-                  filteredConversations.map((conv) => (
-                    <button
-                      key={conv.id}
-                      onClick={() => setSelectedConversation(conv)}
-                      className={cn(
-                        "w-full p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                        selectedConversation?.id === conv.id && "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-600"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                          {conv.type === 'direct' ? (
-                            <User className="h-5 w-5 text-white" />
-                          ) : (
-                            <Users className="h-5 w-5 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-                            {getConversationTitle(conv)}
-                          </h3>
-                          {conv.last_message_at && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {new Date(conv.last_message_at).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
+              <div className="mt-3 flex justify-end">
+                <Button onClick={onSend} disabled={sending || !form.title.trim()}>{sending ? (language === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (language === 'ar' ? 'إرسال' : 'Send')}</Button>
               </div>
             </CardContent>
           </Card>
-
-          {/* Messages Area */}
-          <Card className="border-slate-200 dark:border-slate-800 flex flex-col">
-            {selectedConversation ? (
-              <>
-                {/* Messages */}
-                <CardContent 
-                  ref={messagesContainerRef}
-                  className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-400px)]"
-                >
-                  <div className="space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-center">
-                        <div>
-                          <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            No messages yet. Start the conversation!
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      messages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={cn(
-                            "flex gap-3",
-                            msg.sender_id === profile.id && "flex-row-reverse"
-                          )}
-                        >
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-white">
-                              {msg.sender.full_name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className={cn(
-                            "flex-1 max-w-[70%]",
-                            msg.sender_id === profile.id && "flex flex-col items-end"
-                          )}>
-                            {msg.sender_id !== profile.id && (
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                {msg.sender.full_name}
-                              </p>
-                            )}
-                            <div className={cn(
-                              "rounded-2xl px-4 py-2",
-                              msg.sender_id === profile.id
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                            )}>
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {msg.content}
-                              </p>
-                              {msg.is_edited && (
-                                <p className="text-xs opacity-70 mt-1">(edited)</p>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {new Date(msg.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </CardContent>
-
-                {/* Input */}
-                <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      placeholder="Type a message..."
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      className="flex-1 border-gray-300 dark:border-gray-700"
-                      disabled={sending}
-                    />
-                    <Button
-                      onClick={handleSend}
-                      disabled={!messageInput.trim() || sending}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {sending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </>
+        )}
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-amber-600" />
+              {language === 'ar' ? 'الرسائل والتنبيهات' : 'Messages & Alerts'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{language === 'ar' ? 'لا توجد رسائل' : 'No messages yet'}</p>
             ) : (
-              <div className="flex items-center justify-center h-96 text-center">
-                <div>
-                  <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Select a conversation
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Choose a conversation from the list to start messaging
-                  </p>
-                </div>
+              <div className="space-y-2">
+                {items.map((n) => (
+                  <div key={n.id} className={`p-3 rounded-lg border ${n.read_at ? 'border-slate-200 dark:border-slate-800' : 'border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-900/10'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {!n.read_at && <Badge className="bg-amber-100 text-amber-700">{language === 'ar' ? 'جديد' : 'New'}</Badge>}
+                          <h4 className="font-semibold">{n.title}</h4>
+                        </div>
+                        {n.body && <p className="text-sm text-muted-foreground mt-1">{n.body}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!n.read_at && (
+                          <Button variant="outline" size="sm" onClick={() => onRead(n.id)}>{language === 'ar' ? 'تمييز كمقروء' : 'Mark as read'}</Button>
+                        )}
+                        {n.link_url && (
+                          <Button variant="outline" size="sm" onClick={() => window.open(n.link_url, '_blank')}>
+                            <ExternalLink className="h-3 w-3 mr-1" /> {language === 'ar' ? 'فتح' : 'Open'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

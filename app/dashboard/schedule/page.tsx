@@ -425,6 +425,18 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit }: any) {
                   <div className="flex gap-2 mt-2">
                     <Button variant="outline" size="sm" onClick={() => onEdit(e)}><Edit className="h-3 w-3 mr-1" /> Edit</Button>
                     <Button variant="destructive" size="sm" onClick={() => onDelete(e.id)}><Trash2 className="h-3 w-3 mr-1" /> Delete</Button>
+                    {e.class_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const dateStr = new Date(e.start_at).toISOString().slice(0,10);
+                          window.location.href = `/dashboard/attendance?classId=${e.class_id}&date=${dateStr}`;
+                        }}
+                      >
+                        تسجيل الحضور
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
