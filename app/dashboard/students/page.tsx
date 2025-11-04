@@ -238,6 +238,7 @@ export default function StudentsPage() {
     paginatedItems: paginatedStudents,
     startIndex,
     endIndex,
+    itemsPerPage,
   } = usePagination(filteredStudents, { itemsPerPage: 20 });
 
   const stats = {

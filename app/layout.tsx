@@ -47,13 +47,16 @@ const tajawal = Tajawal({
 });
 
 // Beautiful Arabic font for headings - Saudi-designed, modern
+// Enhanced fallback configuration to handle download failures gracefully
+// If Almarai fails to load, it will automatically fallback to Tajawal
 const almarai = Almarai({
   subsets: ['arabic'],
   weight: ['400', '700', '800'],
   variable: '--font-almarai',
   display: 'swap',
   preload: false,
-  fallback: ['system-ui', 'arial']
+  fallback: ['Tajawal', 'system-ui', 'arial', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
