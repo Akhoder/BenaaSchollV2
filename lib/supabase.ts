@@ -1575,14 +1575,13 @@ export async function checkEligibleSubjectsForStudent() {
     
     if (eligibility && (eligibility as any).eligible) {
       // Check if certificate doesn't exist yet
-      const { data: existingCert } = await supabase
+      const { data: existingCerts, error: certError } = await supabase
         .from('certificates')
         .select('id')
         .eq('student_id', userRes.user.id)
-        .eq('subject_id', subject.id)
-        .single();
+        .eq('subject_id', subject.id);
       
-      if (!existingCert) {
+      if (!certError && (!existingCerts || existingCerts.length === 0)) {
         eligibleSubjects.push({
           subject_id: subject.id,
           subject_name: subject.subject_name,

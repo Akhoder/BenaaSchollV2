@@ -138,67 +138,201 @@ export default function CertificateViewPage() {
     try {
       setDownloading(true);
       
-      // Wait for fonts to load
-      await document.fonts.ready;
-      
-      // Wait a bit more to ensure all fonts are rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Capture the certificate as canvas with better Arabic font support
-      const canvas = await html2canvas(certificateRef.current, {
-        scale: 3, // Higher scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#fef3c7',
-        allowTaint: false,
-        foreignObjectRendering: true,
-        onclone: (clonedDoc) => {
-          // Ensure fonts are available in the cloned document
-          const style = clonedDoc.createElement('style');
-          style.textContent = `
-            @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap');
-            * {
-              font-family: 'Almarai', 'Tajawal', system-ui, sans-serif !important;
-            }
-            [dir="rtl"], [lang="ar"] {
-              direction: rtl !important;
-              text-align: right !important;
-              font-family: 'Almarai', 'Tajawal', system-ui, sans-serif !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-          
-          // Add font link
-          const fontLink = clonedDoc.createElement('link');
-          fontLink.href = 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap';
-          fontLink.rel = 'stylesheet';
-          clonedDoc.head.appendChild(fontLink);
-        },
+      // A4 dimensions in pixels at 96 DPI
+      const DPI = 96;
+      const A4_WIDTH_MM = 210;
+      const A4_HEIGHT_MM = 297;
+      const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / 25.4) * DPI);  // ~794px
+      const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / 25.4) * DPI); // ~1123px
+
+      // Create an offscreen root and an A4-sized page
+      const root = document.createElement('div');
+      root.id = 'pdf-root';
+      root.style.position = 'fixed';
+      root.style.left = '-10000px';
+      root.style.top = '0';
+      root.style.width = `${A4_WIDTH_PX}px`;
+      root.style.height = `${A4_HEIGHT_PX}px`;
+      root.style.background = '#ffffff';
+      root.style.display = 'flex';
+      root.style.alignItems = 'center';
+      root.style.justifyContent = 'center';
+      root.style.boxSizing = 'border-box';
+
+      const page = document.createElement('div');
+      page.style.width = `${A4_WIDTH_PX}px`;
+      page.style.height = `${A4_HEIGHT_PX}px`;
+      page.style.background = '#ffffff';
+      page.style.display = 'flex';
+      page.style.alignItems = 'center';
+      page.style.justifyContent = 'center';
+      page.style.overflow = 'hidden';
+      page.style.boxSizing = 'border-box';
+
+      // Clone the certificate into the page and scale to fit with padding
+      const clone = certificateRef.current.cloneNode(true) as HTMLElement;
+      clone.setAttribute('dir', 'rtl');
+      clone.setAttribute('lang', 'ar');
+      clone.style.margin = '0';
+      clone.style.border = 'none';
+      clone.style.boxShadow = 'none';
+      clone.style.boxSizing = 'border-box';
+      // Enforce Arabic-friendly text rendering
+      clone.style.fontFamily = "Almarai, Tajawal, system-ui, sans-serif";
+      clone.style.letterSpacing = 'normal';
+      clone.style.wordSpacing = 'normal';
+      clone.style.unicodeBidi = 'isolate-override';
+      clone.style.direction = 'rtl';
+
+      // Disable gradient text (can break Arabic shaping in rasterization)
+      const gradientNodes = clone.querySelectorAll<HTMLElement>('.text-gradient, [style*="background-clip: text"], [style*="-webkit-background-clip: text"]');
+      gradientNodes.forEach((el) => {
+        el.style.background = 'none';
+        el.style.backgroundImage = 'none';
+        (el.style as any).webkitBackgroundClip = 'initial';
+        (el.style as any).backgroundClip = 'initial';
+        (el.style as any).webkitTextFillColor = '#111827';
+        el.style.color = '#111827';
+        el.style.letterSpacing = '0';
       });
 
-      // Calculate dimensions
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Limit height to A4 page height (297mm)
-      const maxHeight = 297;
-      const finalHeight = imgHeight > maxHeight ? maxHeight : imgHeight;
-      const finalWidth = imgHeight > maxHeight ? (imgWidth * maxHeight) / imgHeight : imgWidth;
-      
-      // Create PDF
+      // Target likely problematic elements and enforce Cairo font
+      const problematicSelectors = [
+        'h2', // شهادة إتمام
+        '.text-3xl.font-display.font-bold', // student name
+        '.text-lg.font-display.font-semibold', // names, titles
+      ];
+      problematicSelectors.forEach((sel) => {
+        clone.querySelectorAll<HTMLElement>(sel).forEach((el) => {
+          el.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
+          el.style.letterSpacing = 'normal';
+          el.style.wordSpacing = 'normal';
+          el.style.textTransform = 'none';
+        });
+      });
+
+      // Force visibility for the score card content (inside the blue gradient box)
+      const scoreCard = (clone.querySelector('.from-emerald-500.to-blue-500') as HTMLElement) 
+        || (clone.querySelector('[class*="from-emerald-500"][class*="to-blue-500"]') as HTMLElement);
+      if (scoreCard) {
+        // Replace with a simple, raster-friendly layout
+        scoreCard.style.background = '#ffffff';
+        scoreCard.style.backgroundImage = 'none';
+        scoreCard.style.border = '2px solid #3B82F6';
+        scoreCard.style.opacity = '1';
+        scoreCard.style.filter = 'none';
+        scoreCard.style.mixBlendMode = 'normal';
+        scoreCard.style.boxShadow = 'none';
+        scoreCard.style.padding = '24px';
+        scoreCard.style.borderRadius = '12px';
+        scoreCard.style.display = 'flex';
+        scoreCard.style.flexDirection = 'column';
+        scoreCard.style.alignItems = 'center';
+        scoreCard.style.justifyContent = 'center';
+        scoreCard.style.gap = '8px';
+
+        // Clear current content and rebuild
+        scoreCard.innerHTML = '';
+
+        const label = document.createElement('div');
+        label.textContent = (t('finalScore') as any) || 'العلامة النهائية:';
+        label.style.fontSize = '14px';
+        label.style.color = '#111827';
+        label.style.opacity = '1';
+        label.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
+
+        const value = document.createElement('div');
+        const scoreStr = `${(certificate?.final_score ?? 0).toFixed(1)} / 100`;
+        value.textContent = scoreStr;
+        value.style.fontSize = '40px';
+        value.style.fontWeight = '800';
+        value.style.lineHeight = '1.2';
+        value.style.color = '#111827';
+        value.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
+
+        const grade = document.createElement('div');
+        grade.textContent = `${certificate?.grade ?? ''}`;
+        grade.style.fontSize = '24px';
+        grade.style.fontWeight = '700';
+        grade.style.color = '#111827';
+        grade.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
+
+        scoreCard.appendChild(label);
+        scoreCard.appendChild(value);
+        scoreCard.appendChild(grade);
+      }
+
+      page.appendChild(clone);
+      root.appendChild(page);
+
+      // Inject fonts for the clone
+      const style = document.createElement('style');
+      style.textContent = `
+        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-variant-ligatures: normal; -webkit-font-feature-settings: 'liga' 1, 'calt' 1; font-feature-settings: 'liga' 1, 'calt' 1; }
+        [dir="rtl"], [lang="ar"] { direction: rtl !important; text-align: right !important; }
+        h1, h2, h3, .font-display { font-family: 'Cairo', 'Almarai', 'Tajawal', system-ui, sans-serif !important; letter-spacing: normal; }
+        p, span, div { letter-spacing: normal; word-spacing: normal; }
+      `;
+      root.appendChild(style);
+      // Ensure Arabic fonts are available globally (in <head>)
+      const ensureFontLink = (id: string, href: string) => {
+        let link = document.getElementById(id) as HTMLLinkElement | null;
+        if (!link) {
+          link = document.createElement('link');
+          link.id = id;
+          link.rel = 'stylesheet';
+          link.href = href;
+          document.head.appendChild(link);
+        }
+      };
+      ensureFontLink('pdf-fonts-almarai-tajawal', 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap');
+      ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+      document.body.appendChild(root);
+
+      // Wait for layout and fonts
+      await new Promise((r) => setTimeout(r, 300));
+      await document.fonts.ready;
+
+      const cloneRect = clone.getBoundingClientRect();
+      const pad = 24; // px inner padding
+      const scale = Math.min(
+        (A4_WIDTH_PX - pad * 2) / cloneRect.width,
+        (A4_HEIGHT_PX - pad * 2) / cloneRect.height,
+        1
+      );
+      clone.style.transform = `scale(${scale})`;
+      clone.style.transformOrigin = 'center center';
+      clone.style.unicodeBidi = 'plaintext';
+      clone.style.textRendering = 'optimizeLegibility';
+      clone.style.letterSpacing = 'normal';
+      clone.style.wordSpacing = 'normal';
+
+      // Render page to canvas with stable settings
+      await new Promise((r) => setTimeout(r, 100));
+      const canvas = await html2canvas(page, {
+        scale: 2, // stable high quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: A4_WIDTH_PX,
+        height: A4_HEIGHT_PX,
+        windowWidth: A4_WIDTH_PX,
+        windowHeight: A4_HEIGHT_PX,
+      });
+
+      // Clean up the offscreen DOM
+      if (root && root.parentNode) {
+        root.parentNode.removeChild(root);
+      }
+
+      // Create and save the PDF
       const pdf = new jsPDF('portrait', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png', 1.0);
-      
-      // Add image to PDF, centered
-      const xOffset = (210 - finalWidth) / 2;
-      pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
-      
-      // Generate filename
+      pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, 'FAST');
       const filename = `Certificate-${certificate?.certificate_number || 'cert'}-${Date.now()}.pdf`;
-      
-      // Save PDF
       pdf.save(filename);
-      
+
       toast.success('PDF downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -377,15 +511,12 @@ export default function CertificateViewPage() {
       {/* Print Styles */}
       <style jsx global>{`
         @media print {
-          body {
-            background: white;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .print\\:shadow-none {
-            box-shadow: none !important;
-          }
+          @page { size: A4 portrait; margin: 0; }
+          html, body { height: auto; margin: 0; padding: 0; }
+          body { background: white; }
+          /* Hide everything except print root */
+          body > *:not(#print-root) { display: none !important; }
+          #print-root { display: block !important; }
         }
       `}</style>
     </DashboardLayout>

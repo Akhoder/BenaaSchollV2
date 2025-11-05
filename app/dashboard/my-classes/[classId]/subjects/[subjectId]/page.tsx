@@ -278,14 +278,13 @@ export default function SubjectLessonsPage() {
           
           if (subjectData?.auto_publish_certificates) {
             // Check if certificate already exists
-            const { data: existingCert } = await supabase
+            const { data: existingCerts, error: certError } = await supabase
               .from('certificates')
               .select('id')
               .eq('student_id', profile.id)
-              .eq('subject_id', subjectId)
-              .single();
+              .eq('subject_id', subjectId);
             
-            if (!existingCert) {
+            if (!certError && (!existingCerts || existingCerts.length === 0)) {
               // Check eligibility
               const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
                 p_student_id: profile.id,
@@ -484,7 +483,7 @@ export default function SubjectLessonsPage() {
                   </h4>
                   {/* Quiz Notification Badge */}
                   {quizzesByLesson[lesson.id] && quizzesByLesson[lesson.id].length > 0 && (
-                    <button
+                    <div
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent triggering lesson click
                         const availableQuizzes = quizzesByLesson[lesson.id].filter((q: any) => {
@@ -506,7 +505,7 @@ export default function SubjectLessonsPage() {
                           }
                         }
                       }}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 cursor-pointer"
                     >
                       <Badge 
                         className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer"
@@ -515,7 +514,7 @@ export default function SubjectLessonsPage() {
                         <GraduationCap className="h-3 w-3 mr-1" />
                         {quizzesByLesson[lesson.id].length}
                       </Badge>
-                    </button>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
