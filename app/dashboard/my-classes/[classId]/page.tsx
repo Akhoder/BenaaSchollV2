@@ -192,10 +192,13 @@ export default function ClassViewPage() {
 
         {/* Subjects List */}
         {subjects.length === 0 ? (
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardContent className="py-12 text-center">
-              <BookOpen className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 font-sans">No subjects in this class yet.</p>
+          <Card className="card-elegant">
+            <CardContent className="py-12 text-center animate-fade-in">
+              <div className="relative inline-block mb-4">
+                <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Subjects</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-sans">No subjects have been added to this class yet.</p>
             </CardContent>
           </Card>
         ) : (
@@ -208,7 +211,7 @@ export default function ClassViewPage() {
               return (
                 <Card
                   key={subject.id}
-                  className="overflow-hidden border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                  className="card-hover overflow-hidden cursor-pointer"
                   onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subject.id}`)}
                 >
                   <CardHeader className="pb-4">

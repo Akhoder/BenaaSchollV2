@@ -170,16 +170,16 @@ export default function SchedulePage() {
           gradient="from-indigo-600 via-purple-600 to-indigo-700"
         />
 
-        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="font-display">Week View</CardTitle>
+              <CardTitle className="font-display text-gradient">Week View</CardTitle>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))}><ChevronLeft className="h-4 w-4" /></Button>
                 <div className="px-2 text-sm font-sans">{formatRange(weekStart)}</div>
                 <Button variant="outline" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))}><ChevronRight className="h-4 w-4" /></Button>
                 {profile.role !== 'student' && (
-                  <Button onClick={() => { setSelected(null); resetForm(); setIsDialogOpen(true); }} className="ml-2"><Plus className="h-4 w-4 mr-2" /> Add Event</Button>
+                  <Button className="btn-gradient ml-2" onClick={() => { setSelected(null); resetForm(); setIsDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Event</Button>
                 )}
               </div>
             </div>
@@ -199,11 +199,11 @@ export default function SchedulePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
               <div>
                 <Label className="text-sm font-sans">Title *</Label>
-                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div>
                 <Label className="text-sm font-sans">Room</Label>
-                <Input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} className="mt-1" />
+                <Input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div>
                 <Label className="text-sm font-sans">Class</Label>
@@ -225,15 +225,15 @@ export default function SchedulePage() {
               </div>
               <div>
                 <Label className="text-sm font-sans">Start *</Label>
-                <Input type="datetime-local" value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} className="mt-1" />
+                <Input type="datetime-local" value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div>
                 <Label className="text-sm font-sans">End *</Label>
-                <Input type="datetime-local" value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} className="mt-1" />
+                <Input type="datetime-local" value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div className="md:col-span-2">
                 <Label className="text-sm font-sans">Notes</Label>
-                <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1" />
+                <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div>
                 <Label className="text-sm font-sans">Recurrence</Label>
@@ -249,7 +249,7 @@ export default function SchedulePage() {
               </div>
               <div>
                 <Label className="text-sm font-sans">Recurrence End (optional)</Label>
-                <Input type="date" value={form.recurrence_end_at} onChange={(e) => setForm({ ...form, recurrence_end_at: e.target.value })} className="mt-1" />
+                <Input type="date" value={form.recurrence_end_at} onChange={(e) => setForm({ ...form, recurrence_end_at: e.target.value })} className="mt-1 input-modern" />
               </div>
               <div>
                 <Label className="text-sm font-sans">Mode</Label>
@@ -264,12 +264,12 @@ export default function SchedulePage() {
               </div>
               <div className="md:col-span-2">
                 <Label className="text-sm font-sans">Zoom URL (optional)</Label>
-                <Input value={form.zoom_url} onChange={(e) => setForm({ ...form, zoom_url: e.target.value })} placeholder="https://zoom.us/j/..." className="mt-1" />
+                <Input value={form.zoom_url} onChange={(e) => setForm({ ...form, zoom_url: e.target.value })} placeholder="https://zoom.us/j/..." className="mt-1 input-modern" />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={onSave} disabled={!form.title || !form.start_at || !form.end_at}>{selected ? 'Update' : 'Create'}</Button>
+              <Button className="btn-gradient" onClick={onSave} disabled={!form.title || !form.start_at || !form.end_at}>{selected ? 'Update' : 'Create'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

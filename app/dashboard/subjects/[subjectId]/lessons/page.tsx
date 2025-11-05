@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import * as api from '@/lib/supabase';
 import type { AttachmentType, Lesson } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink } from 'lucide-react';
+import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink, Loader2 } from 'lucide-react';
 
 interface AttachmentDraft {
   file_url: string;
@@ -29,12 +30,14 @@ export default function SubjectLessonsPage() {
   const { t } = useLanguage();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [attachmentsByLesson, setAttachmentsByLesson] = useState<Record<string, AttachmentDraft[] & any[]>>({});
+  const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -42,6 +45,7 @@ export default function SubjectLessonsPage() {
   const [isUploadingIdx, setIsUploadingIdx] = useState<number | null>(null);
   const [lessonUploadBusy, setLessonUploadBusy] = useState<Record<string, boolean>>({});
   const [addUrlByLesson, setAddUrlByLesson] = useState<Record<string, string>>({});
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -56,22 +60,31 @@ export default function SubjectLessonsPage() {
   }, [subjectId]);
 
   const loadLessons = async () => {
-    const { data, error } = await api.fetchLessonsBySubject(subjectId);
-    if (error) {
-      console.error(error);
-      toast.error('Error loading lessons');
-      return;
+    try {
+      setLoadingLessons(true);
+      const { data, error } = await api.fetchLessonsBySubject(subjectId);
+      if (error) {
+        console.error(error);
+        toast.error('Error loading lessons');
+        return;
+      }
+      const list = (data || []) as Lesson[];
+      setLessons(list);
+      const ids = list.map(l => l.id);
+      if (ids.length > 0) {
+        const { data: atts } = await api.fetchAttachmentsForLessons(ids);
+        const map: Record<string, any[]> = {};
+        (atts || []).forEach((a: any) => {
+          if (!map[a.lesson_id]) map[a.lesson_id] = [];
+          map[a.lesson_id].push(a);
+        });
+        setAttachmentsByLesson(map);
+      } else {
+        setAttachmentsByLesson({});
+      }
+    } finally {
+      setLoadingLessons(false);
     }
-    const list = (data || []) as Lesson[];
-    setLessons(list);
-    const ids = list.map(l => l.id);
-    const { data: atts } = await api.fetchAttachmentsForLessons(ids);
-    const map: Record<string, any[]> = {};
-    (atts || []).forEach((a: any) => {
-      if (!map[a.lesson_id]) map[a.lesson_id] = [];
-      map[a.lesson_id].push(a);
-    });
-    setAttachmentsByLesson(map);
   };
 
   const onAddAttachment = () => {
@@ -138,6 +151,7 @@ export default function SubjectLessonsPage() {
       setDescription('');
       setVideoUrl('');
       setAttachments([]);
+      setShowAddForm(false);
       await loadLessons();
     } finally {
       setSubmitting(false);
@@ -319,53 +333,61 @@ export default function SubjectLessonsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between pt-1">
+          <h1 className="text-3xl font-display text-gradient">
             {t('lessons') || 'Lessons'}
           </h1>
+          <div className="flex items-center gap-2">
+            {!showAddForm && (
+              <Button className="btn-gradient mt-1" onClick={() => setShowAddForm(true)}>
+                {t('addLesson') || 'Add Lesson'}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('addLesson') || 'Add Lesson'}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {showAddForm && (
+          <Card className="card-elegant">
+            <CardHeader>
+              <CardTitle className="font-display text-gradient">{t('addLesson') || 'Add Lesson'}</CardTitle>
+            </CardHeader>
+            <CardContent>
             <form onSubmit={handleCreateLesson} className="space-y-4">
               <div>
-                <label className="block mb-1">{t('title') || 'Title'}</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('title') || 'Title'} />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('title') || 'Title'}</label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('title') || 'Title'} className="input-modern" />
               </div>
               <div>
-                <label className="block mb-1">{t('description') || 'Description'}</label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('description') || 'Description'} />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('description') || 'Description'}</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('description') || 'Description'} className="input-modern" />
               </div>
               <div>
-                <label className="block mb-1">{t('videoUrl') || 'Video URL (optional)'}</label>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('videoUrl') || 'Video URL (optional)'}</label>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{t('attachmentsOptional') || 'Attachments (optional)'}</span>
-                  <Button type="button" variant="secondary" onClick={onAddAttachment}>
+                  <Button type="button" className="btn-gradient" onClick={onAddAttachment}>
                     {t('addAttachment') || 'Add Attachment'}
                   </Button>
                 </div>
                 {attachments.map((att, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-5">
-                      <label className="block mb-1">{t('fileUrl') || 'File URL'}</label>
-                      <Input value={att.file_url} onChange={(e) => onChangeAttachment(idx, 'file_url', e.target.value)} placeholder="https://..." />
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileUrl') || 'File URL'}</label>
+                      <Input value={att.file_url} onChange={(e) => onChangeAttachment(idx, 'file_url', e.target.value)} placeholder="https://..." className="input-modern" />
                     </div>
                     <div className="col-span-3">
-                      <label className="block mb-1">{t('fileName') || 'File name'}</label>
-                      <Input value={att.file_name || ''} onChange={(e) => onChangeAttachment(idx, 'file_name', e.target.value)} placeholder="optional" />
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileName') || 'File name'}</label>
+                      <Input value={att.file_name || ''} onChange={(e) => onChangeAttachment(idx, 'file_name', e.target.value)} placeholder="optional" className="input-modern" />
                     </div>
                     <div className="col-span-3">
-                      <label className="block mb-1">{t('fileType') || 'File type'}</label>
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileType') || 'File type'}</label>
                       <select
-                        className="block w-full border rounded h-10 px-2"
+                        className="block w-full border rounded h-10 px-2 input-modern"
                         value={att.file_type}
                         onChange={(e) => onChangeAttachment(idx, 'file_type', e.target.value)}
                       >
@@ -401,170 +423,162 @@ export default function SubjectLessonsPage() {
                 ))}
               </div>
 
-              <div className="flex justify-end">
-                <Button disabled={submitting}>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  {t('cancel') || 'Cancel'}
+                </Button>
+                <Button disabled={submitting} className="btn-gradient">
                   {submitting ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle>{t('lessonsList') || 'Lessons'}</CardTitle>
+            <CardTitle className="font-display text-gradient">{t('lessonsList') || 'Lessons'}</CardTitle>
           </CardHeader>
           <CardContent>
-            {lessons.length === 0 ? (
-              <div className="text-sm text-muted-foreground">{t('noData') || 'No lessons yet.'}</div>
+            {/* Filters & Search */}
+            <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="md:col-span-2"></div>
+              <div className="relative">
+                <Input
+                  placeholder={(t('search') as any) || 'Search lessons...'}
+                  value={lessonSearchQuery}
+                  onChange={(e) => setLessonSearchQuery(e.target.value)}
+                  className="input-modern"
+                />
+              </div>
+            </div>
+            {loadingLessons ? (
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('loading') || 'Loading...'}</p>
+              </div>
+            ) : (lessons || []).filter(l => {
+              const q = lessonSearchQuery.trim().toLowerCase();
+              if (!q) return true;
+              return (
+                (l.title || '').toLowerCase().includes(q) ||
+                (l.description || '').toLowerCase().includes(q)
+              );
+            }).length === 0 ? (
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noData') || 'No lessons yet.'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('addLessonToStart') || 'Add a lesson to get started'}</p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {lessons.map((l) => (
-                  <Card key={l.id} className="overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-semibold">{l.title}</CardTitle>
-                        <div className="flex gap-2">
-                          {l.video_url && (
-                            <a href={l.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-sm text-emerald-600 underline">
-                              {t('open') || 'Open'} <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
-                          )}
-                          <Button variant="secondary" size="sm" onClick={() => startEdit(l)}>{t('edit') || 'Edit'}</Button>
-                          <Button variant="destructive" size="sm" onClick={() => removeLesson(l.id)}>{t('delete') || 'Delete'}</Button>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {(lessons || []).filter(l => {
+                  const q = lessonSearchQuery.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    (l.title || '').toLowerCase().includes(q) ||
+                    (l.description || '').toLowerCase().includes(q)
+                  );
+                }).map((l) => {
+                  const atts = attachmentsByLesson[l.id] || [];
+                  const hasVideo = !!l.video_url;
+                  return (
+                    <Card key={l.id} className="card-hover overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-lg font-display font-semibold line-clamp-1">{l.title}</CardTitle>
+                          <div className="flex flex-wrap gap-2">
+                            {hasVideo && (
+                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Video</Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {atts.length} {(t('attachments') as any) || 'Attachments'}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-3">
-                    {editingLessonId === l.id ? (
-                      <div className="space-y-2">
-                        <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                        <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-                        <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} placeholder="https://..." />
-                        <div className="flex gap-2">
-                          <Button onClick={saveEdit}>{t('save') || 'Save'}</Button>
-                          <Button variant="outline" onClick={cancelEdit}>{t('cancel') || 'Cancel'}</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {l.description && (
-                          <div className="text-sm text-muted-foreground mt-1">{l.description}</div>
-                        )}
-                        {(() => {
-                          const embed = getVideoEmbedUrl(l.video_url);
-                          if (embed) {
-                            return (
-                              <div className="mt-3">
-                                <AspectRatio ratio={16 / 9}>
-                                  <iframe
-                                    src={embed}
-                                    className="w-full h-full rounded"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    loading="lazy"
-                                  />
-                                </AspectRatio>
-                              </div>
-                            );
-                          }
-                          if (l.video_url) {
-                            return (
-                              <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
-                                {t('viewVideo') || 'View video'}
-                              </a>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </>
-                    )}
-
-                    <div className="mt-3">
-                      <div className="font-medium mb-2">{t('attachments') || 'Attachments'}</div>
-                      {(attachmentsByLesson[l.id] || []).length === 0 ? (
-                        <div className="text-xs text-muted-foreground">{t('noData') || 'No attachments'}</div>
-                      ) : (
-                        <div className="space-y-3">
-                          {(attachmentsByLesson[l.id] || []).map((a: any) => {
-                            const type = (a.file_type || '').toLowerCase();
-                            const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(a.file_url || '');
-                            const isPdf = type === 'pdf' || /\.pdf(\?|$)/i.test(a.file_url || '');
-                            return (
-                              <div key={a.id} className="border rounded p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    {isImage ? (
-                                      <ImageIcon className="h-4 w-4 text-emerald-600" />
-                                    ) : isPdf ? (
-                                      <FileText className="h-4 w-4 text-red-600" />
-                                    ) : (
-                                      <FileIcon className="h-4 w-4 text-slate-600" />
-                                    )}
-                                    <a href={a.file_url} target="_blank" rel="noreferrer" className="text-sm underline text-blue-600">
-                                      {a.file_name || a.file_url}
-                                    </a>
-                                    <span className="text-xs text-slate-500">({a.file_type})</span>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        {editingLessonId === l.id ? (
+                          <div className="space-y-2">
+                            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="input-modern" />
+                            <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="input-modern" />
+                            <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
+                            <div className="flex gap-2">
+                              <Button onClick={saveEdit} className="btn-gradient">{t('save') || 'Save'}</Button>
+                              <Button variant="outline" onClick={cancelEdit}>{t('cancel') || 'Cancel'}</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {l.description && (
+                              <div className="text-sm text-muted-foreground mt-1 line-clamp-3">{l.description}</div>
+                            )}
+                            {(() => {
+                              const embed = getVideoEmbedUrl(l.video_url);
+                              if (embed) {
+                                return (
+                                  <div className="mt-3">
+                                    <AspectRatio ratio={16 / 9}>
+                                      <iframe
+                                        src={embed}
+                                        className="w-full h-full rounded"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                        loading="lazy"
+                                      />
+                                    </AspectRatio>
                                   </div>
-                                  <Button size="sm" variant="destructive" onClick={() => removeAttachment(a.id)}>
-                                    {t('delete') || 'Delete'}
-                                  </Button>
-                                </div>
-                                {isImage && (
-                                  <div className="rounded overflow-hidden border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={a.file_url} alt={a.file_name || 'image'} className="max-h-48 w-auto object-contain mx-auto" />
-                                  </div>
-                                )}
-                                {isPdf && (
-                                  <div className="rounded overflow-hidden border">
-                                    <iframe
-                                      src={a.file_url}
-                                      title={a.file_name || 'pdf'}
-                                      className="w-full h-64"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="mt-3 grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-8">
-                          <input
-                            type="file"
-                            accept="image/*,.pdf,.ppt,.pptx,.doc,.docx"
-                            onChange={(e) => {
-                              if (!e.target.files || e.target.files.length === 0) return;
-                              const file = e.target.files[0];
-                              const maxBytes = 20 * 1024 * 1024;
-                              if (file.size > maxBytes) {
-                                toast.error('File too large (max 20MB)');
-                                return;
+                                );
                               }
-                              void uploadAttachmentForLesson(l.id, file);
-                            }}
-                            className="block w-full text-sm"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            placeholder={t('fileUrl') || 'File URL'}
-                            value={addUrlByLesson[l.id] || ''}
-                            onChange={(e) => setAddUrlByLesson(prev => ({ ...prev, [l.id]: e.target.value }))}
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-end">
-                          <Button size="sm" onClick={() => addAttachmentUrlForLesson(l.id)} disabled={!!lessonUploadBusy[l.id]}>
-                            {t('add') || 'Add'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                              if (l.video_url) {
+                                return (
+                                  <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
+                                    {t('viewVideo') || 'View video'}
+                                  </a>
+                                );
+                              }
+                              return null;
+                            })()}
+
+                            {/* Attachments preview (first 1-2) */}
+                            {atts.length > 0 && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                {atts.slice(0, 2).map((a: any) => (
+                                  <div key={a.id} className="border rounded p-2 text-sm flex items-center justify-between">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <FileText className="h-4 w-4 text-slate-600" />
+                                      <a href={a.file_url} target="_blank" rel="noreferrer" className="underline text-blue-600 truncate">
+                                        {a.file_name || a.file_url}
+                                      </a>
+                                    </div>
+                                    <Button size="sm" variant="destructive" onClick={() => removeAttachment(a.id)}>
+                                      {t('delete') || 'Delete'}
+                                    </Button>
+                                  </div>
+                                ))}
+                                {atts.length > 2 && (
+                                  <div className="text-xs text-slate-500">+{atts.length - 2} more...</div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Quick actions */}
+                            <div className="flex gap-2 pt-2">
+                              <Button variant="secondary" size="sm" onClick={() => startEdit(l)}>{t('edit') || 'Edit'}</Button>
+                              <Button variant="destructive" size="sm" onClick={() => removeLesson(l.id)}>{t('delete') || 'Delete'}</Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>

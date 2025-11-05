@@ -997,12 +997,21 @@ export async function fetchMyNotifications(limit = 20) {
 }
 
 export async function markNotificationRead(id: string) {
-  return await supabase
+  // Step 1: perform minimal update (no representation) to avoid PostgREST 406 when select is not acceptable
+  const updateRes = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', id);
+
+  if ((updateRes as any)?.error) return updateRes as any;
+
+  // Step 2: fetch the row explicitly (separate SELECT) if needed by callers
+  const fetchRes = await supabase
+    .from('notifications')
     .select('*')
+    .eq('id', id)
     .single();
+  return fetchRes as any;
 }
 
 export async function createNotification(input: { recipient_id?: string | null; class_id?: string | null; role_target?: string | null; title: string; body?: string | null; type?: string | null; link_url?: string | null; }) {

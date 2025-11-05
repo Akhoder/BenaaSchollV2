@@ -240,11 +240,11 @@ export default function TeachersPage() {
           </Button>
         </PageHeader>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Search className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">Search</CardTitle>
+              <CardTitle className="font-display text-gradient">Search</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -252,14 +252,14 @@ export default function TeachersPage() {
               placeholder="Search by name, email or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-11 font-sans"
+              className="h-11 font-sans input-modern"
             />
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="font-display">Teachers ({filtered.length})</CardTitle>
+            <CardTitle className="font-display text-gradient">Teachers ({filtered.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">

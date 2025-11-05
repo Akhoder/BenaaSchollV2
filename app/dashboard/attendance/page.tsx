@@ -438,9 +438,9 @@ export default function AttendancePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
               <Users className="h-5 w-5 text-blue-600" />
               {language === 'ar' ? 'تسجيل حضور الطلاب' : 'Record Student Attendance'}
             </CardTitle>
@@ -494,7 +494,7 @@ export default function AttendancePage() {
                 <label className="text-sm block mb-1">{language === 'ar' ? 'التاريخ' : 'Date'}</label>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-slate-500" />
-                  <Input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
+                  <Input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="input-modern" />
                 </div>
               </div>
               <div className="flex items-end">
@@ -507,19 +507,31 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle>{language === 'ar' ? 'الطلاب' : 'Students'}</CardTitle>
+            <CardTitle className="font-display text-gradient">{language === 'ar' ? 'الطلاب' : 'Students'}</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStudents ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
+              <div className="space-y-2 animate-fade-in">
+                <div className="text-center py-8">
+                  <div className="relative inline-block mb-4">
+                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+                    <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}</p>
+                </div>
               </div>
             ) : students.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{language === 'ar' ? 'لا يوجد طلاب' : 'No students found'}</p>
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Users className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{language === 'ar' ? 'لا يوجد طلاب' : 'No students found'}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {language === 'ar' ? 'لا يوجد طلاب مسجلين في هذا الفصل' : 'No students enrolled in this class'}
+                </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -567,7 +579,7 @@ export default function AttendancePage() {
               </div>
             )}
             <div className="mt-4 flex justify-end">
-              <Button onClick={onSave} disabled={saving || !selectedSubjectId || !selectedClassId}>
+              <Button className="btn-gradient" onClick={onSave} disabled={saving || !selectedSubjectId || !selectedClassId}>
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ' : 'Save')}
               </Button>

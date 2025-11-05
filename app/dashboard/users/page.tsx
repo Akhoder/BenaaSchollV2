@@ -271,7 +271,7 @@ export default function UsersPage() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Total Users
@@ -281,7 +281,7 @@ export default function UsersPage() {
               <div className="text-3xl font-bold font-display">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Admins
@@ -291,7 +291,7 @@ export default function UsersPage() {
               <div className="text-3xl font-bold font-display text-red-600">{stats.admins}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Teachers
@@ -301,7 +301,7 @@ export default function UsersPage() {
               <div className="text-3xl font-bold font-display text-blue-600">{stats.teachers}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Students
@@ -311,7 +311,7 @@ export default function UsersPage() {
               <div className="text-3xl font-bold font-display text-emerald-600">{stats.students}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Supervisors
@@ -324,11 +324,11 @@ export default function UsersPage() {
         </div>
 
         {/* Filters */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle>Filters</CardTitle>
+              <CardTitle className="font-display text-gradient">Filters</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -339,7 +339,7 @@ export default function UsersPage() {
                   placeholder="Search by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-11"
+                  className="pl-10 h-11 input-modern"
                 />
               </div>
               <Select value={roleFilter} onValueChange={setRoleFilter}>

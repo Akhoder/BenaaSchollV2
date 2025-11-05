@@ -197,7 +197,7 @@ export default function AnnouncementsPage() {
         {/* Stats Cards */}
         {(profile.role === 'admin' || stats.myAnnouncements > 0) && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                   Total
@@ -207,7 +207,7 @@ export default function AnnouncementsPage() {
                 <div className="text-3xl font-bold font-display">{stats.total}</div>
               </CardContent>
             </Card>
-            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                   Published
@@ -217,7 +217,7 @@ export default function AnnouncementsPage() {
                 <div className="text-3xl font-bold font-display text-emerald-600">{stats.published}</div>
               </CardContent>
             </Card>
-            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                   Drafts
@@ -228,7 +228,7 @@ export default function AnnouncementsPage() {
               </CardContent>
             </Card>
             {profile.role !== 'student' && (
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-hover glass-strong">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                     My Announcements
@@ -243,9 +243,9 @@ export default function AnnouncementsPage() {
         )}
 
         {/* Search and Filter */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-lg font-display text-gradient">
               <Filter className="h-5 w-5 text-indigo-600" />
               Search & Filter
             </CardTitle>
@@ -259,7 +259,7 @@ export default function AnnouncementsPage() {
                     placeholder="Search announcements..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 font-sans"
+                    className="pl-10 font-sans input-modern"
                   />
                 </div>
               </div>

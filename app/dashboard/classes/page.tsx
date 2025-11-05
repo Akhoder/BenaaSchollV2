@@ -385,9 +385,13 @@ export default function ClassesPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">Loading classes...</p>
+          <div className="text-center animate-fade-in">
+            <div className="relative inline-block">
+              <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+              <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl animate-pulse"></div>
+            </div>
+            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading classes...</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch the data</p>
           </div>
         </div>
       </DashboardLayout>
@@ -440,7 +444,7 @@ export default function ClassesPage() {
               <div className="flex gap-4 justify-center">
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="btn-gradient"
                 >
                   Refresh Page
                 </Button>
@@ -583,11 +587,11 @@ GRANT ALL ON classes TO authenticated;`;
         </div>
 
         {/* Search */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">Search Classes</CardTitle>
+              <CardTitle className="font-display text-gradient">Search Classes</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -597,7 +601,7 @@ GRANT ALL ON classes TO authenticated;`;
                 placeholder="Search by class name, code, or teacher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 font-sans"
+                className="pl-10 h-11 font-sans input-modern"
               />
             </div>
           </CardContent>

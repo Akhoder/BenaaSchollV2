@@ -65,7 +65,14 @@ export default function MyClassesPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <div className="text-center animate-fade-in">
+            <div className="relative inline-block">
+              <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+              <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl animate-pulse"></div>
+            </div>
+            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading your classes...</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch your data</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -87,11 +94,14 @@ export default function MyClassesPage() {
         />
 
         {classes.length === 0 ? (
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardContent className="py-12 text-center">
-              <School className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 font-sans">You are not enrolled in any classes yet.</p>
-              <Button className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" onClick={() => router.push('/dashboard')}>
+          <Card className="card-elegant">
+            <CardContent className="py-12 text-center animate-fade-in">
+              <div className="relative inline-block mb-4">
+                <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Classes Yet</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-sans mb-6">You are not enrolled in any classes yet. Browse available classes to get started!</p>
+              <Button className="btn-gradient mt-4 animate-pulse-glow" onClick={() => router.push('/dashboard')}>
                 Browse Available Classes
               </Button>
             </CardContent>
@@ -101,7 +111,7 @@ export default function MyClassesPage() {
             {classes.map((cls: any) => (
               <Card 
                 key={cls.id} 
-                className="overflow-hidden border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300 group cursor-pointer"
+                className="card-hover overflow-hidden cursor-pointer"
                 onClick={() => router.push(`/dashboard/my-classes/${cls.id}`)}
               >
                 <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">

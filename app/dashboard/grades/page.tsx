@@ -102,7 +102,14 @@ export default function GradesPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <div className="text-center animate-fade-in">
+            <div className="relative inline-block">
+              <Loader2 className="h-16 w-16 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
+              <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl animate-pulse"></div>
+            </div>
+            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading your grades...</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch your data</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -169,16 +176,19 @@ export default function GradesPage() {
 
         {/* ✅ Grades List */}
         {grades.length === 0 ? (
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardContent className="py-12 text-center">
-              <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-500 dark:text-slate-400 font-sans">No graded assignments yet</p>
+          <Card className="card-elegant">
+            <CardContent className="py-12 text-center animate-fade-in">
+              <div className="relative inline-block mb-4">
+                <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Grades Yet</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-sans">You don't have any graded assignments yet. Submit your work to see grades here!</p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-elegant">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display">
+              <CardTitle className="flex items-center gap-2 font-display text-gradient">
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
                 Grade Details
               </CardTitle>

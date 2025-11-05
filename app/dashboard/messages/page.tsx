@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, ExternalLink } from 'lucide-react';
+import { Bell, ExternalLink, Loader2 } from 'lucide-react';
 import { fetchMyNotifications, markNotificationRead, createNotification, supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,14 +26,16 @@ export default function MessagesPage() {
   const [form, setForm] = useState({ title: '', body: '', link_url: '', class_id: '' });
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!profile) { router.push('/login'); return; }
-      loadData().catch(() => {});
-      if (profile && ['admin','teacher','supervisor'].includes(profile.role)) {
-        loadClasses().catch(() => {});
-      }
+    if (authLoading) return;
+    if (!profile) {
+      router.push('/login');
+      return;
     }
-  }, [authLoading, profile]);
+    loadData().catch(() => {});
+    if (['admin','teacher','supervisor'].includes(profile.role)) {
+      loadClasses().catch(() => {});
+    }
+  }, [authLoading, profile, router]);
 
   const loadData = async () => {
     try {
@@ -96,23 +98,23 @@ export default function MessagesPage() {
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         {['admin','teacher','supervisor'].includes(profile.role) && (
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-elegant">
             <CardHeader>
-              <CardTitle>{language === 'ar' ? 'إرسال إشعار' : 'Send Notification'}</CardTitle>
+              <CardTitle className="font-display text-gradient">{language === 'ar' ? 'إرسال إشعار' : 'Send Notification'}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <Label className="text-sm">{language === 'ar' ? 'العنوان' : 'Title'}</Label>
-                  <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+                  <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1 input-modern" />
                 </div>
                 <div className="md:col-span-2">
                   <Label className="text-sm">{language === 'ar' ? 'المحتوى' : 'Body'}</Label>
-                  <Input value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} className="mt-1" />
+                  <Input value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} className="mt-1 input-modern" />
                 </div>
                 <div>
                   <Label className="text-sm">Link</Label>
-                  <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="https://..." className="mt-1" />
+                  <Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} placeholder="https://..." className="mt-1 input-modern" />
                 </div>
                 <div>
                   <Label className="text-sm">{language === 'ar' ? 'الفصل (اختياري)' : 'Class (optional)'}</Label>
@@ -128,27 +130,39 @@ export default function MessagesPage() {
                 </div>
               </div>
               <div className="mt-3 flex justify-end">
-                <Button onClick={onSend} disabled={sending || !form.title.trim()}>{sending ? (language === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (language === 'ar' ? 'إرسال' : 'Send')}</Button>
+                <Button className="btn-gradient" onClick={onSend} disabled={sending || !form.title.trim()}>{sending ? (language === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (language === 'ar' ? 'إرسال' : 'Send')}</Button>
               </div>
             </CardContent>
           </Card>
         )}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
               <Bell className="h-5 w-5 text-amber-600" />
               {language === 'ar' ? 'الرسائل والتنبيهات' : 'Messages & Alerts'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+              <div className="space-y-2 animate-fade-in">
+                <div className="text-center py-8">
+                  <div className="relative inline-block mb-4">
+                    <Loader2 className="h-12 w-12 animate-spin text-amber-600 mx-auto animate-pulse-glow" />
+                    <div className="absolute inset-0 bg-amber-200/20 rounded-full blur-xl"></div>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{language === 'ar' ? 'جاري تحميل الرسائل...' : 'Loading messages...'}</p>
+                </div>
               </div>
             ) : items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{language === 'ar' ? 'لا توجد رسائل' : 'No messages yet'}</p>
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Bell className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{language === 'ar' ? 'لا توجد رسائل' : 'No messages yet'}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {language === 'ar' ? 'ستظهر الرسائل والإشعارات هنا عند وصولها' : 'Messages and notifications will appear here when they arrive'}
+                </p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {items.map((n) => (

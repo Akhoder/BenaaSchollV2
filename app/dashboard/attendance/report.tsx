@@ -353,9 +353,9 @@ export default function AttendanceReportPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
               <Users className="h-5 w-5 text-blue-600" />
               {language === 'ar' ? 'تقرير الحضور' : 'Attendance Report'}
             </CardTitle>
@@ -409,18 +409,18 @@ export default function AttendanceReportPage() {
                 <label className="text-sm block mb-1">{language === 'ar' ? 'من تاريخ' : 'From'}</label>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-slate-500" />
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-modern" />
                 </div>
               </div>
               <div>
                 <label className="text-sm block mb-1">{language === 'ar' ? 'إلى تاريخ' : 'To'}</label>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-slate-500" />
-                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-modern" />
                 </div>
               </div>
               <div className="flex items-end">
-                <Button variant="outline" onClick={exportCSV} disabled={rows.length === 0}>
+                <Button className="btn-gradient" onClick={exportCSV} disabled={rows.length === 0}>
                   <Download className="h-4 w-4 mr-2" /> CSV
                 </Button>
               </div>
@@ -428,9 +428,9 @@ export default function AttendanceReportPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle>{language === 'ar' ? 'الملخص' : 'Summary'}</CardTitle>
+            <CardTitle className="font-display text-gradient">{language === 'ar' ? 'الملخص' : 'Summary'}</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingData ? (

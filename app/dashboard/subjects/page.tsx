@@ -248,9 +248,13 @@ export default function SubjectsPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">Loading subjects...</p>
+          <div className="text-center animate-fade-in">
+            <div className="relative inline-block">
+              <Loader2 className="h-16 w-16 animate-spin text-amber-600 mx-auto animate-pulse-glow" />
+              <div className="absolute inset-0 bg-amber-200/20 rounded-full blur-xl animate-pulse"></div>
+            </div>
+            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading subjects...</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch the data</p>
           </div>
         </div>
       </DashboardLayout>
@@ -281,11 +285,11 @@ export default function SubjectsPage() {
           )}
         </PageHeader>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Search className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">Search Subjects</CardTitle>
+              <CardTitle className="font-display text-gradient">Search Subjects</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -295,16 +299,16 @@ export default function SubjectsPage() {
                 placeholder="Search by subject, class or teacher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 font-sans"
+                className="pl-10 h-11 font-sans input-modern"
               />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
+              <CardTitle className="flex items-center gap-2 font-display text-gradient">
                 <BookOpen className="h-5 w-5 text-indigo-600" />
                 Subjects ({filtered.length})
               </CardTitle>
@@ -312,9 +316,14 @@ export default function SubjectsPage() {
           </CardHeader>
           <CardContent>
             {filtered.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600" />
-                <p className="mt-4 text-slate-500 dark:text-slate-400 font-sans">No subjects found</p>
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No subjects found</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {search ? 'Try adjusting your search criteria' : 'No subjects have been added yet'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -515,7 +524,7 @@ export default function SubjectsPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
                 Cancel
               </Button>
-              <Button onClick={onSave} disabled={isSaving || !form.subject_name || !form.class_id} className="font-sans">
+              <Button className="btn-gradient font-sans" onClick={onSave} disabled={isSaving || !form.subject_name || !form.class_id}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

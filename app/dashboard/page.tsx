@@ -32,7 +32,7 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
-  AlertCircle, Bell 
+  AlertCircle, Bell, Loader2 
 } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
 import { 
@@ -129,6 +129,10 @@ export default function DashboardPage() {
   const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
   const [classProgress, setClassProgress] = useState<ClassProgress>({});
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  // Teacher-specific stats
+  const [teacherClassCount, setTeacherClassCount] = useState<number>(0);
+  const [teacherStudentCount, setTeacherStudentCount] = useState<number>(0);
+  const [teacherClasses, setTeacherClasses] = useState<any[]>([]);
   
   // Loading states
   const [loadingStudentData, setLoadingStudentData] = useState(false);
@@ -136,6 +140,7 @@ export default function DashboardPage() {
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [loadingTeacherData, setLoadingTeacherData] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
   // ============================================
@@ -165,6 +170,12 @@ export default function DashboardPage() {
         void loadUpcomingAssignments();
       }
       
+      // تحميل بيانات المعلم
+      if (profile.role === 'teacher') {
+        void loadTeacherData();
+        void loadTeacherSchedule();
+      }
+
       // تحميل النشاط الحديث للمدير
       if (profile.role === 'admin') {
         void loadRecentActivity();
@@ -256,20 +267,11 @@ export default function DashboardPage() {
           setStats(statsData);
         }
       } else if (profile.role === 'teacher') {
-        // استعلامات المعلم
-        const [classes, students] = await Promise.all([
-          supabase.from('classes').select('id', { count: 'exact' }).eq('teacher_id', profile.id),
-          supabase
-            .from('student_enrollments')
-            .select('student_id', { count: 'exact' })
-            .in('class_id',
-              (await supabase.from('classes').select('id').eq('teacher_id', profile.id)).data?.map(c => c.id) || []
-            ),
-        ]);
-
+        // إحصائيات المعلم يتم جلبها من loadTeacherData
+        // لا حاجة لاستعلامات إضافية هنا
         setStats({
-          totalClasses: classes.count || 0,
-          totalStudents: students.count || 0,
+          totalClasses: 0,
+          totalStudents: 0,
           totalTeachers: 0,
           totalSubjects: 0,
         });
@@ -598,6 +600,128 @@ export default function DashboardPage() {
       toast.error(language === 'ar' ? 'فشل تحميل إحصائيات الطالب' : 'Failed to load student statistics');
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  /**
+   * جلب بيانات المعلم (الفصول والطلاب)
+   * يجلب الفصول التي يدرسها المعلم من class_subjects
+   */
+  const loadTeacherData = async () => {
+    if (!profile || profile.role !== 'teacher') return;
+    
+    try {
+      setLoadingTeacherData(true);
+      
+      // جلب الفصول التي يدرسها المعلم من class_subjects
+      const { data: classSubjects, error: csError } = await supabase
+        .from('class_subjects')
+        .select('class_id, subject_name')
+        .eq('teacher_id', profile.id);
+      
+      if (csError) {
+        console.error('Error fetching class subjects:', csError);
+        toast.error(language === 'ar' ? 'فشل تحميل المواد' : 'Failed to load subjects');
+        return;
+      }
+      
+      const classIds = Array.from(new Set((classSubjects || []).map((x: any) => x.class_id).filter(Boolean)));
+      setTeacherClassCount(classIds.length);
+      
+      if (classIds.length === 0) {
+        setTeacherClasses([]);
+        setTeacherStudentCount(0);
+        return;
+      }
+      
+      // جلب تفاصيل الفصول
+      const { data: classesData, error: classesError } = await supabase
+        .from('classes')
+        .select('id, class_name, level, goals, image_url')
+        .in('id', classIds);
+      
+      if (classesError) {
+        console.error('Error fetching classes:', classesError);
+        toast.error(language === 'ar' ? 'فشل تحميل الفصول' : 'Failed to load classes');
+        return;
+      }
+      
+      // إضافة عدد الطلاب لكل فصل
+      const { data: enrollments } = await supabase
+        .from('student_enrollments')
+        .select('class_id')
+        .in('class_id', classIds)
+        .eq('status', 'active');
+      
+      const enrollmentCounts = (enrollments || []).reduce((acc: Record<string, number>, row: any) => {
+        acc[row.class_id] = (acc[row.class_id] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const classesWithCounts = (classesData || []).map((cls: any) => ({
+        ...cls,
+        student_count: enrollmentCounts[cls.id] || 0,
+        subjects: (classSubjects || []).filter((cs: any) => cs.class_id === cls.id).map((cs: any) => cs.subject_name)
+      }));
+      
+      setTeacherClasses(classesWithCounts);
+      
+      // حساب إجمالي الطلاب
+      const totalStudents = Object.values(enrollmentCounts).reduce((sum: number, count: any) => sum + count, 0);
+      setTeacherStudentCount(totalStudents);
+    } catch (e) {
+      console.error('Error loading teacher data:', e);
+      toast.error(language === 'ar' ? 'فشل تحميل بيانات المعلم' : 'Failed to load teacher data');
+    } finally {
+      setLoadingTeacherData(false);
+    }
+  };
+
+  /**
+   * جلب جدول المعلم (الأحداث اليومية والقادمة)
+   * يستخدم RPC function للحصول على الأحداث
+   */
+  const loadTeacherSchedule = async () => {
+    if (!profile || profile.role !== 'teacher') return;
+    
+    try {
+      setLoadingSchedule(true);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() + 7);
+      
+      const { data, error } = await supabase.rpc('get_user_events', {
+        p_start: today.toISOString(),
+        p_end: endOfWeek.toISOString()
+      });
+      
+      if (error) {
+        console.error('Error fetching schedule:', error);
+        toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+        return;
+      }
+      
+      // تصفية الأحداث اليومية
+      const todayItems = (data || []).filter((e: any) => {
+        const d = new Date(e.start_at);
+        return d.toDateString() === today.toDateString();
+      });
+      
+      // تصفية الأحداث القادمة
+      const upcoming = (data || []).filter((e: any) => {
+        const d = new Date(e.start_at);
+        return d > today && d <= endOfWeek;
+      }).slice(0, 5);
+      
+      setTodayEvents(todayItems || []);
+      setUpcomingEvents(upcoming || []);
+    } catch (e) {
+      console.error('Error loading schedule:', e);
+      toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+    } finally {
+      setLoadingSchedule(false);
     }
   };
 
@@ -1034,16 +1158,24 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   {loadingSchedule ? (
-                    <div className="text-center py-8">
-                      <Skeleton className="h-12 w-12 mx-auto mb-2" />
+                    <div className="text-center py-8 animate-fade-in">
+                      <div className="relative inline-block mb-4">
+                        <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+                        <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                      </div>
                       <Skeleton className="h-4 w-32 mx-auto mb-2" />
                       <Skeleton className="h-4 w-24 mx-auto" />
                     </div>
                   ) : todayEvents.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm font-sans">
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400 animate-fade-in">
+                      <div className="relative inline-block mb-4">
+                        <Calendar className="h-16 w-16 mx-auto opacity-50 animate-float" />
+                      </div>
+                      <p className="text-sm font-semibold font-display mb-1">
                         {language === 'ar' ? 'لا توجد أحداث اليوم' : 'No events scheduled for today'}
+                      </p>
+                      <p className="text-xs font-sans opacity-75">
+                        {language === 'ar' ? 'لا توجد أحداث مجدولة لهذا اليوم' : 'You have a free day today!'}
                       </p>
                     </div>
                   ) : (
@@ -1190,16 +1322,19 @@ export default function DashboardPage() {
 
             {/* Upcoming Assignments - الواجبات القادمة */}
             {loadingAssignments ? (
-              <div className="text-center py-8">
-                <Skeleton className="h-12 w-12 mx-auto mb-2" />
+              <div className="text-center py-8 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-amber-600 mx-auto animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-amber-200/20 rounded-full blur-xl"></div>
+                </div>
                 <Skeleton className="h-4 w-32 mx-auto mb-2" />
                 <Skeleton className="h-4 w-24 mx-auto" />
               </div>
             ) : upcomingAssignments.length > 0 && (
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-elegant">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 font-display">
+                    <CardTitle className="flex items-center gap-2 font-display text-gradient">
                       <FileText className="h-5 w-5 text-amber-600" />
                       {language === 'ar' ? 'الواجبات القادمة' : 'Upcoming Assignments'}
                     </CardTitle>
@@ -1268,7 +1403,7 @@ export default function DashboardPage() {
                             </div>
                             <Button 
                               size="sm" 
-                              variant="outline" 
+                              className="btn-gradient transition-all duration-300 hover:scale-105"
                               onClick={() => router.push(`/dashboard/assignments/${assignment.id}/submit`)}
                             >
                               {assignment.submission 
@@ -1287,29 +1422,37 @@ export default function DashboardPage() {
 
             {/* My Enrolled Classes - فصولي المسجلة */}
             {loadingStudentData ? (
-              <div className="text-center py-8">
-                <Skeleton className="h-12 w-12 mx-auto mb-2" />
+              <div className="text-center py-8 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                </div>
                 <Skeleton className="h-4 w-32 mx-auto mb-2" />
                 <Skeleton className="h-4 w-24 mx-auto" />
               </div>
             ) : (
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-elegant">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display">
+                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
                     <School className="h-5 w-5 text-blue-600" />
                     {language === 'ar' ? 'فصولي المسجلة' : 'My Enrolled Classes'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {Object.keys(myClassEnrollments).length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <School className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm font-sans mb-4">
-                        {language === 'ar' ? 'لم تسجل في أي فصل بعد' : 'You have not enrolled in any classes yet'}
+                    <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
+                      <div className="relative inline-block mb-4">
+                        <School className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                        {language === 'ar' ? 'لم تسجل في أي فصل بعد' : 'No Enrolled Classes'}
+                      </h3>
+                      <p className="text-sm font-sans mb-6">
+                        {language === 'ar' ? 'استعرض الفصول المتاحة وابدأ التعلم!' : 'Browse available classes and start learning!'}
                       </p>
                       <Button 
+                        className="btn-gradient animate-pulse-glow"
                         onClick={() => router.push('/dashboard/classes')} 
-                        variant="outline"
                       >
                         {language === 'ar' ? 'استعراض الفصول المتاحة' : 'Browse Available Classes'}
                       </Button>
@@ -1321,7 +1464,7 @@ export default function DashboardPage() {
                         .map((c: any) => (
                           <Card 
                             key={c.id} 
-                            className="overflow-hidden border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all duration-300 group cursor-pointer"
+                            className="card-hover overflow-hidden cursor-pointer"
                             onClick={() => router.push(`/dashboard/my-classes/${c.id}`)}
                           >
                             <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
@@ -1382,25 +1525,33 @@ export default function DashboardPage() {
 
             {/* Available Classes - الفصول المتاحة */}
             {loadingStudentData ? (
-              <div className="text-center py-8">
-                <Skeleton className="h-12 w-12 mx-auto mb-2" />
+              <div className="text-center py-8 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
+                </div>
                 <Skeleton className="h-4 w-32 mx-auto mb-2" />
                 <Skeleton className="h-4 w-24 mx-auto" />
               </div>
             ) : (
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <Card className="card-elegant">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display">
+                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
                     <BookOpen className="h-5 w-5 text-emerald-600" />
                     {language === 'ar' ? 'الفصول المتاحة للتسجيل' : 'Available Classes'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
+                      <div className="relative inline-block mb-4">
+                        <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                        {language === 'ar' ? 'لا توجد فصول متاحة' : 'No Available Classes'}
+                      </h3>
                       <p className="text-sm font-sans">
-                        {language === 'ar' ? 'لا توجد فصول متاحة حاليًا' : 'No available classes at the moment'}
+                        {language === 'ar' ? 'لا توجد فصول متاحة للتسجيل حاليًا' : 'No classes available for enrollment at the moment'}
                       </p>
                     </div>
                   ) : (
@@ -1434,7 +1585,7 @@ export default function DashboardPage() {
                                 </p>
                               )}
                               <Button
-                                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                                className="btn-gradient w-full transition-all duration-300 hover:scale-105"
                                 disabled={!!enrollingIds[c.id]}
                                 onClick={async () => {
                                   try {
@@ -1529,17 +1680,18 @@ export default function DashboardPage() {
         {/* Teacher Dashboard - لوحة المعلم */}
         {profile.role === 'teacher' && (
           <>
+            {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <StatCard
                 title={t('myClasses')}
-                value={stats.totalClasses}
+                value={teacherClassCount}
                 icon={School}
                 description={language === 'ar' ? 'الفصول التي تدرسها' : 'Classes you teach'}
                 gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
                 title={t('myStudents')}
-                value={stats.totalStudents}
+                value={teacherStudentCount}
                 icon={Users}
                 description={language === 'ar' ? 'إجمالي الطلاب' : 'Total students'}
                 gradient="from-purple-500 to-pink-500"
@@ -1548,33 +1700,189 @@ export default function DashboardPage() {
                 title={t('schedule')}
                 value={todayEvents.length}
                 icon={Calendar}
-                description={language === 'ar' ? 'فصول هذا الأسبوع' : 'Classes this week'}
+                description={language === 'ar' ? 'فصول اليوم' : 'Classes today'}
                 gradient="from-amber-500 to-orange-500"
               />
             </div>
 
-            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  {t('myClasses')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats.totalClasses === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {language === 'ar' ? 'لم يتم تعيين أي فصول بعد' : 'No classes assigned yet'}
-                  </p>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {language === 'ar' 
-                      ? `لديك ${stats.totalClasses} ${stats.totalClasses === 1 ? 'فصل' : 'فصول'}` 
-                      : `You have ${stats.totalClasses} ${stats.totalClasses === 1 ? 'class' : 'classes'}`
-                    }
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            {/* Today's Schedule */}
+            {loadingSchedule ? (
+              <Card className="card-elegant">
+                <CardHeader>
+                  <CardTitle className="font-display text-gradient">
+                    {language === 'ar' ? 'جدول اليوم' : 'Today\'s Schedule'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 animate-fade-in">
+                    <div className="relative inline-block mb-4">
+                      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+                      <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                      {language === 'ar' ? 'جاري تحميل الجدول...' : 'Loading schedule...'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : todayEvents.length > 0 && (
+              <Card className="card-elegant">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      {language === 'ar' ? 'جدول اليوم' : 'Today\'s Schedule'}
+                    </CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => router.push('/dashboard/schedule')} 
+                      className="text-sm"
+                    >
+                      {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {todayEvents.map((e: ScheduleEvent) => (
+                      <div 
+                        key={e.id} 
+                        className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {new Date(e.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                                {new Date(e.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
+                            <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+                              {e.room && <span>📍 {e.room}</span>}
+                              {e.mode === 'online' && (
+                                <span className="flex items-center gap-1">
+                                  <Video className="h-3 w-3" /> 
+                                  {language === 'ar' ? 'أونلاين' : 'Online'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {e.zoom_url && (
+                            <Button 
+                              size="sm" 
+                              className="btn-gradient transition-all duration-300 hover:scale-105"
+                              onClick={() => window.open(e.zoom_url, '_blank')}
+                            >
+                              <Video className="h-3 w-3 mr-1" /> 
+                              {language === 'ar' ? 'انضم' : 'Join'}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My Classes */}
+            {loadingTeacherData ? (
+              <Card className="card-elegant">
+                <CardHeader>
+                  <CardTitle className="font-display text-gradient">{t('myClasses')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 animate-fade-in">
+                    <div className="relative inline-block mb-4">
+                      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
+                      <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                      {language === 'ar' ? 'جاري تحميل الفصول...' : 'Loading classes...'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="card-elegant">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                    <School className="h-5 w-5 text-blue-600" />
+                    {t('myClasses')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {teacherClasses.length === 0 ? (
+                    <div className="text-center py-12 animate-fade-in">
+                      <div className="relative inline-block mb-4">
+                        <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                        {language === 'ar' ? 'لا توجد فصول' : 'No Classes'}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                        {language === 'ar' ? 'لم يتم تعيين أي فصول لك بعد' : 'No classes have been assigned to you yet'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {teacherClasses.map((cls: any) => (
+                        <Card 
+                          key={cls.id} 
+                          className="card-hover overflow-hidden cursor-pointer"
+                          onClick={() => router.push(`/dashboard/classes/${cls.id}`)}
+                        >
+                          <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
+                            <div className="flex items-start gap-4">
+                              <div className="relative flex-shrink-0">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+                                {cls.image_url ? (
+                                  <img 
+                                    src={cls.image_url} 
+                                    alt={cls.class_name} 
+                                    className="w-16 h-16 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900" 
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
+                                    <School className="h-8 w-8 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0 pt-1">
+                                <CardTitle className="text-lg font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {cls.class_name}
+                                </CardTitle>
+                                <div className="space-y-1">
+                                  {cls.level && (
+                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-xs">
+                                      {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
+                                    </Badge>
+                                  )}
+                                  <div className="flex items-center justify-between mt-2">
+                                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 text-xs">
+                                      {cls.student_count} {language === 'ar' ? 'طالب' : 'students'}
+                                    </Badge>
+                                    {cls.subjects && cls.subjects.length > 0 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {cls.subjects.length} {language === 'ar' ? 'مادة' : 'subjects'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
 
