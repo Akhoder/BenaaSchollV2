@@ -69,6 +69,27 @@ export interface SubjectProgressStats {
   overall_progress: number;
 }
 
+export type CertificateStatus = 'draft' | 'issued' | 'published';
+export type CertificateGrade = 'A' | 'B' | 'C' | 'D' | 'F' | 'ممتاز' | 'جيد جداً' | 'جيد' | 'مقبول' | 'راسب';
+
+export interface Certificate {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  teacher_id?: string | null;
+  final_score: number;
+  grade: CertificateGrade;
+  status: CertificateStatus;
+  auto_issued: boolean;
+  certificate_number: string;
+  completion_date: string;
+  issued_by?: string | null;
+  issued_at?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SubjectRow {
   id: string;
   class_id: string;
@@ -1369,4 +1390,126 @@ export async function replaceOptions(questionId: string, options: Array<{ text: 
   await supabase.from('quiz_options').delete().eq('question_id', questionId);
   const rows = options.map(o => ({ question_id: questionId, text: o.text, is_correct: !!o.is_correct, order_index: o.order_index ?? 0 }));
   return await supabase.from('quiz_options').insert(rows).select('*');
+}
+
+// ============================================
+// CERTIFICATE FUNCTIONS
+// ============================================
+
+export async function checkCertificateEligibility(studentId: string, subjectId: string) {
+  return await supabase.rpc('check_certificate_eligibility', {
+    p_student_id: studentId,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function autoIssueCertificateIfEligible(studentId: string, subjectId: string) {
+  return await supabase.rpc('auto_issue_certificate_if_eligible', {
+    p_student_id: studentId,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function fetchCertificatesForSubject(subjectId: string) {
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchCertificatesForStudent(studentId?: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = studentId || userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('student_id', uid)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchCertificateById(certificateId: string) {
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('id', certificateId)
+    .single();
+}
+
+export async function updateCertificateStatus(certificateId: string, status: CertificateStatus, issuedBy?: string) {
+  const updates: any = { status };
+  
+  if (status === 'issued' && !issuedBy) {
+    const { data: userRes } = await supabase.auth.getUser();
+    updates.issued_by = userRes?.user?.id;
+    updates.issued_at = new Date().toISOString();
+  }
+  
+  if (status === 'published') {
+    updates.published_at = new Date().toISOString();
+    if (!updates.issued_by && !issuedBy) {
+      const { data: userRes } = await supabase.auth.getUser();
+      updates.issued_by = userRes?.user?.id;
+    }
+    if (!updates.issued_at) {
+      updates.issued_at = new Date().toISOString();
+    }
+  }
+  
+  return await supabase
+    .from('certificates')
+    .update(updates)
+    .eq('id', certificateId)
+    .select('*')
+    .single();
+}
+
+export async function createCertificateManually(
+  studentId: string,
+  subjectId: string,
+  finalScore: number,
+  grade: CertificateGrade
+) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  
+  // Get teacher_id from subject
+  const { data: subject } = await supabase
+    .from('class_subjects')
+    .select('teacher_id')
+    .eq('id', subjectId)
+    .single();
+  
+  // Generate certificate number
+  const certNumber = `CERT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+  
+  return await supabase
+    .from('certificates')
+    .insert([{
+      student_id: studentId,
+      subject_id: subjectId,
+      teacher_id: subject?.teacher_id || null,
+      final_score: finalScore,
+      grade: grade,
+      status: 'draft',
+      auto_issued: false,
+      certificate_number: certNumber,
+      completion_date: new Date().toISOString().split('T')[0],
+      issued_by: userRes.user.id,
+      issued_at: new Date().toISOString(),
+    }])
+    .select('*')
+    .single();
+}
+
+export async function deleteCertificate(certificateId: string) {
+  return await supabase
+    .from('certificates')
+    .delete()
+    .eq('id', certificateId);
 }

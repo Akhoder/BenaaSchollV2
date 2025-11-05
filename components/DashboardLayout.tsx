@@ -18,7 +18,8 @@ import {
   LogOut,
   Menu,
   UserCircle,
-  MessageSquare
+  MessageSquare,
+  Award
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: 'My Classes', href: '/dashboard/my-classes', icon: School, roles: ['student'] },
     { name: 'My Assignments', href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
+    { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
     { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
@@ -46,6 +48,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin', 'teacher', 'supervisor'] },
     { name: language === 'ar' ? 'المسابقات' : 'Quizzes', href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
+    { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher', 'student'] },
     { name: language === 'ar' ? 'الحضور' : 'Attendance', href: '/dashboard/attendance', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },

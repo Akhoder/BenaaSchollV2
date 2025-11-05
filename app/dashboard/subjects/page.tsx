@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, Users, FileText } from 'lucide-react';
+import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, Users, FileText, Award } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -387,6 +387,9 @@ export default function SubjectsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => router.push(`/dashboard/subjects/${s.id}/assignments`)}>
                                 <FileText className="mr-2 h-4 w-4" /> Assignments
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/dashboard/subjects/${s.id}/certificates`)}>
+                                <Award className="mr-2 h-4 w-4" /> Certificates
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
