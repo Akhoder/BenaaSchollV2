@@ -14,12 +14,259 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import * as api from '@/lib/supabase';
 import type { AttachmentType, Lesson } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink, Loader2, Calendar, GripVertical } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { LessonStatus } from '@/lib/supabase';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface AttachmentDraft {
   file_url: string;
   file_name?: string;
   file_type: AttachmentType;
+}
+
+interface SortableLessonProps {
+  lesson: Lesson;
+  attachments: any[];
+  editingLessonId: string | null;
+  editTitle: string;
+  editDescription: string;
+  editVideoUrl: string;
+  imageErrors: Set<string>;
+  onEditStart: (lesson: Lesson) => void;
+  onEditTitle: (value: string) => void;
+  onEditDescription: (value: string) => void;
+  onEditVideoUrl: (value: string) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onDelete: (id: string) => void;
+  onUpdateStatus: (id: string, status: LessonStatus) => void;
+  onRemoveAttachment: (id: string) => void;
+  getStatusBadge: (status?: LessonStatus) => JSX.Element;
+  getVideoEmbedUrl: (url?: string | null) => string | null;
+  t: (key: string) => string;
+}
+
+function SortableLesson({
+  lesson: l,
+  attachments: atts,
+  editingLessonId,
+  editTitle,
+  editDescription,
+  editVideoUrl,
+  imageErrors,
+  onEditStart,
+  onEditTitle,
+  onEditDescription,
+  onEditVideoUrl,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+  onUpdateStatus,
+  onRemoveAttachment,
+  getStatusBadge,
+  getVideoEmbedUrl,
+  t,
+}: SortableLessonProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: l.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const hasVideo = !!l.video_url;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className="card-hover overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <button
+                {...attributes}
+                {...listeners}
+                className="mt-1 p-1 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label="Drag handle"
+              >
+                <GripVertical className="h-5 w-5" />
+              </button>
+              <CardTitle className="text-lg font-display font-semibold line-clamp-1 flex-1">{l.title}</CardTitle>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getStatusBadge(l.status)}
+              {hasVideo && (
+                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Video</Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                {atts.length} {(t('attachments') as any) || 'Attachments'}
+              </Badge>
+            </div>
+          </div>
+          {/* Status selector */}
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-slate-600 dark:text-slate-400">{(t('status') as any) || 'Status'}:</span>
+            <Select
+              value={l.status || 'draft'}
+              onValueChange={(value) => onUpdateStatus(l.id, value as LessonStatus)}
+            >
+              <SelectTrigger className="h-8 w-32 text-xs input-modern">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">{t('draft') || 'Draft'}</SelectItem>
+                <SelectItem value="published">{t('published') || 'Published'}</SelectItem>
+                <SelectItem value="scheduled">{t('scheduled') || 'Scheduled'}</SelectItem>
+              </SelectContent>
+            </Select>
+            {l.status === 'scheduled' && l.scheduled_at && (
+              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(l.scheduled_at).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {editingLessonId === l.id ? (
+            <div className="space-y-2">
+              <Input value={editTitle} onChange={(e) => onEditTitle(e.target.value)} className="input-modern" />
+              <Textarea value={editDescription} onChange={(e) => onEditDescription(e.target.value)} className="input-modern" />
+              <Input value={editVideoUrl} onChange={(e) => onEditVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
+              <div className="flex gap-2">
+                <Button onClick={onSaveEdit} className="btn-gradient">{t('save') || 'Save'}</Button>
+                <Button variant="outline" onClick={onCancelEdit}>{t('cancel') || 'Cancel'}</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {l.description && (
+                <div className="text-sm text-muted-foreground mt-1 line-clamp-3">{l.description}</div>
+              )}
+              {(() => {
+                const embed = getVideoEmbedUrl(l.video_url);
+                if (embed) {
+                  return (
+                    <div className="mt-3">
+                      <AspectRatio ratio={16 / 9}>
+                        <iframe
+                          src={embed}
+                          className="w-full h-full rounded"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          loading="lazy"
+                        />
+                      </AspectRatio>
+                    </div>
+                  );
+                }
+                if (l.video_url) {
+                  return (
+                    <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
+                      {t('viewVideo') || 'View video'}
+                    </a>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Attachments preview */}
+              {atts.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {atts.slice(0, 4).map((a: any) => {
+                      const type = (a.file_type || '').toLowerCase();
+                      const fileUrl = a.file_url || '';
+                      const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(fileUrl);
+                      const isPdf = type === 'pdf' || /\.pdf(\?|$)/i.test(fileUrl);
+                      
+                      return (
+                        <div key={a.id} className="border rounded p-2 text-xs overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          {isImage ? (
+                            <div className="space-y-1">
+                              <div className="w-full h-16 bg-slate-100 dark:bg-slate-800 rounded border overflow-hidden relative flex items-center justify-center">
+                                {imageErrors.has(a.id || fileUrl) ? (
+                                  <ImageIcon className="h-6 w-6 text-slate-400" />
+                                ) : (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img 
+                                    src={fileUrl} 
+                                    alt={a.file_name || 'attachment'} 
+                                    className="w-full h-full object-cover"
+                                    onError={() => onRemoveAttachment(a.id)}
+                                  />
+                                )}
+                              </div>
+                              <a 
+                                href={fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="block truncate text-blue-600 hover:underline"
+                                title={a.file_name || fileUrl}
+                              >
+                                {a.file_name || 'Image'}
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-center h-16 bg-slate-100 dark:bg-slate-800 rounded border">
+                                {isPdf ? (
+                                  <FileText className="h-6 w-6 text-red-600" />
+                                ) : (
+                                  <FileIcon className="h-6 w-6 text-slate-600" />
+                                )}
+                              </div>
+                              <a 
+                                href={fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="block truncate text-blue-600 hover:underline"
+                                title={a.file_name || fileUrl}
+                              >
+                                {a.file_name || fileUrl}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {atts.length > 4 && (
+                    <div className="text-xs text-slate-500 text-center pt-1">
+                      +{atts.length - 4} {(t('more') as any) || 'more'}...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Quick actions */}
+              <div className="flex gap-2 pt-2">
+                <Button variant="secondary" size="sm" onClick={() => onEditStart(l)}>{t('edit') || 'Edit'}</Button>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(l.id)}>{t('delete') || 'Delete'}</Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function SubjectLessonsPage() {
@@ -38,6 +285,8 @@ export default function SubjectLessonsPage() {
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [attachmentsByLesson, setAttachmentsByLesson] = useState<Record<string, AttachmentDraft[] & any[]>>({});
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [filterHasVideo, setFilterHasVideo] = useState<'all' | 'with' | 'without'>('all');
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -46,6 +295,7 @@ export default function SubjectLessonsPage() {
   const [lessonUploadBusy, setLessonUploadBusy] = useState<Record<string, boolean>>({});
   const [addUrlByLesson, setAddUrlByLesson] = useState<Record<string, string>>({});
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -59,26 +309,32 @@ export default function SubjectLessonsPage() {
     }
   }, [subjectId]);
 
+  // Debounce search query for smoother typing
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(lessonSearchQuery.trim().toLowerCase()), 300);
+    return () => clearTimeout(id);
+  }, [lessonSearchQuery]);
+
   const loadLessons = async () => {
     try {
       setLoadingLessons(true);
-      const { data, error } = await api.fetchLessonsBySubject(subjectId);
-      if (error) {
-        console.error(error);
-        toast.error('Error loading lessons');
-        return;
-      }
-      const list = (data || []) as Lesson[];
-      setLessons(list);
-      const ids = list.map(l => l.id);
+    const { data, error } = await api.fetchLessonsBySubject(subjectId);
+    if (error) {
+      console.error(error);
+      toast.error('Error loading lessons');
+      return;
+    }
+    const list = (data || []) as Lesson[];
+    setLessons(list);
+    const ids = list.map(l => l.id);
       if (ids.length > 0) {
-        const { data: atts } = await api.fetchAttachmentsForLessons(ids);
-        const map: Record<string, any[]> = {};
-        (atts || []).forEach((a: any) => {
-          if (!map[a.lesson_id]) map[a.lesson_id] = [];
-          map[a.lesson_id].push(a);
-        });
-        setAttachmentsByLesson(map);
+    const { data: atts } = await api.fetchAttachmentsForLessons(ids);
+    const map: Record<string, any[]> = {};
+    (atts || []).forEach((a: any) => {
+      if (!map[a.lesson_id]) map[a.lesson_id] = [];
+      map[a.lesson_id].push(a);
+    });
+    setAttachmentsByLesson(map);
       } else {
         setAttachmentsByLesson({});
       }
@@ -331,6 +587,71 @@ export default function SubjectLessonsPage() {
     await loadLessons();
   };
 
+  const updateLessonStatus = async (lessonId: string, newStatus: LessonStatus) => {
+    try {
+      const { error } = await api.updateLesson(lessonId, { status: newStatus });
+      if (error) {
+        toast.error('Failed to update status');
+        return;
+      }
+      toast.success('Status updated');
+      await loadLessons();
+    } catch (err) {
+      toast.error('Error updating status');
+    }
+  };
+
+  const getStatusBadge = (status?: LessonStatus) => {
+    if (!status) status = 'draft';
+    const statusConfig = {
+      draft: { label: t('draft') || 'Draft', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+      published: { label: t('published') || 'Published', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      scheduled: { label: t('scheduled') || 'Scheduled', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+    };
+    const config = statusConfig[status] || statusConfig.draft;
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = lessons.findIndex((l) => l.id === active.id);
+    const newIndex = lessons.findIndex((l) => l.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Update local state immediately for better UX
+    const newLessons = arrayMove(lessons, oldIndex, newIndex);
+    setLessons(newLessons);
+
+    // Save to database
+    try {
+      const lessonIds = newLessons.map((l) => l.id);
+      const { error } = await api.updateLessonsOrder(lessonIds);
+      if (error) {
+        // Revert on error
+        setLessons(lessons);
+        toast.error('Failed to save order');
+      } else {
+        toast.success('Order saved');
+      }
+    } catch (err) {
+      // Revert on error
+      setLessons(lessons);
+      toast.error('Error saving order');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -349,10 +670,10 @@ export default function SubjectLessonsPage() {
 
         {showAddForm && (
           <Card className="card-elegant">
-            <CardHeader>
+          <CardHeader>
               <CardTitle className="font-display text-gradient">{t('addLesson') || 'Add Lesson'}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          </CardHeader>
+          <CardContent>
             <form onSubmit={handleCreateLesson} className="space-y-4">
               <div>
                 <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('title') || 'Title'}</label>
@@ -432,8 +753,8 @@ export default function SubjectLessonsPage() {
                 </Button>
               </div>
             </form>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         )}
 
         <Card className="card-elegant">
@@ -443,7 +764,17 @@ export default function SubjectLessonsPage() {
           <CardContent>
             {/* Filters & Search */}
             <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="md:col-span-2"></div>
+              <div className="flex gap-2 md:col-span-2">
+                <select
+                  className="input-modern h-10 px-3 rounded"
+                  value={filterHasVideo}
+                  onChange={(e) => setFilterHasVideo(e.target.value as 'all' | 'with' | 'without')}
+                >
+                  <option value="all">{(t('all') as any) || 'All'}</option>
+                  <option value="with">{(t('withVideo') as any) || 'With video'}</option>
+                  <option value="without">{(t('withoutVideo') as any) || 'Without video'}</option>
+                </select>
+              </div>
               <div className="relative">
                 <Input
                   placeholder={(t('search') as any) || 'Search lessons...'}
@@ -462,12 +793,13 @@ export default function SubjectLessonsPage() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('loading') || 'Loading...'}</p>
               </div>
             ) : (lessons || []).filter(l => {
-              const q = lessonSearchQuery.trim().toLowerCase();
-              if (!q) return true;
-              return (
-                (l.title || '').toLowerCase().includes(q) ||
-                (l.description || '').toLowerCase().includes(q)
-              );
+              const q = debouncedQuery;
+              const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+              if (!matchesQuery) return false;
+              const hasVideo = !!l.video_url;
+              if (filterHasVideo === 'with' && !hasVideo) return false;
+              if (filterHasVideo === 'without' && hasVideo) return false;
+              return true;
             }).length === 0 ? (
               <div className="text-center py-12 animate-fade-in">
                 <div className="relative inline-block mb-4">
@@ -477,109 +809,55 @@ export default function SubjectLessonsPage() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('addLessonToStart') || 'Add a lesson to get started'}</p>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {(lessons || []).filter(l => {
-                  const q = lessonSearchQuery.trim().toLowerCase();
-                  if (!q) return true;
-                  return (
-                    (l.title || '').toLowerCase().includes(q) ||
-                    (l.description || '').toLowerCase().includes(q)
-                  );
-                }).map((l) => {
-                  const atts = attachmentsByLesson[l.id] || [];
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={lessons.filter(l => {
+                  const q = debouncedQuery;
+                  const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+                  if (!matchesQuery) return false;
                   const hasVideo = !!l.video_url;
-                  return (
-                    <Card key={l.id} className="card-hover overflow-hidden">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="text-lg font-display font-semibold line-clamp-1">{l.title}</CardTitle>
-                          <div className="flex flex-wrap gap-2">
-                            {hasVideo && (
-                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Video</Badge>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              {atts.length} {(t('attachments') as any) || 'Attachments'}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0 space-y-3">
-                        {editingLessonId === l.id ? (
-                          <div className="space-y-2">
-                            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="input-modern" />
-                            <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="input-modern" />
-                            <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
-                            <div className="flex gap-2">
-                              <Button onClick={saveEdit} className="btn-gradient">{t('save') || 'Save'}</Button>
-                              <Button variant="outline" onClick={cancelEdit}>{t('cancel') || 'Cancel'}</Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            {l.description && (
-                              <div className="text-sm text-muted-foreground mt-1 line-clamp-3">{l.description}</div>
-                            )}
-                            {(() => {
-                              const embed = getVideoEmbedUrl(l.video_url);
-                              if (embed) {
-                                return (
-                                  <div className="mt-3">
-                                    <AspectRatio ratio={16 / 9}>
-                                      <iframe
-                                        src={embed}
-                                        className="w-full h-full rounded"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                        loading="lazy"
-                                      />
-                                    </AspectRatio>
-                                  </div>
-                                );
-                              }
-                              if (l.video_url) {
-                                return (
-                                  <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
-                                    {t('viewVideo') || 'View video'}
-                                  </a>
-                                );
-                              }
-                              return null;
-                            })()}
-
-                            {/* Attachments preview (first 1-2) */}
-                            {atts.length > 0 && (
-                              <div className="flex flex-col gap-2 mt-2">
-                                {atts.slice(0, 2).map((a: any) => (
-                                  <div key={a.id} className="border rounded p-2 text-sm flex items-center justify-between">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <FileText className="h-4 w-4 text-slate-600" />
-                                      <a href={a.file_url} target="_blank" rel="noreferrer" className="underline text-blue-600 truncate">
-                                        {a.file_name || a.file_url}
-                                      </a>
-                                    </div>
-                                    <Button size="sm" variant="destructive" onClick={() => removeAttachment(a.id)}>
-                                      {t('delete') || 'Delete'}
-                                    </Button>
-                                  </div>
-                                ))}
-                                {atts.length > 2 && (
-                                  <div className="text-xs text-slate-500">+{atts.length - 2} more...</div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Quick actions */}
-                            <div className="flex gap-2 pt-2">
-                              <Button variant="secondary" size="sm" onClick={() => startEdit(l)}>{t('edit') || 'Edit'}</Button>
-                              <Button variant="destructive" size="sm" onClick={() => removeLesson(l.id)}>{t('delete') || 'Delete'}</Button>
-                            </div>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                  if (filterHasVideo === 'with' && !hasVideo) return false;
+                  if (filterHasVideo === 'without' && hasVideo) return false;
+                  return true;
+                }).map(l => l.id)} strategy={verticalListSortingStrategy}>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {(lessons || []).filter(l => {
+                      const q = debouncedQuery;
+                      const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+                      if (!matchesQuery) return false;
+                      const hasVideo = !!l.video_url;
+                      if (filterHasVideo === 'with' && !hasVideo) return false;
+                      if (filterHasVideo === 'without' && hasVideo) return false;
+                      return true;
+                    }).map((l) => {
+                      const atts = attachmentsByLesson[l.id] || [];
+                      return (
+                        <SortableLesson
+                          key={l.id}
+                          lesson={l}
+                          attachments={atts}
+                          editingLessonId={editingLessonId}
+                          editTitle={editTitle}
+                          editDescription={editDescription}
+                          editVideoUrl={editVideoUrl}
+                          imageErrors={imageErrors}
+                          onEditStart={startEdit}
+                          onEditTitle={setEditTitle}
+                          onEditDescription={setEditDescription}
+                          onEditVideoUrl={setEditVideoUrl}
+                          onSaveEdit={saveEdit}
+                          onCancelEdit={cancelEdit}
+                          onDelete={removeLesson}
+                          onUpdateStatus={updateLessonStatus}
+                          onRemoveAttachment={removeAttachment}
+                          getStatusBadge={getStatusBadge}
+                          getVideoEmbedUrl={getVideoEmbedUrl}
+                          t={t}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </CardContent>
         </Card>

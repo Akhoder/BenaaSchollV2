@@ -21,12 +21,17 @@ export interface Profile {
 
 export type AttachmentType = 'image' | 'pdf' | 'ppt' | 'word';
 
+export type LessonStatus = 'draft' | 'published' | 'scheduled';
+
 export interface Lesson {
   id: string;
   subject_id: string;
   title: string;
   description?: string | null;
   video_url?: string | null;
+  status?: LessonStatus;
+  scheduled_at?: string | null;
+  order_index: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -367,7 +372,7 @@ export async function fetchLessonsBySubject(subjectId: string) {
     .from('lessons')
     .select('*')
     .eq('subject_id', subjectId)
-    .order('created_at', { ascending: false });
+    .order('order_index', { ascending: true });
 }
 
 export async function createLesson(input: {
@@ -375,15 +380,29 @@ export async function createLesson(input: {
   title: string;
   description?: string;
   video_url?: string;
+  status?: LessonStatus;
+  scheduled_at?: string | null;
 }) {
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userRes?.user) {
     return { data: null, error: userErr || new Error('Not authenticated') } as any;
   }
   const created_by = userRes.user.id;
+  
+  // Get max order_index for this subject
+  const { data: maxOrder } = await supabase
+    .from('lessons')
+    .select('order_index')
+    .eq('subject_id', input.subject_id)
+    .order('order_index', { ascending: false })
+    .limit(1)
+    .single();
+  
+  const order_index = (maxOrder?.order_index ?? -1) + 1;
+  
   return await supabase
     .from('lessons')
-    .insert([{ ...input, created_by }])
+    .insert([{ ...input, created_by, status: input.status || 'draft', order_index }])
     .select('*')
     .single();
 }
@@ -423,7 +442,7 @@ export async function fetchAttachmentsForLessons(lessonIds: string[]) {
     .order('created_at', { ascending: false });
 }
 
-export async function updateLesson(id: string, fields: Partial<Pick<Lesson, 'title' | 'description' | 'video_url'>>) {
+export async function updateLesson(id: string, fields: Partial<Pick<Lesson, 'title' | 'description' | 'video_url' | 'status' | 'scheduled_at'>>) {
   return await supabase
     .from('lessons')
     .update(fields)
@@ -437,6 +456,31 @@ export async function deleteLesson(id: string) {
     .from('lessons')
     .delete()
     .eq('id', id);
+}
+
+export async function updateLessonsOrder(lessonIds: string[]) {
+  // Update order_index for each lesson based on its position in the array
+  const updates = lessonIds.map((lessonId, index) => ({
+    id: lessonId,
+    order_index: index,
+  }));
+  
+  // Use a transaction-like approach: update each lesson
+  const promises = updates.map(({ id, order_index }) =>
+    supabase
+      .from('lessons')
+      .update({ order_index })
+      .eq('id', id)
+  );
+  
+  const results = await Promise.all(promises);
+  const hasError = results.some(r => r.error);
+  
+  if (hasError) {
+    return { data: null, error: new Error('Failed to update order') } as any;
+  }
+  
+  return { data: null, error: null };
 }
 
 export async function deleteLessonAttachment(id: string) {

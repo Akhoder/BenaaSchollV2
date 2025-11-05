@@ -97,6 +97,10 @@ export const translations = {
     attachments: 'Attachments',
     addLesson: 'Add Lesson',
     add: 'Add',
+    status: 'Status',
+    draft: 'Draft',
+    published: 'Published',
+    scheduled: 'Scheduled',
   },
   ar: {
     appName: 'مدرسة البناء العلمي',
@@ -196,6 +200,10 @@ export const translations = {
     attachments: 'المرفقات',
     addLesson: 'إضافة درس',
     add: 'إضافة',
+    status: 'الحالة',
+    draft: 'مسودة',
+    published: 'منشور',
+    scheduled: 'مجدول',
   },
   fr: {
     appName: 'Madrasat Al-Binaa Al-Ilmi',
@@ -295,6 +303,10 @@ export const translations = {
     attachments: 'Pièces jointes',
     addLesson: 'Ajouter leçon',
     add: 'Ajouter',
+    status: 'Statut',
+    draft: 'Brouillon',
+    published: 'Publié',
+    scheduled: 'Planifié',
   },
 };
 
