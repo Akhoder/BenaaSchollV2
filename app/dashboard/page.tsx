@@ -892,7 +892,7 @@ export default function DashboardPage() {
             {/* Recent Activity and Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2">
               {/* Recent Activity Card */}
-              <Card className="card-hover border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+              <Card className="card-hover glass-strong">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -936,7 +936,7 @@ export default function DashboardPage() {
               </Card>
 
               {/* Quick Actions Card */}
-              <Card className="card-hover border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+              <Card className="card-hover glass-strong">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
@@ -1014,7 +1014,7 @@ export default function DashboardPage() {
             {/* Today's Schedule and Quick Actions - جدول اليوم والإجراءات السريعة */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {/* Today's Schedule Card */}
-              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow md:col-span-2">
+              <Card className="card-hover glass-strong md:col-span-2">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 font-display">

@@ -2,34 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   CSS Variables - مدرسة البناء العلمي
+   ============================================ */
 @layer base {
   :root {
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    --font-arabic: 'Tajawal', 'Almarai', 'Segoe UI', sans-serif;
-    --font-heading: 'Plus Jakarta Sans', 'DM Sans', sans-serif;
-  }
-}
+    /* CSS Variables are set by Next.js font loader in layout.tsx */
+    /* --font-inter, --font-tajawal, --font-almarai, etc. are defined there */
 
-@layer base {
-  :root {
     /* مدرسة البناء العلمي - ألوان الشعار */
     /* Deep Green (الأخضر الداكن) - Primary */
     --primary: 142 60% 25%;
     --primary-foreground: 0 0% 98%;
     --primary-hover: 142 60% 20%;
     --primary-light: 142 60% 95%;
-    
+
     /* Golden/Bronze (الذهبي/البرونزي) - Accent */
     --accent: 35 80% 45%;
     --accent-foreground: 0 0% 98%;
     --accent-hover: 35 80% 40%;
     --accent-light: 35 80% 95%;
-    
+
     /* Brown (البني) - Text & Secondary */
     --secondary: 25 30% 35%;
     --secondary-foreground: 0 0% 98%;
     --secondary-light: 25 30% 95%;
-    
+
     /* Base Colors */
     --background: 0 0% 100%;
     --foreground: 25 20% 15%;
@@ -37,14 +35,14 @@
     --card-foreground: 25 20% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 25 20% 15%;
-    
+
     /* Muted & Borders */
     --muted: 142 20% 96%;
     --muted-foreground: 25 15% 45%;
     --border: 142 20% 88%;
     --input: 142 20% 88%;
     --ring: 142 60% 25%;
-    
+
     /* Status Colors */
     --success: 142 65% 35%;
     --success-foreground: 0 0% 98%;
@@ -54,16 +52,17 @@
     --destructive-foreground: 0 0% 98%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 98%;
-    
+
     /* Chart Colors */
     --chart-1: 142 60% 35%;
     --chart-2: 35 80% 45%;
     --chart-3: 142 50% 50%;
     --chart-4: 35 70% 60%;
     --chart-5: 142 40% 65%;
-    
+
     --radius: 0.75rem;
   }
+
   .dark {
     /* Dark Mode - مدرسة البناء العلمي */
     --background: 142 30% 8%;
@@ -72,31 +71,31 @@
     --card-foreground: 0 0% 95%;
     --popover: 142 25% 10%;
     --popover-foreground: 0 0% 95%;
-    
+
     /* Primary - Deep Green */
     --primary: 142 55% 40%;
     --primary-foreground: 0 0% 98%;
     --primary-hover: 142 55% 45%;
     --primary-light: 142 30% 15%;
-    
+
     /* Accent - Golden/Bronze */
     --accent: 35 75% 55%;
     --accent-foreground: 0 0% 10%;
     --accent-hover: 35 75% 60%;
     --accent-light: 35 30% 15%;
-    
+
     /* Secondary - Brown */
     --secondary: 25 25% 25%;
     --secondary-foreground: 0 0% 95%;
     --secondary-light: 25 25% 18%;
-    
+
     /* Muted & Borders */
     --muted: 142 20% 15%;
     --muted-foreground: 25 10% 65%;
     --border: 142 20% 20%;
     --input: 142 20% 20%;
     --ring: 142 55% 40%;
-    
+
     /* Status Colors */
     --success: 142 60% 45%;
     --success-foreground: 0 0% 98%;
@@ -106,7 +105,7 @@
     --destructive-foreground: 0 0% 98%;
     --info: 199 75% 55%;
     --info-foreground: 0 0% 98%;
-    
+
     /* Chart Colors */
     --chart-1: 142 55% 45%;
     --chart-2: 35 75% 55%;
@@ -116,29 +115,73 @@
   }
 }
 
+/* ============================================
+   Base Styles - Typography & Fonts
+   ============================================ */
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
   }
-  
+
+  /* تطبيق الخطوط العربية عند RTL */
+  /* Apply Arabic fonts when RTL */
   [dir="rtl"] body,
   [lang="ar"] body {
-    font-family: var(--font-tajawal), sans-serif;
+    font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
+  }
+
+  /* العناوين بالعربية تستخدم Almarai */
+  /* Headings in Arabic use Almarai */
+  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
+  [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
+  [lang="ar"] h1, [lang="ar"] h2, [lang="ar"] h3,
+  [lang="ar"] h4, [lang="ar"] h5, [lang="ar"] h6 {
+    font-family: var(--font-almarai), var(--font-tajawal), system-ui, sans-serif !important;
   }
 }
 
-/* Modern animations and transitions */
+/* ============================================
+   Modern Glass Morphism Effects
+   ============================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-strong {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================
+   Animations & Keyframes
+   ============================================ */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -159,24 +202,6 @@
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
-
-/* Gradient backgrounds */
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-bg-light {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-/* تحسينات بصرية جديدة */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -188,10 +213,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
   }
 }
 
@@ -202,6 +227,35 @@
   100% {
     background-position: calc(200px + 100%) 0;
   }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes border-glow {
+  0%, 100% {
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.8);
+  }
+}
+
+/* ============================================
+   Utility Classes - Animations
+   ============================================ */
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }
 
 .animate-float {
@@ -218,50 +272,42 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* تحسينات الكروت */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
 }
 
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+/* ============================================
+   Typography Utilities
+   ============================================ */
+.font-heading {
+  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
 }
 
-/* مدرسة البناء العلمي - تحسينات الأزرار */
-.btn-gradient {
-  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
-  color: white;
-  transition: all 0.3s ease;
-  border: none;
+.font-display {
+  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
+  letter-spacing: -0.03em;
 }
 
-.btn-gradient:hover {
-  background: linear-gradient(135deg, hsl(142 60% 20%) 0%, hsl(142 60% 30%) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(142, 60%, 25%, 0.3);
+/* خطوط عربية - يتم استخدامها تلقائياً عند RTL */
+/* Arabic fonts - automatically used when RTL */
+.font-arabic {
+  font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
 }
 
-.btn-accent {
-  background: linear-gradient(135deg, hsl(35 80% 45%) 0%, hsl(35 80% 55%) 100%);
-  color: white;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.btn-accent:hover {
-  background: linear-gradient(135deg, hsl(35 80% 40%) 0%, hsl(35 80% 50%) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(35, 80%, 45%, 0.3);
-}
-
-/* تحسينات النصوص */
 .text-shadow {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-shadow-lg {
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .text-primary-gradient {
@@ -278,63 +324,13 @@
   background-clip: text;
 }
 
-/* تحسينات الخلفيات */
-.bg-pattern {
-  background-image: 
-    radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 0),
-    radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 0);
-  background-size: 100px 100px;
-}
-
-/* تحسينات الاستجابة */
-@media (max-width: 768px) {
-  .mobile-optimized {
-    padding: 1rem;
-    font-size: 0.875rem;
-  }
-  
-  .mobile-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-/* تحسينات الوضع المظلم */
-.dark .glass {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.dark .card-hover:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-}
-
-/* Beautiful Typography - مدرسة البناء العلمي */
-.text-gradient {
-  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.font-heading {
-  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
-}
-
-.font-display {
-  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
-  letter-spacing: -0.03em;
-}
-
-[dir="rtl"] {
-  font-family: var(--font-tajawal), var(--font-almarai), sans-serif;
-}
-
-/* RTL Support */
+/* ============================================
+   RTL Support
+   ============================================ */
 [dir="rtl"] {
   direction: rtl;
   text-align: right;
+  font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
 }
 
 [dir="ltr"] {
@@ -342,36 +338,166 @@
   text-align: left;
 }
 
-/* Card Enhancements */
+/* ============================================
+   Backgrounds & Gradients
+   ============================================ */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-light {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.bg-pattern {
+  background-image:
+    radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 0),
+    radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 0);
+  background-size: 100px 100px;
+}
+
+/* خلفية متدرجة متحركة */
+.bg-gradient-animated {
+  background: linear-gradient(-45deg, #10b981, #14b8a6, #059669, #0d9488);
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* ============================================
+   Card Enhancements - Modern Style
+   ============================================ */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(16, 185, 129, 0.1);
+}
+
 .card-elegant {
-  background: white;
-  border: 1px solid hsl(var(--border));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-elegant:hover {
-  box-shadow: 0 8px 24px rgba(142, 60%, 25%, 0.12);
-  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 25px -5px rgba(16, 185, 129, 0.1),
+    0 10px 10px -5px rgba(16, 185, 129, 0.04);
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .dark .card-elegant {
-  background: hsl(var(--card));
-  border-color: hsl(var(--border));
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.1);
 }
 
 .dark .card-elegant:hover {
-  box-shadow: 0 8px 24px rgba(142, 55%, 40%, 0.15);
+  box-shadow: 
+    0 20px 25px -5px rgba(16, 185, 129, 0.15),
+    0 10px 10px -5px rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
-/* Navigation Active State */
-.nav-active {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
-  color: hsl(var(--primary-foreground));
-  box-shadow: 0 4px 12px rgba(142, 60%, 25%, 0.2);
+.dark .card-hover:hover {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(16, 185, 129, 0.2);
 }
 
-/* Brand Colors */
+/* ============================================
+   Button Styles - Modern & Professional
+   ============================================ */
+.btn-gradient {
+  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-gradient:hover::before {
+  left: 100%;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, hsl(142 60% 20%) 0%, hsl(142 60% 30%) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, hsl(35 80% 45%) 0%, hsl(35 80% 55%) 100%);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-accent:hover::before {
+  left: 100%;
+}
+
+.btn-accent:hover {
+  background: linear-gradient(135deg, hsl(35 80% 40%) 0%, hsl(35 80% 50%) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(217, 119, 6, 0.4);
+}
+
+/* ============================================
+   Input Enhancements
+   ============================================ */
+.input-modern:focus {
+  border-color: hsl(142 60% 25%);
+  box-shadow: 
+    0 0 0 3px rgba(16, 185, 129, 0.1),
+    0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.dark .input-modern:focus {
+  border-color: hsl(142 55% 40%);
+  box-shadow: 
+    0 0 0 3px rgba(16, 185, 129, 0.2),
+    0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   Brand Colors
+   ============================================ */
 .bg-brand-primary {
   background: hsl(var(--primary));
 }
@@ -394,4 +520,39 @@
 
 .border-brand-accent {
   border-color: hsl(var(--accent));
+}
+
+/* ============================================
+   Navigation Styles
+   ============================================ */
+.nav-active {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
+  color: hsl(var(--primary-foreground));
+  box-shadow: 
+    0 4px 12px rgba(16, 185, 129, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   Dark Mode Enhancements
+   ============================================ */
+.dark .glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .mobile-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }

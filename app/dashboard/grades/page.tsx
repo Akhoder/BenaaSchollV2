@@ -125,7 +125,7 @@ export default function GradesPage() {
 
         {/* ✅ Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Total Graded
@@ -139,7 +139,7 @@ export default function GradesPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Assignments graded</p>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Average Grade
@@ -153,7 +153,7 @@ export default function GradesPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Overall average</p>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Status

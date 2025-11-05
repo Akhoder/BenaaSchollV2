@@ -521,7 +521,7 @@ GRANT ALL ON classes TO authenticated;`;
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Total Classes
@@ -536,7 +536,7 @@ GRANT ALL ON classes TO authenticated;`;
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Active Classes
@@ -551,7 +551,7 @@ GRANT ALL ON classes TO authenticated;`;
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Completed
@@ -566,7 +566,7 @@ GRANT ALL ON classes TO authenticated;`;
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Total Students
