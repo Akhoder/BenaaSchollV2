@@ -12,7 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import * as api from '@/lib/supabase';
 import type { Certificate } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Loader2, Award, Eye, Search, FileText } from 'lucide-react';
+import { Loader2, Award, Eye, Search, FileText, Download as DownloadIcon, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function MyCertificatesPage() {
@@ -22,8 +22,10 @@ export default function MyCertificatesPage() {
 
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [subjects, setSubjects] = useState<Record<string, { subject_name?: string }>>({});
+  const [eligibleSubjects, setEligibleSubjects] = useState<Array<{ subject_id: string; subject_name: string; eligibility: any }>>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [issuing, setIssuing] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -39,6 +41,7 @@ export default function MyCertificatesPage() {
   useEffect(() => {
     if (profile && profile.role === 'student') {
       void loadCertificates();
+      void loadEligibleSubjects();
     }
   }, [profile]);
 
@@ -75,6 +78,39 @@ export default function MyCertificatesPage() {
       toast.error('Error loading certificates');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEligibleSubjects = async () => {
+    try {
+      const { data, error } = await api.checkEligibleSubjectsForStudent();
+      if (error) {
+        console.error(error);
+        return;
+      }
+      setEligibleSubjects((data || []) as Array<{ subject_id: string; subject_name: string; eligibility: any }>);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleIssueCertificate = async (subjectId: string, subjectName: string) => {
+    try {
+      setIssuing(subjectId);
+      const { data, error } = await api.studentIssueCertificate(subjectId);
+      if (error) {
+        toast.error((t('failedToIssueCertificate') as any) || 'Failed to issue certificate');
+        return;
+      }
+      toast.success((t('certificateIssuedSuccessfully') as any) || 'Certificate issued successfully!');
+      // Reload certificates and eligible subjects
+      await loadCertificates();
+      await loadEligibleSubjects();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Error issuing certificate');
+    } finally {
+      setIssuing(null);
     }
   };
 
@@ -138,6 +174,65 @@ export default function MyCertificatesPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Eligible Subjects (Can Issue Certificate) */}
+        {eligibleSubjects.length > 0 && (
+          <Card className="card-elegant border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
+            <CardHeader>
+              <CardTitle className="font-display text-gradient flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                {(t('eligibleForCertificates') as any) || 'Eligible for Certificates'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {eligibleSubjects.map((item) => {
+                  const eligibility = item.eligibility || {};
+                  return (
+                    <div
+                      key={item.subject_id}
+                      className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-1">{item.subject_name}</h3>
+                        <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                          <p>
+                            {(t('lessonsCompleted') as any) || 'Lessons'}: {eligibility.lessons_completed || 0} / {eligibility.lessons_total || 0}
+                          </p>
+                          <p>
+                            {(t('quizzesGraded') as any) || 'Quizzes'}: {eligibility.quizzes_graded || 0} / {eligibility.quizzes_total || 0}
+                          </p>
+                          <p className="font-medium text-emerald-600 dark:text-emerald-400 mt-2">
+                            {(t('finalScore') as any) || 'Final Score'}: {eligibility.final_score ? parseFloat(eligibility.final_score).toFixed(1) : '0.0'} / 100
+                            {' - '}
+                            {eligibility.grade || '-'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        className="btn-gradient ml-4"
+                        onClick={() => handleIssueCertificate(item.subject_id, item.subject_name)}
+                        disabled={issuing === item.subject_id}
+                      >
+                        {issuing === item.subject_id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {(t('issuing') as any) || 'Issuing...'}
+                          </>
+                        ) : (
+                          <>
+                            <Award className="h-4 w-4 mr-2" />
+                            {(t('issueCertificate') as any) || 'Issue Certificate'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Certificates Grid */}
         {filteredCertificates.length === 0 ? (

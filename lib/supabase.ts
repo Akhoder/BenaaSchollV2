@@ -1471,7 +1471,8 @@ export async function createCertificateManually(
   studentId: string,
   subjectId: string,
   finalScore: number,
-  grade: CertificateGrade
+  grade: CertificateGrade,
+  status: CertificateStatus = 'draft'
 ) {
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userRes?.user) {
@@ -1488,21 +1489,28 @@ export async function createCertificateManually(
   // Generate certificate number
   const certNumber = `CERT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
   
+  const insertData: any = {
+    student_id: studentId,
+    subject_id: subjectId,
+    teacher_id: subject?.teacher_id || null,
+    final_score: finalScore,
+    grade: grade,
+    status: status,
+    auto_issued: false,
+    certificate_number: certNumber,
+    completion_date: new Date().toISOString().split('T')[0],
+    issued_by: userRes.user.id,
+    issued_at: new Date().toISOString(),
+  };
+  
+  // If status is published, set published_at
+  if (status === 'published') {
+    insertData.published_at = new Date().toISOString();
+  }
+  
   return await supabase
     .from('certificates')
-    .insert([{
-      student_id: studentId,
-      subject_id: subjectId,
-      teacher_id: subject?.teacher_id || null,
-      final_score: finalScore,
-      grade: grade,
-      status: 'draft',
-      auto_issued: false,
-      certificate_number: certNumber,
-      completion_date: new Date().toISOString().split('T')[0],
-      issued_by: userRes.user.id,
-      issued_at: new Date().toISOString(),
-    }])
+    .insert([insertData])
     .select('*')
     .single();
 }
@@ -1512,4 +1520,77 @@ export async function deleteCertificate(certificateId: string) {
     .from('certificates')
     .delete()
     .eq('id', certificateId);
+}
+
+export async function studentIssueCertificate(subjectId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  
+  return await supabase.rpc('student_issue_certificate', {
+    p_student_id: userRes.user.id,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function checkEligibleSubjectsForStudent() {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: [], error: userErr } as any;
+  }
+  
+  // Get all enrolled subjects for the student
+  const { data: enrollments } = await supabase
+    .from('student_enrollments')
+    .select('class_id, status')
+    .eq('student_id', userRes.user.id)
+    .eq('status', 'active');
+  
+  if (!enrollments || enrollments.length === 0) {
+    return { data: [], error: null } as any;
+  }
+  
+  const classIds = enrollments.map(e => e.class_id);
+  
+  // Get subjects with auto_publish enabled
+  const { data: subjects } = await supabase
+    .from('class_subjects')
+    .select('id, subject_name, auto_publish_certificates')
+    .in('class_id', classIds)
+    .eq('auto_publish_certificates', true);
+  
+  if (!subjects || subjects.length === 0) {
+    return { data: [], error: null } as any;
+  }
+  
+  // Check eligibility for each subject
+  const eligibleSubjects: Array<{ subject_id: string; subject_name: string; eligibility: any }> = [];
+  
+  for (const subject of subjects) {
+    const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+      p_student_id: userRes.user.id,
+      p_subject_id: subject.id,
+    });
+    
+    if (eligibility && (eligibility as any).eligible) {
+      // Check if certificate doesn't exist yet
+      const { data: existingCert } = await supabase
+        .from('certificates')
+        .select('id')
+        .eq('student_id', userRes.user.id)
+        .eq('subject_id', subject.id)
+        .single();
+      
+      if (!existingCert) {
+        eligibleSubjects.push({
+          subject_id: subject.id,
+          subject_name: subject.subject_name,
+          eligibility: eligibility,
+        });
+      }
+    }
+  }
+  
+  return { data: eligibleSubjects, error: null } as any;
 }

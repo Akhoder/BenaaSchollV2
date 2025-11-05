@@ -42,7 +42,10 @@ import {
   Lock,
   Search,
   Filter,
-  X
+  X,
+  Award,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { 
   fetchSubjectsForClass, 
@@ -55,6 +58,8 @@ import {
 } from '@/lib/supabase';
 import { fetchMyAssignmentsForSubject, fetchSubmissionForAssignment } from '@/lib/supabase';
 import { fetchQuizzesForSubject, fetchQuizzesForLesson, fetchStudentAttemptsForQuiz } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -82,6 +87,8 @@ export default function SubjectLessonsPage() {
   const [quizAttempts, setQuizAttempts] = useState<Record<string, any[]>>({});
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [lessonStatusFilter, setLessonStatusFilter] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
+  const [certificateEligibility, setCertificateEligibility] = useState<any>(null);
+  const [issuingCertificate, setIssuingCertificate] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -257,6 +264,42 @@ export default function SubjectLessonsPage() {
           }
         });
         setQuizAttempts(attemptsMap);
+      }
+
+      // Check certificate eligibility
+      if (profile?.id) {
+        try {
+          // Check if auto_publish is enabled for this subject
+          const { data: subjectData } = await supabase
+            .from('class_subjects')
+            .select('auto_publish_certificates')
+            .eq('id', subjectId)
+            .single();
+          
+          if (subjectData?.auto_publish_certificates) {
+            // Check if certificate already exists
+            const { data: existingCert } = await supabase
+              .from('certificates')
+              .select('id')
+              .eq('student_id', profile.id)
+              .eq('subject_id', subjectId)
+              .single();
+            
+            if (!existingCert) {
+              // Check eligibility
+              const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+                p_student_id: profile.id,
+                p_subject_id: subjectId,
+              });
+              
+              if (eligibility && (eligibility as any).eligible) {
+                setCertificateEligibility(eligibility);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error checking certificate eligibility:', err);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -516,6 +559,74 @@ export default function SubjectLessonsPage() {
   return (
     <DashboardLayout>
       <div className="animate-fade-in">
+        {/* Certificate Eligibility Banner */}
+        {certificateEligibility && (
+          <Card className="card-elegant border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                      {language === 'ar' ? 'شهادة جاهزة للإصدار!' : 'Certificate Ready to Issue!'}
+                    </h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                      {language === 'ar' 
+                        ? `تهانينا! لقد أكملت جميع الدروس والاختبارات في مادة ${subject?.subject_name || ''}. يمكنك الآن إصدار شهادتك مباشرة.`
+                        : `Congratulations! You've completed all lessons and quizzes for ${subject?.subject_name || ''}. You can now issue your certificate.`
+                      }
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-amber-600 dark:text-amber-400">
+                      <span>
+                        {language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
+                      </span>
+                      <span className="font-semibold">{certificateEligibility.grade || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  className="btn-gradient whitespace-nowrap"
+                  onClick={async () => {
+                    try {
+                      setIssuingCertificate(true);
+                      const { data, error } = await api.studentIssueCertificate(subjectId);
+                      if (error) {
+                        toast.error(language === 'ar' ? 'فشل إصدار الشهادة' : 'Failed to issue certificate');
+                        return;
+                      }
+                      toast.success(language === 'ar' ? 'تم إصدار الشهادة بنجاح!' : 'Certificate issued successfully!');
+                      setCertificateEligibility(null);
+                      // Redirect to certificates page
+                      router.push('/dashboard/my-certificates');
+                    } catch (err: any) {
+                      console.error(err);
+                      toast.error(err.message || (language === 'ar' ? 'خطأ في إصدار الشهادة' : 'Error issuing certificate'));
+                    } finally {
+                      setIssuingCertificate(false);
+                    }
+                  }}
+                  disabled={issuingCertificate}
+                >
+                  {issuingCertificate ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Award className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'إصدار الشهادة' : 'Issue Certificate'}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Mobile Header */}
         <div className="lg:hidden mb-4 flex items-center justify-between">
           <Button 

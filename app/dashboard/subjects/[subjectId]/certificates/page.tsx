@@ -18,6 +18,7 @@ import type { Certificate, CertificateStatus, CertificateGrade } from '@/lib/sup
 import { toast } from 'sonner';
 import { Loader2, Award, CheckCircle, XCircle, Eye, Printer, Download, FileCheck, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { Switch } from '@/components/ui/switch';
 
 export default function SubjectCertificatesPage() {
   const params = useParams();
@@ -29,7 +30,9 @@ export default function SubjectCertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [students, setStudents] = useState<Record<string, { full_name?: string; email?: string }>>({});
   const [subjectName, setSubjectName] = useState<string>('');
+  const [autoPublishEnabled, setAutoPublishEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [updatingAutoPublish, setUpdatingAutoPublish] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | CertificateStatus>('all');
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
@@ -42,6 +45,7 @@ export default function SubjectCertificatesPage() {
     student_id: '',
     final_score: '',
     grade: '' as CertificateGrade | '',
+    status: 'draft' as CertificateStatus,
   });
   const [creating, setCreating] = useState(false);
 
@@ -80,15 +84,16 @@ export default function SubjectCertificatesPage() {
     try {
       setLoading(true);
       
-      // Load subject name
+      // Load subject name and auto_publish setting
       const { data: subject } = await supabase
         .from('class_subjects')
-        .select('subject_name')
+        .select('subject_name, auto_publish_certificates')
         .eq('id', subjectId)
         .single();
       
       if (subject) {
         setSubjectName(subject.subject_name);
+        setAutoPublishEnabled(subject.auto_publish_certificates || false);
       }
 
       // Load certificates
@@ -213,6 +218,59 @@ export default function SubjectCertificatesPage() {
             {(t('issueNewCertificate') as any) || 'Issue New Certificate'}
           </Button>
         </div>
+
+        {/* Auto-Publish Settings */}
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="font-display text-gradient flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              {(t('certificateSettings') as any) || 'Certificate Settings'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label className="text-base font-medium mb-2 block">
+                  {(t('autoPublishCertificates') as any) || 'Auto-Publish Certificates'}
+                </Label>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {(t('autoPublishDescription') as any) || 'When enabled, certificates will be automatically published (visible to students) immediately after they complete all lessons and quizzes. When disabled, certificates will be created as draft and require manual approval.'}
+                </p>
+              </div>
+              <div className="ml-4">
+                <Switch
+                  checked={autoPublishEnabled}
+                  onCheckedChange={async (checked) => {
+                    try {
+                      setUpdatingAutoPublish(true);
+                      const { error } = await supabase
+                        .from('class_subjects')
+                        .update({ auto_publish_certificates: checked })
+                        .eq('id', subjectId);
+                      
+                      if (error) {
+                        toast.error('Failed to update setting');
+                        return;
+                      }
+                      
+                      setAutoPublishEnabled(checked);
+                      toast.success(
+                        checked 
+                          ? ((t('autoPublishEnabled') as any) || 'Auto-publish enabled')
+                          : ((t('autoPublishDisabled') as any) || 'Auto-publish disabled')
+                      );
+                    } catch (err) {
+                      toast.error('Error updating setting');
+                    } finally {
+                      setUpdatingAutoPublish(false);
+                    }
+                  }}
+                  disabled={updatingAutoPublish}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <Card className="card-elegant">
@@ -493,13 +551,40 @@ export default function SubjectCertificatesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label className="text-sm font-medium">
+                  {(t('status') as any) || 'Status'} *
+                </Label>
+                <Select
+                  value={createForm.status}
+                  onValueChange={(value) => setCreateForm({ ...createForm, status: value as CertificateStatus })}
+                >
+                  <SelectTrigger className="input-modern mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">
+                      {(t('draft') as any) || 'Draft'} - {(t('notVisibleToStudent') as any) || 'Not visible to student'}
+                    </SelectItem>
+                    <SelectItem value="issued">
+                      {(t('issued') as any) || 'Issued'} - {(t('approvedButNotVisible') as any) || 'Approved but not visible'}
+                    </SelectItem>
+                    <SelectItem value="published">
+                      {(t('published') as any) || 'Published'} - {(t('visibleToStudent') as any) || 'Visible to student'}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {(t('statusHint') as any) || 'Select "Published" to make the certificate visible to the student immediately'}
+                </p>
+              </div>
             </div>
             <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => {
                   setCreateDialogOpen(false);
-                  setCreateForm({ student_id: '', final_score: '', grade: '' });
+                  setCreateForm({ student_id: '', final_score: '', grade: '', status: 'draft' });
                 }}
               >
                 {(t('cancel') as any) || 'Cancel'}
@@ -517,15 +602,20 @@ export default function SubjectCertificatesPage() {
                       createForm.student_id,
                       subjectId,
                       parseFloat(createForm.final_score),
-                      createForm.grade
+                      createForm.grade,
+                      createForm.status
                     );
                     if (error) {
                       toast.error('Failed to create certificate');
                       return;
                     }
-                    toast.success('Certificate created successfully');
+                    toast.success(
+                      createForm.status === 'published' 
+                        ? ((t('certificateCreatedAndPublished') as any) || 'Certificate created and published successfully')
+                        : ((t('certificateCreated') as any) || 'Certificate created successfully')
+                    );
                     setCreateDialogOpen(false);
-                    setCreateForm({ student_id: '', final_score: '', grade: '' });
+                    setCreateForm({ student_id: '', final_score: '', grade: '', status: 'draft' });
                     await loadData();
                   } catch (err) {
                     toast.error('Error creating certificate');
@@ -533,7 +623,7 @@ export default function SubjectCertificatesPage() {
                     setCreating(false);
                   }
                 }}
-                disabled={creating || !createForm.student_id || !createForm.final_score || !createForm.grade}
+                disabled={creating || !createForm.student_id || !createForm.final_score || !createForm.grade || !createForm.status}
               >
                 {creating ? (
                   <>
