@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,7 +96,7 @@ export default function StudentsPage() {
   const { profile, loading: authLoading, isAuthorized } = useAuthCheck({
     requiredRole: ['admin', 'teacher', 'supervisor'],
   });
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -251,16 +252,10 @@ export default function StudentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center animate-fade-in">
-            <div className="relative inline-block">
-              <Loader2 className="h-16 w-16 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
-              <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl animate-pulse"></div>
-            </div>
-            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading students...</p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch the data</p>
-          </div>
-        </div>
+        <DashboardLoadingSpinner
+          text={language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}
+          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
+        />
       </DashboardLayout>
     );
   }
@@ -300,38 +295,38 @@ export default function StudentsPage() {
         </PageHeader>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="card-hover glass-strong">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Total Students
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-success to-success-light rounded-lg">
                 <Users className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.total}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">All students</p>
+              <div className="text-3xl font-bold font-display text-success">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">All students</p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover glass-strong">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Enrolled
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-info to-info-light rounded-lg">
                 <BookOpen className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.enrolled}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">In classes</p>
+              <div className="text-3xl font-bold font-display text-info">{stats.enrolled}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">In classes</p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover glass-strong">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Not Enrolled

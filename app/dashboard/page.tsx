@@ -25,6 +25,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatCard } from '@/components/StatCard';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
+import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +33,7 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
-  AlertCircle, Bell, Loader2 
+  AlertCircle, Bell, Zap
 } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
 import { 
@@ -898,12 +899,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-slate-600">{t('loading')}</p>
-          </div>
-        </div>
+        <DashboardLoadingSpinner
+          text={t('loading')}
+          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait...'}
+        />
       </DashboardLayout>
     );
   }
@@ -916,50 +915,45 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header Section - قسم الترحيب */}
-        <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-8 md:p-12 text-white shadow-2xl shadow-emerald-500/30 relative overflow-hidden border border-white/20">
-          {/* Background Effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.08) 0%, transparent 50%)'
-          }}></div>
-          
-          {/* Animated Elements */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20 animate-float blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16 animate-float blur-2xl" style={{animationDelay: '1s'}}></div>
+        <div className="glass-card-gradient p-8 md:p-12 text-foreground relative overflow-hidden animate-fade-in-up">
+          {/* Floating Orbs */}
+          <div className="absolute top-10 right-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute bottom-10 left-10 w-40 h-40 bg-accent/20 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
+          <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-secondary/20 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}}></div>
           
           <div className="relative z-10">
             {/* Avatar and Welcome */}
             <div className="flex items-start gap-4 md:gap-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/20 rounded-2xl blur-md"></div>
-                <div className="relative w-20 h-20 md:w-24 md:h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
-                  <span className="text-3xl md:text-4xl font-bold">{profile.full_name.charAt(0).toUpperCase()}</span>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                <div className="relative w-20 h-20 md:w-24 md:h-24 glass-card flex items-center justify-center border-2 border-primary/30 shadow-xl">
+                  <span className="text-3xl md:text-4xl font-bold text-primary">{profile.full_name.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
               <div className="flex-1 pt-2">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight flex items-center gap-2">
-                  <span className="bg-gradient-to-r from-white to-emerald-50 bg-clip-text text-transparent drop-shadow-lg">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight flex items-center gap-3 animate-fade-in-up">
+                  <span className="text-primary">
                     {t('welcomeBack')}, {profile.full_name}!
                   </span>
-                  <span className="text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl">👋</span>
+                  <span className="text-4xl md:text-5xl lg:text-6xl animate-bounce-in">👋</span>
                 </h1>
-                <p className="text-emerald-50/90 mt-2 text-lg md:text-xl font-medium font-sans">
+                <p className="text-muted-foreground mt-2 text-lg md:text-xl font-medium font-sans animate-fade-in-up" style={{animationDelay: '100ms'}}>
                   {t(`${profile.role}Dashboard`)}
                 </p>
               </div>
             </div>
             
             {/* Status and Quick Info */}
-            <div className="mt-6 md:mt-8 flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                <span className="text-white text-sm font-medium font-sans">
+            <div className="mt-6 md:mt-8 flex flex-wrap items-center gap-3">
+              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '200ms'}}>
+                <div className="w-2.5 h-2.5 bg-success rounded-full animate-pulse-glow"></div>
+                <span className="text-sm font-medium">
                   {language === 'ar' ? 'نظام متصل' : 'System Online'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                <Calendar className="w-4 h-4 text-white" />
-                <span className="text-white text-sm font-medium font-sans">
+              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '300ms'}}>
+                <Calendar className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">
                   {new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
                     weekday: 'long', 
                     year: 'numeric', 
@@ -968,9 +962,9 @@ export default function DashboardPage() {
                   })}
                 </span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                <TrendingUp className="w-4 h-4 text-white" />
-                <span className="text-white text-sm font-medium font-sans">
+              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '400ms'}}>
+                <TrendingUp className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">
                   {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
                 </span>
               </div>
@@ -981,118 +975,157 @@ export default function DashboardPage() {
         {/* Admin Dashboard - لوحة المدير */}
         {profile.role === 'admin' && (
           <>
+            {/* Floating Orbs Background */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+              <div className="orb-primary w-64 h-64 top-20 left-10" />
+              <div className="orb-accent w-64 h-64 top-1/3 right-10" />
+              <div className="orb-secondary w-64 h-64 bottom-20 left-1/3" />
+            </div>
+
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
               <StatCard
                 title={t('totalStudents')}
                 value={stats.totalStudents}
                 icon={Users}
                 description={t('activeClasses')}
-                gradient="from-blue-500 to-cyan-500"
+                color="primary"
+                loading={loadingStats}
               />
               <StatCard
                 title={t('totalTeachers')}
                 value={stats.totalTeachers}
                 icon={Users}
                 description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
-                gradient="from-purple-500 to-pink-500"
+                color="accent"
+                loading={loadingStats}
               />
               <StatCard
                 title={t('totalClasses')}
                 value={stats.totalClasses}
                 icon={School}
                 description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
-                gradient="from-amber-500 to-orange-500"
+                color="secondary"
+                loading={loadingStats}
               />
               <StatCard
                 title={t('subjects')}
                 value={stats.totalSubjects}
                 icon={BookOpen}
                 description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
-                gradient="from-emerald-500 to-teal-500"
+                color="success"
+                loading={loadingStats}
               />
             </div>
 
             {/* Recent Activity and Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up delay-200">
               {/* Recent Activity Card */}
-              <Card className="card-hover glass-strong">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    {t('recentActivity')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="glass-card-hover p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold flex items-center gap-3">
+                    <div className="p-2 bg-success/10 rounded-xl">
+                      <TrendingUp className="w-5 h-5 text-success" />
+                    </div>
+                    <span className="text-primary">{t('recentActivity')}</span>
+                  </h3>
+                </div>
+                <div>
                   {loadingActivity ? (
-                  <div className="space-y-3">
-                      <Skeleton className="h-16 w-full" />
-                      <Skeleton className="h-16 w-full" />
+                    <div className="space-y-4">
+                      <div className="glass-card p-4 animate-pulse">
+                        <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                      </div>
+                      <div className="glass-card p-4 animate-pulse">
+                        <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                      </div>
                     </div>
                   ) : recentActivity.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                      {language === 'ar' ? 'لا يوجد نشاط حديث' : 'No recent activity'}
-                    </p>
+                    <div className="text-center py-8">
+                      <div className="inline-flex p-4 bg-muted/50 rounded-2xl mb-3">
+                        <Clock className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {language === 'ar' ? 'لا يوجد نشاط حديث' : 'No recent activity'}
+                      </p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
-                      {recentActivity.map((activity) => (
+                      {recentActivity.map((activity, index) => (
                         <div 
                           key={activity.id} 
-                          className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20"
+                          className="glass-card p-4 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
+                          style={{ animationDelay: `${index * 50}ms` }}
                         >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            {activity.icon === 'users' && <Users className="w-4 h-4 text-white" />}
-                            {activity.icon === 'school' && <School className="w-4 h-4 text-white" />}
-                      </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                              {activity.title}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {formatTimeAgo(activity.timestamp)}
-                            </p>
-                      </div>
-                    </div>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl">
+                              {activity.icon === 'users' && <Users className="w-5 h-5 text-white" />}
+                              {activity.icon === 'school' && <School className="w-5 h-5 text-white" />}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-foreground">
+                                {activity.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatTimeAgo(activity.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                      </div>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Quick Actions Card */}
-              <Card className="card-hover glass-strong">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                    {t('quickActions')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button 
-                    className="w-full justify-start btn-gradient text-white font-medium"
+              <div className="glass-card-hover p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold flex items-center gap-3">
+                    <div className="p-2 bg-accent/10 rounded-xl">
+                      <Zap className="w-5 h-5 text-accent" />
+                    </div>
+                    <span className="text-primary">{t('quickActions')}</span>
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <button 
+                    className="w-full btn-primary flex items-center justify-between group"
                     onClick={() => router.push('/dashboard/students')}
                     aria-label={language === 'ar' ? 'إضافة طالب جديد' : 'Add new student'}
                   >
-                    {language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="w-full justify-start border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-medium"
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      <span>{language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}</span>
+                    </div>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button 
+                    className="w-full btn-glass flex items-center justify-between group"
                     onClick={() => router.push('/dashboard/classes')}
                     aria-label={language === 'ar' ? 'إنشاء فصل جديد' : 'Create new class'}
                   >
-                    {language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="w-full justify-start border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-medium"
+                    <div className="flex items-center gap-2">
+                      <School className="w-5 h-5" />
+                      <span>{language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}</span>
+                    </div>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button 
+                    className="w-full btn-outline flex items-center justify-between group"
                     onClick={() => router.push('/dashboard/teachers')}
                     aria-label={language === 'ar' ? 'إضافة معلم جديد' : 'Add new teacher'}
                   >
-                    {language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}
-                  </Button>
-                </CardContent>
-              </Card>
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" />
+                      <span>{language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}</span>
+                    </div>
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Charts */}
@@ -1334,7 +1367,7 @@ export default function DashboardPage() {
               <Card className="card-elegant">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                    <CardTitle className="flex items-center gap-2 font-display text-primary">
                       <FileText className="h-5 w-5 text-amber-600" />
                       {language === 'ar' ? 'الواجبات القادمة' : 'Upcoming Assignments'}
                     </CardTitle>

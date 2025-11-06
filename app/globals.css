@@ -3,556 +3,600 @@
 @tailwind utilities;
 
 /* ============================================
-   CSS Variables - مدرسة البناء العلمي
+   ✨ ULTRA MODERN DESIGN SYSTEM 2025
+   نظام تصميم عصري للغاية
    ============================================ */
+
 @layer base {
   :root {
-    /* CSS Variables are set by Next.js font loader in layout.tsx */
-    /* --font-inter, --font-tajawal, --font-almarai, etc. are defined there */
-
-    /* مدرسة البناء العلمي - ألوان الشعار */
-    /* Deep Green (الأخضر الداكن) - Primary */
-    --primary: 142 60% 25%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 142 60% 20%;
-    --primary-light: 142 60% 95%;
-
-    /* Golden/Bronze (الذهبي/البرونزي) - Accent */
-    --accent: 35 80% 45%;
-    --accent-foreground: 0 0% 98%;
-    --accent-hover: 35 80% 40%;
-    --accent-light: 35 80% 95%;
-
-    /* Brown (البني) - Text & Secondary */
-    --secondary: 25 30% 35%;
-    --secondary-foreground: 0 0% 98%;
-    --secondary-light: 25 30% 95%;
-
-    /* Base Colors */
-    --background: 0 0% 100%;
-    --foreground: 25 20% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 25 20% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 25 20% 15%;
-
-    /* Muted & Borders */
-    --muted: 142 20% 96%;
-    --muted-foreground: 25 15% 45%;
-    --border: 142 20% 88%;
-    --input: 142 20% 88%;
-    --ring: 142 60% 25%;
-
-    /* Status Colors */
-    --success: 142 65% 35%;
-    --success-foreground: 0 0% 98%;
-    --warning: 35 90% 50%;
-    --warning-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 98%;
-
-    /* Chart Colors */
-    --chart-1: 142 60% 35%;
-    --chart-2: 35 80% 45%;
-    --chart-3: 142 50% 50%;
-    --chart-4: 35 70% 60%;
-    --chart-5: 142 40% 65%;
-
-    --radius: 0.75rem;
+    /* 🎓 PRIMARY - Navy Blue (مستوحى من أكاديمية زاد) */
+    /* العلم والمعرفة والثقة */
+    --primary: 220 90% 35%;          /* #0B3D6B - Deep Navy Blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 220 90% 95%;
+    --primary-dark: 220 90% 25%;
+    
+    /* 🌱 ACCENT - Teal Green (البناء والنمو) */
+    /* النمو والتطور والإسلام */
+    --accent: 174 65% 45%;           /* #2A9D8F - Teal Green */
+    --accent-foreground: 0 0% 100%;
+    --accent-light: 174 65% 95%;
+    --accent-dark: 174 65% 35%;
+    
+    /* 🔥 SECONDARY - Warm Orange (الحماس والطاقة) */
+    /* الطاقة والتحفيز */
+    --secondary: 25 85% 55%;         /* #F4A460 - Warm Orange */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 25 85% 95%;
+    
+    /* 🎯 SURFACE COLORS */
+    --background: 214 32% 94%;       /* #EEF1F6 - Professional Gray (احترافي ومريح) */
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;               /* البطاقات تبقى بيضاء لتبرز */
+    --card-foreground: 240 10% 4%;
+    --muted: 214 32% 91%;            /* #DFE4EC - أغمق قليلاً للتمييز */
+    --muted-foreground: 240 4% 46%;
+    --border: 214 32% 85%;           /* #C5CDD9 - حدود أوضح */
+    --input: 0 0% 100%;              /* حقول بيضاء لتبرز */
+    --ring: 251 91% 65%;
+    
+    /* ✅ STATUS COLORS */
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+    --error-light: 0 84% 95%;
+    
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 217 91% 95%;
+    
+    /* 🎨 GRADIENT COLORS - ZAD ACADEMY INSPIRED */
+    --gradient-start: 220 90% 35%;     /* Navy Blue */
+    --gradient-middle: 174 65% 45%;    /* Teal Green */
+    --gradient-end: 158 64% 52%;       /* Success Green */
+    
+    --radius: 1rem;
   }
 
   .dark {
-    /* Dark Mode - مدرسة البناء العلمي */
-    --background: 142 30% 8%;
-    --foreground: 0 0% 95%;
-    --card: 142 25% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 142 25% 10%;
-    --popover-foreground: 0 0% 95%;
-
-    /* Primary - Deep Green */
-    --primary: 142 55% 40%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 142 55% 45%;
-    --primary-light: 142 30% 15%;
-
-    /* Accent - Golden/Bronze */
-    --accent: 35 75% 55%;
-    --accent-foreground: 0 0% 10%;
-    --accent-hover: 35 75% 60%;
-    --accent-light: 35 30% 15%;
-
-    /* Secondary - Brown */
-    --secondary: 25 25% 25%;
-    --secondary-foreground: 0 0% 95%;
-    --secondary-light: 25 25% 18%;
-
-    /* Muted & Borders */
-    --muted: 142 20% 15%;
-    --muted-foreground: 25 10% 65%;
-    --border: 142 20% 20%;
-    --input: 142 20% 20%;
-    --ring: 142 55% 40%;
-
-    /* Status Colors */
-    --success: 142 60% 45%;
-    --success-foreground: 0 0% 98%;
-    --warning: 35 85% 55%;
-    --warning-foreground: 0 0% 98%;
-    --destructive: 0 65% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --info: 199 75% 55%;
-    --info-foreground: 0 0% 98%;
-
-    /* Chart Colors */
-    --chart-1: 142 55% 45%;
-    --chart-2: 35 75% 55%;
-    --chart-3: 142 50% 50%;
-    --chart-4: 35 70% 60%;
-    --chart-5: 142 45% 60%;
+    --background: 220 25% 10%;
+    --foreground: 0 0% 98%;
+    --card: 220 25% 15%;
+    --card-foreground: 0 0% 98%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 70%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    
+    /* أفتح قليلاً في الوضع الداكن */
+    --primary: 220 90% 50%;
+    --accent: 174 65% 55%;
+    --secondary: 25 85% 60%;
   }
-}
 
-/* ============================================
-   Base Styles - Typography & Fonts
-   ============================================ */
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
-  /* تطبيق الخطوط العربية عند RTL */
-  /* Apply Arabic fonts when RTL */
-  [dir="rtl"] body,
-  [lang="ar"] body {
-    font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
+  ::selection {
+    @apply bg-primary/30 text-primary;
   }
 
-  /* العناوين بالعربية تستخدم Almarai */
-  /* Headings in Arabic use Almarai */
-  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
-  [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
-  [lang="ar"] h1, [lang="ar"] h2, [lang="ar"] h3,
-  [lang="ar"] h4, [lang="ar"] h5, [lang="ar"] h6 {
-    font-family: var(--font-almarai), var(--font-tajawal), system-ui, sans-serif !important;
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
-}
 
-/* ============================================
-   Modern Glass Morphism Effects
-   ============================================ */
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50;
+  }
 
-.dark .glass {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-strong {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.dark .glass-strong {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* ============================================
-   Animations & Keyframes
-   ============================================ */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
-}
-
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes border-glow {
-  0%, 100% {
-    border-color: rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    border-color: rgba(16, 185, 129, 0.8);
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/40 hover:bg-primary/60 rounded-full;
   }
 }
 
 /* ============================================
-   Utility Classes - Animations
+   🎬 ULTRA SMOOTH ANIMATIONS
    ============================================ */
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out;
-}
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
+@layer utilities {
+  /* Fade & Slide */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  background-size: 200px 100%;
-  animation: shimmer 1.5s infinite;
-}
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Scale & Bounce */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes bounce-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    70% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+
+  /* Floating & Rotating */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(5deg); }
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Pulse & Glow */
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4),
+                  0 0 40px rgba(139, 92, 246, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.6),
+                  0 0 60px rgba(139, 92, 246, 0.3);
+    }
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  /* Border Animation */
+  @keyframes border-dance {
+    0%, 100% {
+      border-color: hsl(var(--primary));
+    }
+    33% {
+      border-color: hsl(var(--accent));
+    }
+    66% {
+      border-color: hsl(var(--secondary));
+    }
+  }
+
+  /* Animation Classes */
+  .animate-fade-in { animation: fade-in 0.6s ease-out; }
+  .animate-fade-in-up { animation: fade-in-up 0.8s ease-out; }
+  .animate-fade-in-down { animation: fade-in-down 0.8s ease-out; }
+  .animate-slide-in-right { animation: slide-in-right 0.8s ease-out; }
+  .animate-slide-in-left { animation: slide-in-left 0.8s ease-out; }
+  .animate-scale-in { animation: scale-in 0.5s ease-out; }
+  .animate-bounce-in { animation: bounce-in 0.8s ease-out; }
+  .animate-float { animation: float 3s ease-in-out infinite; }
+  .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+  .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+  .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+  .animate-gradient { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+  .animate-shimmer { animation: shimmer 2s linear infinite; }
+  .animate-border-dance { animation: border-dance 3s ease-in-out infinite; }
+
+  /* Delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+  .delay-800 { animation-delay: 800ms; }
+  .delay-1000 { animation-delay: 1000ms; }
 }
 
 /* ============================================
-   Typography Utilities
+   💎 ULTRA MODERN COMPONENTS
    ============================================ */
-.font-heading {
-  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
-}
 
-.font-display {
-  font-family: var(--font-plus-jakarta), var(--font-dm-sans), sans-serif;
-  letter-spacing: -0.03em;
-}
+@layer components {
+  /* ========== GLASS CARDS ========== */
+  .glass-card {
+    @apply backdrop-blur-2xl bg-white/70 dark:bg-white/5;
+    @apply border border-white/20 dark:border-white/10;
+    @apply rounded-3xl shadow-2xl shadow-black/5;
+    @apply transition-all duration-500;
+  }
 
-/* خطوط عربية - يتم استخدامها تلقائياً عند RTL */
-/* Arabic fonts - automatically used when RTL */
-.font-arabic {
-  font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
-}
+  .glass-card-hover {
+    @apply glass-card;
+    @apply hover:shadow-3xl hover:shadow-primary/10;
+    @apply hover:-translate-y-2 hover:scale-[1.02];
+    @apply cursor-pointer;
+  }
 
-.text-shadow {
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+  .glass-card-gradient {
+    @apply backdrop-blur-2xl;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.4) 100%
+    );
+    @apply dark:bg-gradient-to-br dark:from-white/10 dark:to-white/5;
+    @apply border border-white/40 dark:border-white/10;
+    @apply rounded-3xl shadow-2xl;
+  }
 
-.text-shadow-lg {
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
+  /* ========== MODERN CARDS ========== */
+  .card-ultra {
+    @apply bg-card rounded-3xl border border-border/50;
+    @apply shadow-lg shadow-black/5;
+    @apply transition-all duration-500 ease-out;
+    @apply hover:shadow-2xl hover:shadow-primary/10;
+    @apply hover:border-primary/30;
+  }
 
-.text-gradient {
-  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+  .card-interactive {
+    @apply card-ultra cursor-pointer;
+    @apply hover:-translate-y-3 hover:scale-[1.02];
+    @apply active:scale-[0.98];
+  }
 
-.text-primary-gradient {
-  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+  .card-gradient-border {
+    @apply relative rounded-3xl p-[2px] overflow-hidden;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(var(--accent)),
+      hsl(var(--secondary))
+    );
+    @apply animate-gradient;
+  }
 
-.text-accent-gradient {
-  background: linear-gradient(135deg, hsl(35 80% 45%) 0%, hsl(35 80% 55%) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  .card-gradient-border > div {
+    @apply bg-card rounded-[calc(1.5rem-2px)] h-full w-full;
+  }
+
+  /* ========== ULTRA MODERN BUTTONS ========== */
+  .btn-ultra {
+    @apply relative overflow-hidden;
+    @apply px-8 py-4 rounded-2xl font-semibold;
+    @apply transition-all duration-300;
+    @apply hover:-translate-y-1 hover:shadow-2xl;
+    @apply active:translate-y-0 active:shadow-lg;
+  }
+
+  .btn-primary {
+    @apply btn-ultra;
+    @apply bg-gradient-to-r from-primary via-primary to-accent;
+    @apply text-white;
+    @apply hover:shadow-primary/50;
+    @apply hover:brightness-110;
+  }
+
+  .btn-secondary {
+    @apply btn-ultra;
+    @apply bg-gradient-to-r from-secondary via-secondary to-info;
+    @apply text-white;
+    @apply hover:shadow-secondary/50;
+    @apply hover:brightness-110;
+  }
+
+  .btn-glass {
+    @apply btn-ultra;
+    @apply backdrop-blur-xl bg-white/20 dark:bg-white/10;
+    @apply border-2 border-white/30 dark:border-white/20;
+    @apply text-foreground hover:bg-white/30 dark:hover:bg-white/20;
+  }
+
+  .btn-outline {
+    @apply btn-ultra;
+    @apply bg-transparent border-2 border-primary;
+    @apply text-primary hover:bg-primary hover:text-white;
+  }
+
+  /* ========== MODERN INPUTS ========== */
+  .input-ultra {
+    @apply w-full px-6 py-4 rounded-2xl;
+    @apply bg-muted/50 border-2 border-transparent;
+    @apply text-foreground placeholder:text-muted-foreground;
+    @apply transition-all duration-300;
+    @apply focus:border-primary focus:bg-background;
+    @apply focus:ring-4 focus:ring-primary/20;
+    @apply focus:shadow-lg focus:shadow-primary/10;
+    @apply outline-none;
+  }
+
+  /* ========== BADGES ========== */
+  .badge-ultra {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full;
+    @apply text-sm font-semibold backdrop-blur-xl;
+    @apply transition-all duration-300;
+  }
+
+  .badge-primary {
+    @apply badge-ultra;
+    @apply bg-primary/10 text-primary border border-primary/30;
+    @apply hover:bg-primary/20;
+  }
+
+  .badge-success {
+    @apply badge-ultra;
+    @apply bg-success/10 text-success border border-success/30;
+    @apply hover:bg-success/20;
+  }
+
+  .badge-gradient {
+    @apply badge-ultra;
+    @apply bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20;
+    @apply text-primary border border-primary/30;
+  }
+
+  /* ========== TEXT GRADIENTS ========== */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary via-accent to-secondary;
+    @apply bg-clip-text text-transparent;
+    @apply animate-gradient;
+  }
+
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent;
+    @apply bg-clip-text text-transparent;
+  }
+
+  .text-gradient-secondary {
+    @apply bg-gradient-to-r from-secondary to-info;
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* ========== BACKGROUNDS ========== */
+  .bg-gradient-mesh {
+    background-image: 
+      radial-gradient(at 0% 0%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 0%, hsl(var(--accent) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(var(--secondary) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(var(--accent) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 50%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--secondary) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(var(--accent) / 0.15) 0px, transparent 50%);
+  }
+
+  .bg-dots {
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--primary) / 0.1) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  .bg-grid {
+    background-image: 
+      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* ========== FLOATING ELEMENTS ========== */
+  .floating-orb {
+    @apply absolute rounded-full blur-3xl opacity-30;
+    @apply pointer-events-none;
+  }
+
+  .orb-primary {
+    @apply floating-orb bg-primary animate-float-slow;
+  }
+
+  .orb-accent {
+    @apply floating-orb bg-accent animate-float-slow delay-500;
+  }
+
+  .orb-secondary {
+    @apply floating-orb bg-secondary animate-float-slow delay-1000;
+  }
+
+  /* ========== NAVIGATION ========== */
+  .nav-link-ultra {
+    @apply relative px-6 py-3 rounded-xl;
+    @apply text-muted-foreground font-medium;
+    @apply transition-all duration-300;
+    @apply hover:text-foreground hover:bg-muted/50;
+  }
+
+  .nav-link-active {
+    @apply nav-link-ultra;
+    @apply text-primary bg-primary/10;
+    @apply font-semibold;
+  }
+
+  .nav-link-active::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 -translate-x-1/2;
+    @apply w-1/2 h-1 bg-gradient-to-r from-primary to-accent;
+    @apply rounded-full;
+  }
+
+  /* ========== DIVIDERS ========== */
+  .divider-gradient {
+    @apply h-px w-full;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--primary)),
+      hsl(var(--accent)),
+      hsl(var(--secondary)),
+      transparent
+    );
+  }
+
+  /* ========== SECTION CONTAINERS ========== */
+  .section-ultra {
+    @apply relative py-20 md:py-32 overflow-hidden;
+  }
+
+  .container-ultra {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* ========== SHADOWS ========== */
+  .shadow-glow-primary {
+    box-shadow: 
+      0 20px 60px -15px hsl(var(--primary) / 0.4),
+      0 0 40px hsl(var(--primary) / 0.2);
+  }
+
+  .shadow-glow-accent {
+    box-shadow: 
+      0 20px 60px -15px hsl(var(--accent) / 0.4),
+      0 0 40px hsl(var(--accent) / 0.2);
+  }
+
+  .shadow-3xl {
+    box-shadow: 
+      0 35px 60px -15px rgba(0, 0, 0, 0.3),
+      0 0 80px rgba(0, 0, 0, 0.1);
+  }
 }
 
 /* ============================================
-   RTL Support
+   📱 RESPONSIVE UTILITIES
    ============================================ */
+
+@layer utilities {
+  .grid-ultra {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+
+  .grid-ultra-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+
+  .stack-ultra {
+    @apply flex flex-col gap-8;
+  }
+}
+
+/* ============================================
+   🌍 RTL SUPPORT
+   ============================================ */
+
 [dir="rtl"] {
   direction: rtl;
-  text-align: right;
-  font-family: var(--font-tajawal), var(--font-almarai), system-ui, sans-serif !important;
 }
 
-[dir="ltr"] {
-  direction: ltr;
-  text-align: left;
+[dir="rtl"] .rtl\:mirror {
+  transform: scaleX(-1);
 }
 
 /* ============================================
-   Backgrounds & Gradients
+   ♿ ACCESSIBILITY
    ============================================ */
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+*:focus-visible {
+  @apply outline-none ring-4 ring-primary/40 ring-offset-2 ring-offset-background;
+  @apply rounded-xl;
 }
 
-.gradient-bg-light {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-.bg-pattern {
-  background-image:
-    radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 0),
-    radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2px, transparent 0);
-  background-size: 100px 100px;
-}
-
-/* خلفية متدرجة متحركة */
-.bg-gradient-animated {
-  background: linear-gradient(-45deg, #10b981, #14b8a6, #059669, #0d9488);
-  background-size: 400% 400%;
-  animation: gradient-shift 8s ease infinite;
-}
-
-/* ============================================
-   Card Enhancements - Modern Style
-   ============================================ */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(16, 185, 129, 0.1);
-}
-
-.card-elegant {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-elegant:hover {
-  box-shadow: 
-    0 20px 25px -5px rgba(16, 185, 129, 0.1),
-    0 10px 10px -5px rgba(16, 185, 129, 0.04);
-  transform: translateY(-2px);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.dark .card-elegant {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.1);
-}
-
-.dark .card-elegant:hover {
-  box-shadow: 
-    0 20px 25px -5px rgba(16, 185, 129, 0.15),
-    0 10px 10px -5px rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.dark .card-hover:hover {
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.3),
-    0 10px 10px -5px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(16, 185, 129, 0.2);
-}
-
-/* ============================================
-   Button Styles - Modern & Professional
-   ============================================ */
-.btn-gradient {
-  background: linear-gradient(135deg, hsl(142 60% 25%) 0%, hsl(142 60% 35%) 100%);
-  color: white;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-gradient::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn-gradient:hover::before {
-  left: 100%;
-}
-
-.btn-gradient:hover {
-  background: linear-gradient(135deg, hsl(142 60% 20%) 0%, hsl(142 60% 30%) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-}
-
-.btn-accent {
-  background: linear-gradient(135deg, hsl(35 80% 45%) 0%, hsl(35 80% 55%) 100%);
-  color: white;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-accent::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn-accent:hover::before {
-  left: 100%;
-}
-
-.btn-accent:hover {
-  background: linear-gradient(135deg, hsl(35 80% 40%) 0%, hsl(35 80% 50%) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(217, 119, 6, 0.4);
-}
-
-/* ============================================
-   Input Enhancements
-   ============================================ */
-.input-modern:focus {
-  border-color: hsl(142 60% 25%);
-  box-shadow: 
-    0 0 0 3px rgba(16, 185, 129, 0.1),
-    0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.dark .input-modern:focus {
-  border-color: hsl(142 55% 40%);
-  box-shadow: 
-    0 0 0 3px rgba(16, 185, 129, 0.2),
-    0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-
-/* ============================================
-   Brand Colors
-   ============================================ */
-.bg-brand-primary {
-  background: hsl(var(--primary));
-}
-
-.bg-brand-accent {
-  background: hsl(var(--accent));
-}
-
-.text-brand-primary {
-  color: hsl(var(--primary));
-}
-
-.text-brand-accent {
-  color: hsl(var(--accent));
-}
-
-.border-brand-primary {
-  border-color: hsl(var(--primary));
-}
-
-.border-brand-accent {
-  border-color: hsl(var(--accent));
-}
-
-/* ============================================
-   Navigation Styles
-   ============================================ */
-.nav-active {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
-  color: hsl(var(--primary-foreground));
-  box-shadow: 
-    0 4px 12px rgba(16, 185, 129, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-/* ============================================
-   Dark Mode Enhancements
-   ============================================ */
-.dark .glass {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-}
-
-/* ============================================
-   Responsive Design
-   ============================================ */
-@media (max-width: 768px) {
-  .mobile-optimized {
-    padding: 1rem;
-    font-size: 0.875rem;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
 
-  .mobile-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+/* ============================================
+   🖨️ PRINT
+   ============================================ */
+
+@media print {
+  body {
+    @apply bg-white text-black;
+  }
+  
+  .no-print {
+    display: none !important;
   }
 }
