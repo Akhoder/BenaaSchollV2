@@ -13,6 +13,7 @@ import { Loader2, Printer, Download, ArrowLeft, Award } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
 export default function CertificateViewPage() {
   const params = useParams();
@@ -29,8 +30,15 @@ export default function CertificateViewPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
+  const [template, setTemplate] = useState<'classic' | 'modern' | 'royal'>((typeof window !== 'undefined' && (localStorage.getItem('cert_template') as any)) || 'classic');
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [signatureSrc, setSignatureSrc] = useState<string | null>(null);
+  const [stampSrc, setStampSrc] = useState<string | null>(null);
+  const [branding, setBranding] = useState<{ watermark_enabled?: boolean; watermark_opacity?: number; watermark_use_logo?: boolean; watermark_use_stamp?: boolean; royal_gold?: string; royal_bg_tint?: string }>({});
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!authLoading && !profile) {
       router.push('/login');
       return;
@@ -42,6 +50,33 @@ export default function CertificateViewPage() {
       void loadCertificate();
     }
   }, [certificateId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('branding_settings').select('*').eq('id', 1).single();
+        if (data) {
+          if (data.template && (['classic','modern','royal'] as any).includes(data.template)) {
+            setTemplate(data.template);
+          }
+          if (data.logo_url) setLogoSrc(data.logo_url);
+          if (data.signature_url) setSignatureSrc(data.signature_url);
+          if (data.stamp_url) setStampSrc(data.stamp_url);
+          // store watermark/palette in dataset for later use
+          const b = {
+            royal_gold: data.royal_gold,
+            royal_bg_tint: data.royal_bg_tint,
+            watermark_enabled: data.watermark_enabled,
+            watermark_opacity: data.watermark_opacity,
+            watermark_use_logo: data.watermark_use_logo,
+            watermark_use_stamp: data.watermark_use_stamp,
+          };
+          setBranding(b);
+          (window as any).__branding = b;
+        }
+      } catch {}
+    })();
+  }, []);
 
   const loadCertificate = async () => {
     try {
@@ -117,6 +152,18 @@ export default function CertificateViewPage() {
       if (principal) {
         setPrincipalName(principal.full_name);
       }
+
+      // Load template from branding settings
+      const { data } = await supabase
+        .from('branding_settings')
+        .select('template')
+        .single();
+      
+      if (data) {
+        if (data.template && (['classic','modern','royal'] as any).includes(data.template)) {
+          setTemplate(data.template);
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error('Error loading certificate');
@@ -174,8 +221,7 @@ export default function CertificateViewPage() {
       clone.setAttribute('dir', 'rtl');
       clone.setAttribute('lang', 'ar');
       clone.style.margin = '0';
-      clone.style.border = 'none';
-      clone.style.boxShadow = 'none';
+      // keep template borders/shadows intact to match on-screen appearance
       clone.style.boxSizing = 'border-box';
       // Enforce Arabic-friendly text rendering
       clone.style.fontFamily = "Almarai, Tajawal, system-ui, sans-serif";
@@ -211,56 +257,6 @@ export default function CertificateViewPage() {
         });
       });
 
-      // Force visibility for the score card content (inside the blue gradient box)
-      const scoreCard = (clone.querySelector('.from-emerald-500.to-blue-500') as HTMLElement) 
-        || (clone.querySelector('[class*="from-emerald-500"][class*="to-blue-500"]') as HTMLElement);
-      if (scoreCard) {
-        // Replace with a simple, raster-friendly layout
-        scoreCard.style.background = '#ffffff';
-        scoreCard.style.backgroundImage = 'none';
-        scoreCard.style.border = '2px solid #3B82F6';
-        scoreCard.style.opacity = '1';
-        scoreCard.style.filter = 'none';
-        scoreCard.style.mixBlendMode = 'normal';
-        scoreCard.style.boxShadow = 'none';
-        scoreCard.style.padding = '24px';
-        scoreCard.style.borderRadius = '12px';
-        scoreCard.style.display = 'flex';
-        scoreCard.style.flexDirection = 'column';
-        scoreCard.style.alignItems = 'center';
-        scoreCard.style.justifyContent = 'center';
-        scoreCard.style.gap = '8px';
-
-        // Clear current content and rebuild
-        scoreCard.innerHTML = '';
-
-        const label = document.createElement('div');
-        label.textContent = (t('finalScore') as any) || 'العلامة النهائية:';
-        label.style.fontSize = '14px';
-        label.style.color = '#111827';
-        label.style.opacity = '1';
-        label.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
-
-        const value = document.createElement('div');
-        const scoreStr = `${(certificate?.final_score ?? 0).toFixed(1)} / 100`;
-        value.textContent = scoreStr;
-        value.style.fontSize = '40px';
-        value.style.fontWeight = '800';
-        value.style.lineHeight = '1.2';
-        value.style.color = '#111827';
-        value.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
-
-        const grade = document.createElement('div');
-        grade.textContent = `${certificate?.grade ?? ''}`;
-        grade.style.fontSize = '24px';
-        grade.style.fontWeight = '700';
-        grade.style.color = '#111827';
-        grade.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
-
-        scoreCard.appendChild(label);
-        scoreCard.appendChild(value);
-        scoreCard.appendChild(grade);
-      }
 
       page.appendChild(clone);
       root.appendChild(page);
@@ -288,19 +284,98 @@ export default function CertificateViewPage() {
       ensureFontLink('pdf-fonts-almarai-tajawal', 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap');
       ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
 
+      // Apply template CSS and class
+      const templateCSS = getCertificateTemplateCSS(template, { royalGold: branding.royal_gold, royalBgTint: branding.royal_bg_tint });
+      const templateStyle = document.createElement('style');
+      templateStyle.textContent = templateCSS;
+      root.appendChild(templateStyle);
+      clone.classList.add(template === 'modern' ? 'cert-template-modern' : template === 'royal' ? 'cert-template-royal' : 'cert-template-classic');
+
+      // Ensure score value and grade are present and visible
+      const ensureText = (selector: string, text: string) => {
+        const el = clone.querySelector(selector) as HTMLElement | null;
+        if (el) {
+          if (!el.textContent || el.textContent.trim().length === 0) {
+            el.textContent = text;
+          }
+          el.style.color = '#111827';
+          el.style.opacity = '1';
+          el.style.visibility = 'visible';
+          el.style.filter = 'none';
+          (el.style as any).webkitTextFillColor = '#111827';
+        }
+      };
+      ensureText('.score-value', `${(certificate?.final_score ?? 0).toFixed(1)} / 100`);
+      ensureText('.score-grade', `${certificate?.grade ?? ''}`);
+
+      // Watermark (export only)
+      if (branding.watermark_enabled) {
+        const wmImgSrc = branding.watermark_use_logo && logoSrc ? logoSrc : (branding.watermark_use_stamp && stampSrc ? stampSrc : null);
+        if (wmImgSrc) {
+          const wm = document.createElement('img');
+          wm.src = wmImgSrc;
+          wm.style.position = 'absolute';
+          wm.style.left = '50%';
+          wm.style.top = '50%';
+          wm.style.transform = 'translate(-50%, -50%)';
+          wm.style.opacity = String(branding.watermark_opacity ?? 0.08);
+          wm.style.pointerEvents = 'none';
+          wm.style.zIndex = '0';
+          wm.style.maxWidth = '60%';
+          wm.style.filter = 'grayscale(20%)';
+          clone.appendChild(wm);
+        }
+      }
+
+      // Ensure score card exists and is visible in clone
+      const cloneScoreRoot = clone.querySelector('[data-score-root="1"]') as HTMLElement | null;
+      if (cloneScoreRoot && !cloneScoreRoot.querySelector('.score-card')) {
+        const sc = document.createElement('div');
+        sc.className = 'score-card inline-block';
+        sc.style.background = '#ffffff';
+        sc.style.border = '2px solid #3B82F6';
+        sc.style.borderRadius = '12px';
+        sc.style.padding = '24px';
+        sc.style.textAlign = 'center';
+        const label = document.createElement('div');
+        label.className = 'score-label mb-2';
+        label.textContent = ((t('finalScore') as any) || 'العلامة النهائية:') as string;
+        label.style.fontSize = '14px';
+        label.style.color = '#111827';
+        label.style.opacity = '0.9';
+        const value = document.createElement('div');
+        value.className = 'score-value font-display';
+        value.textContent = `${(certificate?.final_score ?? 0).toFixed(1)} / 100`;
+        value.style.fontSize = '40px';
+        value.style.fontWeight = '800';
+        value.style.lineHeight = '1.2';
+        value.style.color = '#111827';
+        const grade = document.createElement('div');
+        grade.className = 'score-grade font-display mt-2';
+        grade.textContent = `${certificate?.grade ?? ''}`;
+        grade.style.fontSize = '24px';
+        grade.style.fontWeight = '700';
+        grade.style.color = '#111827';
+        sc.appendChild(label);
+        sc.appendChild(value);
+        sc.appendChild(grade);
+        cloneScoreRoot.appendChild(sc);
+      }
+
       document.body.appendChild(root);
 
       // Wait for layout and fonts
       await new Promise((r) => setTimeout(r, 300));
       await document.fonts.ready;
-
+      
       const cloneRect = clone.getBoundingClientRect();
-      const pad = 24; // px inner padding
-      const scale = Math.min(
-        (A4_WIDTH_PX - pad * 2) / cloneRect.width,
-        (A4_HEIGHT_PX - pad * 2) / cloneRect.height,
-        1
-      );
+      const pad = 0; // maximize content area
+      const widthScale = (A4_WIDTH_PX - pad * 2) / cloneRect.width;
+      const heightScale = (A4_HEIGHT_PX - pad * 2) / cloneRect.height;
+      let scale = widthScale; // prefer fitting width to reduce side margins
+      if (cloneRect.height * scale > (A4_HEIGHT_PX - pad * 2)) {
+        scale = Math.min(widthScale, heightScale);
+      }
       clone.style.transform = `scale(${scale})`;
       clone.style.transformOrigin = 'center center';
       clone.style.unicodeBidi = 'plaintext';
@@ -332,7 +407,7 @@ export default function CertificateViewPage() {
       pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, undefined, 'FAST');
       const filename = `Certificate-${certificate?.certificate_number || 'cert'}-${Date.now()}.pdf`;
       pdf.save(filename);
-
+      
       toast.success('PDF downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -367,6 +442,13 @@ export default function CertificateViewPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in print:space-y-0">
+        {mounted && (
+          (() => {
+            const css = getCertificateTemplateCSS(template, { royalGold: branding.royal_gold, royalBgTint: branding.royal_bg_tint });
+            const liveCss = css.replaceAll('#pdf-root ', '');
+            return <style>{liveCss}</style>;
+          })()
+        )}
         {/* Actions */}
         <div className="flex items-center justify-between pt-1 print:hidden">
           <Button variant="outline" onClick={() => router.back()}>
@@ -395,6 +477,13 @@ export default function CertificateViewPage() {
                 </>
               )}
             </Button>
+            {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Button variant={template==='classic' ? 'default' : 'outline'} size="sm" onClick={() => setTemplate('classic')}>Classic</Button>
+                <Button variant={template==='modern' ? 'default' : 'outline'} size="sm" onClick={() => setTemplate('modern')}>Modern</Button>
+                <Button variant={template==='royal' ? 'default' : 'outline'} size="sm" onClick={() => setTemplate('royal')}>Royal</Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -402,11 +491,21 @@ export default function CertificateViewPage() {
         <div className="max-w-4xl mx-auto">
           <div 
             ref={certificateRef}
-            className="bg-gradient-to-br from-amber-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-4 border-amber-400 dark:border-amber-600 rounded-lg shadow-2xl p-12 print:p-16 print:shadow-none print:border-2"
+            className={`${template==='modern' ? 'cert-template-modern' : template==='royal' ? 'cert-template-royal' : 'cert-template-classic'} relative rounded-lg shadow-2xl p-12 print:p-16 print:shadow-none`}
             dir="rtl"
             lang="ar"
             style={{ fontFamily: "'Almarai', 'Tajawal', system-ui, sans-serif" }}
           >
+            {branding?.watermark_enabled && (
+              (() => {
+                const wmImgSrc = (branding?.watermark_use_logo && logoSrc) ? logoSrc : ((branding?.watermark_use_stamp && stampSrc) ? stampSrc : null);
+                return wmImgSrc ? (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+                    <img src={wmImgSrc} alt="wm" style={{ opacity: branding?.watermark_opacity ?? 0.08, maxWidth: '60%', filter: 'grayscale(20%)' }} />
+                  </div>
+                ) : null;
+              })()
+            )}
             {/* Header */}
             <div className="text-center mb-8 print:mb-12">
               <div className="flex items-center justify-center mb-4">
@@ -455,15 +554,15 @@ export default function CertificateViewPage() {
                   </p>
                 </div>
 
-                <div className="mt-8 print:mt-12">
-                  <div className="inline-block bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-8 py-4 rounded-lg shadow-lg print:px-12 print:py-6">
-                    <p className="text-sm text-white/90 mb-2 print:text-base">
+                <div className="mt-8 print:mt-12" data-score-root="1" style={{ position: 'relative' }}>
+                  <div className="score-card inline-block" style={{ background: 'rgba(255,255,255,0.98)', border: '2px solid #3B82F6', borderRadius: 12, padding: 24, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+                    <p className="score-label mb-2" style={{ fontSize: 14, color: '#111827', opacity: 0.9 }}>
                       {(t('finalScore') as any) || 'العلامة النهائية:'}
                     </p>
-                    <p className="text-4xl font-display font-bold print:text-5xl">
+                    <p className="score-value font-display" style={{ fontSize: 40, fontWeight: 800, lineHeight: 1.2, color: '#111827' }}>
                       {certificate.final_score.toFixed(1)} / 100
                     </p>
-                    <p className="text-2xl font-display font-semibold mt-2 print:text-3xl">
+                    <p className="score-grade font-display mt-2" style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>
                       {certificate.grade}
                     </p>
                   </div>
