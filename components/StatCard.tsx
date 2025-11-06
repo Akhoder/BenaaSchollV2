@@ -1,96 +1,161 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LucideIcon } from 'lucide-react';
+'use client';
+
+import React from 'react';
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value: number | string;
   icon: LucideIcon;
   description?: string;
+  color?: 'primary' | 'accent' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
   trend?: {
     value: number;
     isPositive: boolean;
   };
-  gradient?: string;
   loading?: boolean;
+  className?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, description, trend, gradient, loading = false }: StatCardProps) {
-  const defaultGradient = "from-emerald-500 to-teal-500";
-  const cardGradient = gradient || defaultGradient;
+const colorConfig = {
+  primary: {
+    bg: 'bg-primary/10',
+    text: 'text-primary',
+    glow: 'shadow-glow-primary',
+  },
+  accent: {
+    bg: 'bg-accent/10',
+    text: 'text-accent',
+    glow: 'shadow-glow-accent',
+  },
+  secondary: {
+    bg: 'bg-secondary/10',
+    text: 'text-secondary',
+    glow: 'shadow-glow-primary',
+  },
+  success: {
+    bg: 'bg-success/10',
+    text: 'text-success',
+    glow: 'shadow-glow-primary',
+  },
+  warning: {
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    glow: 'shadow-glow-accent',
+  },
+  error: {
+    bg: 'bg-error/10',
+    text: 'text-error',
+    glow: 'shadow-glow-accent',
+  },
+  info: {
+    bg: 'bg-info/10',
+    text: 'text-info',
+    glow: 'shadow-glow-primary',
+  },
+};
+
+export function StatCard({
+  title,
+  value,
+  icon: Icon,
+  description,
+  color = 'primary',
+  trend,
+  loading = false,
+  className
+}: StatCardProps) {
+  const config = colorConfig[color];
 
   if (loading) {
     return (
-      <Card className="card-hover border-slate-200/50 dark:border-slate-800/50">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-          <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2"></div>
-          <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-        </CardContent>
-      </Card>
+      <div className={cn("glass-card p-6 animate-pulse", className)}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 bg-muted rounded" />
+            <div className="h-12 w-12 bg-muted rounded-2xl" />
+          </div>
+          <div className="h-8 w-20 bg-muted rounded" />
+          <div className="h-3 w-32 bg-muted rounded" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="group relative overflow-hidden border-[hsl(var(--border))] card-elegant">
-      {/* خلفية متدرجة متحركة */}
+    <div className={cn(
+      "glass-card-hover p-6 group relative overflow-hidden",
+      className
+    )}>
+      {/* Decorative Background */}
       <div className={cn(
-        "absolute inset-0 bg-gradient-to-br", cardGradient,
-        "opacity-0 group-hover:opacity-10 transition-all duration-500 animate-shimmer"
+        "absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500",
+        config.bg
       )} />
-      
-      {/* تأثير الضوء المتحرك */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer" />
-      
-      <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0 relative z-10">
-        <CardTitle className="text-sm font-semibold text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors">
-          {title}
-        </CardTitle>
-        <div className={cn(
-          "p-2.5 rounded-xl bg-gradient-to-br shadow-lg",
-          cardGradient,
-          "group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
-        )}>
-          <Icon className="h-5 w-5 text-white drop-shadow-sm" />
+
+      <div className="relative z-10 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted-foreground">
+            {title}
+          </h3>
+          
+          {/* Icon */}
+          <div className={cn(
+            "p-3 rounded-2xl transition-all duration-300 group-hover:scale-110",
+            config.bg
+          )}>
+            <Icon className={cn("w-6 h-6", config.text)} />
+          </div>
         </div>
-      </CardHeader>
-      
-      <CardContent className="relative z-10">
+
+        {/* Value */}
         <div className={cn(
-          "text-3xl sm:text-4xl font-bold bg-gradient-to-br text-shadow",
-          cardGradient,
-          "bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300"
+          "text-4xl font-bold font-display transition-all duration-300",
+          config.text
         )}>
           {value}
         </div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-2 font-medium group-hover:text-[hsl(var(--primary))] transition-colors">
-            {description}
-          </p>
-        )}
-        {trend && (
-          <div className="flex items-center gap-1 mt-2">
+
+        {/* Description & Trend */}
+        <div className="flex items-center justify-between">
+          {description && (
+            <p className="text-sm text-muted-foreground">
+              {description}
+            </p>
+          )}
+
+          {trend && (
             <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold",
-              trend.isPositive 
-                ? 'bg-[hsl(var(--primary-light))] text-[hsl(var(--primary))] dark:bg-[hsl(var(--primary-light))]' 
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              "flex items-center gap-1 text-sm font-medium",
+              trend.isPositive ? "text-success" : "text-error"
             )}>
-              <span className={cn(
-                "transition-transform duration-300",
-                trend.isPositive ? 'group-hover:translate-y-[-2px]' : 'group-hover:translate-y-[2px]'
-              )}>
-                {trend.isPositive ? '↗' : '↘'}
-              </span>
-              {Math.abs(trend.value)}%
+              {trend.isPositive ? (
+                <TrendingUp className="w-4 h-4" />
+              ) : (
+                <TrendingDown className="w-4 h-4" />
+              )}
+              <span>{Math.abs(trend.value)}%</span>
             </div>
-            <span className="text-xs text-muted-foreground">from last month</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Border Glow */}
+      <div className={cn(
+        "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
+        "ring-1 ring-inset",
+        color === 'primary' && "ring-primary/30",
+        color === 'accent' && "ring-accent/30",
+        color === 'secondary' && "ring-secondary/30",
+        color === 'success' && "ring-success/30",
+        color === 'warning' && "ring-warning/30",
+        color === 'error' && "ring-error/30",
+        color === 'info' && "ring-info/30"
+      )} />
+    </div>
   );
 }
+
+export default StatCard;

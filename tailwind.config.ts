@@ -10,12 +10,12 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-plus-jakarta)', 'var(--font-dm-sans)', 'sans-serif'],
-        arabic: ['var(--font-tajawal)', 'var(--font-almarai)', 'system-ui', 'sans-serif'],
-        tajawal: ['var(--font-tajawal)', 'sans-serif'],
-        almarai: ['var(--font-almarai)', 'sans-serif'],
+        sans: ['var(--font-poppins)', 'var(--font-cairo)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
+        poppins: ['var(--font-poppins)', 'sans-serif'],
+        cairo: ['var(--font-cairo)', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -41,10 +41,13 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          light: 'hsl(var(--primary-light))',
+          dark: 'hsl(var(--primary-dark))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
+          light: 'hsl(var(--secondary-light))',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
@@ -53,10 +56,32 @@ const config: Config = {
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
+          light: 'hsl(var(--accent-light))',
+          dark: 'hsl(var(--accent-dark))',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
+          light: 'hsl(var(--success-light))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: 'hsl(var(--warning-foreground))',
+          light: 'hsl(var(--warning-light))',
+        },
+        error: {
+          DEFAULT: 'hsl(var(--error))',
+          foreground: 'hsl(var(--error-foreground))',
+          light: 'hsl(var(--error-light))',
+        },
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          foreground: 'hsl(var(--info-foreground))',
+          light: 'hsl(var(--info-light))',
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -68,6 +93,9 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+      },
+      boxShadow: {
+        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
       },
       keyframes: {
         'accordion-down': {

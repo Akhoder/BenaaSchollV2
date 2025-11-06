@@ -96,8 +96,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-green-50/20 to-amber-50/10 dark:from-[hsl(142_30%_8%)] dark:via-[hsl(142_25%_10%)] dark:to-[hsl(142_20%_12%)]">
-      <nav className="fixed top-0 z-50 w-full bg-white/95 dark:bg-[hsl(142_25%_10%)]/95 backdrop-blur-lg border-b border-[hsl(var(--border))] shadow-sm">
+    <div className="min-h-screen bg-background">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 bg-pattern-dots opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+      
+      <nav className="fixed top-0 z-50 w-full glass-card border-b border-border shadow-sm">
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start gap-3">
@@ -110,8 +114,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-0 bg-white dark:bg-[hsl(142_25%_10%)] border-[hsl(var(--border))]">
                   <div className="flex h-full flex-col gap-2 p-4">
                     <div className="flex items-center gap-3 px-3 py-4 border-b border-[hsl(var(--border))]">
-                      <div className="p-2 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl shadow-lg">
-                        <GraduationCap className="h-6 w-6 text-white" />
+                      <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg">
+                        <img 
+                          src="/icons/logo.jpg" 
+                          alt="مدرسة البناء العلمي" 
+                          className="w-12 h-12 object-cover"
+                        />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-lg font-display font-bold text-[hsl(var(--primary))] leading-tight">مدرسة البناء العلمي</span>
@@ -126,8 +134,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Sheet>
 
               <Link href="/dashboard" className="flex items-center gap-3 group">
-                <div className="p-2 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <GraduationCap className="h-5 w-5 text-white" />
+                <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <img 
+                    src="/icons/logo.jpg" 
+                    alt="مدرسة البناء العلمي" 
+                    className="w-10 h-10 object-cover"
+                  />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xl font-display font-bold hidden sm:inline-block text-[hsl(var(--primary))] leading-tight">

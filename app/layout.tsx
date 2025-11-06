@@ -1,62 +1,33 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Tajawal, Almarai, Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
+import { Poppins, Cairo } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 
-// ✅ FONT OPTIMIZATION: Modern, contemporary fonts for better design
-const inter = Inter({
+// ✅ ULTRA MODERN FONTS - خطوط عصرية 2024
+// Poppins - الخط الأكثر عصرية للغة الإنجليزية
+// نظيف، هندسي، احترافي، يستخدم في أفضل المواقع العصرية
+const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-poppins',
   display: 'swap',
   preload: true,
   fallback: ['system-ui', 'arial']
 });
 
-// Modern display font for headings - Very popular in 2024
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-plus-jakarta',
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'arial']
-});
-
-// Modern geometric sans-serif - Clean and professional
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'arial']
-});
-
-// Modern Arabic font - Clean, elegant, professional
-const tajawal = Tajawal({
+// Cairo - أفضل خط عربي عصري من Google Fonts
+// مصمم خصيصاً للغة العربية مع دعم ممتاز للاتينية
+// يستخدم في أشهر المواقع العربية العصرية
+const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['200', '300', '400', '500', '700', '800', '900'],
-  variable: '--font-tajawal',
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-cairo',
   display: 'swap',
   preload: true,
   fallback: ['system-ui', 'arial']
-});
-
-// Beautiful Arabic font for headings - Saudi-designed, modern
-// Enhanced fallback configuration to handle download failures gracefully
-// If Almarai fails to load, it will automatically fallback to Tajawal
-const almarai = Almarai({
-  subsets: ['arabic'],
-  weight: ['400', '700', '800'],
-  variable: '--font-almarai',
-  display: 'swap',
-  preload: false,
-  fallback: ['Tajawal', 'system-ui', 'arial', 'sans-serif'],
-  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
@@ -97,7 +68,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} ${plusJakarta.variable} ${dmSans.variable} ${tajawal.variable} ${almarai.variable} font-sans antialiased`}>
+      <body className={`${poppins.variable} ${cairo.variable} font-sans antialiased`}>
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>

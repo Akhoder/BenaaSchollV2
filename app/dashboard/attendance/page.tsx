@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { LoadingInline } from '@/components/LoadingSpinner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -513,14 +514,11 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent>
             {loadingStudents ? (
-              <div className="space-y-2 animate-fade-in">
-                <div className="text-center py-8">
-                  <div className="relative inline-block mb-4">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
-                    <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
-                  </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}</p>
-                </div>
+              <div className="py-8">
+                <LoadingInline 
+                  text={language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}
+                  size="default"
+                />
               </div>
             ) : students.length === 0 ? (
               <div className="text-center py-12 animate-fade-in">

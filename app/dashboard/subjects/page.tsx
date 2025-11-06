@@ -44,6 +44,7 @@ interface TeacherRow { id: string; full_name: string; }
 
 export default function SubjectsPage() {
   const { profile, loading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const router = useRouter();
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
@@ -247,16 +248,10 @@ export default function SubjectsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center animate-fade-in">
-            <div className="relative inline-block">
-              <Loader2 className="h-16 w-16 animate-spin text-amber-600 mx-auto animate-pulse-glow" />
-              <div className="absolute inset-0 bg-amber-200/20 rounded-full blur-xl animate-pulse"></div>
-            </div>
-            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading subjects...</p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch the data</p>
-          </div>
-        </div>
+        <DashboardLoadingSpinner
+          text={language === 'ar' ? 'جاري تحميل المواد...' : 'Loading subjects...'}
+          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
+        />
       </DashboardLayout>
     );
   }
@@ -285,10 +280,10 @@ export default function SubjectsPage() {
           )}
         </PageHeader>
 
-        <Card className="card-elegant">
+        <Card className="card-interactive">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-slate-500" />
+              <Search className="h-5 w-5 text-muted-foreground" />
               <CardTitle className="font-display text-gradient">Search Subjects</CardTitle>
             </div>
           </CardHeader>
@@ -305,11 +300,11 @@ export default function SubjectsPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-elegant">
+        <Card className="card-interactive animate-fade-in-up delay-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-display text-gradient">
-                <BookOpen className="h-5 w-5 text-indigo-600" />
+                <BookOpen className="h-5 w-5 text-primary" />
                 Subjects ({filtered.length})
               </CardTitle>
             </div>
