@@ -113,7 +113,7 @@ export default function EditQuizPage() {
 
   // Load lessons when subject changes
   const onSubjectChange = useCallback(async (sid: string) => {
-    setForm((prev) => ({ ...prev, subject_id: sid, lesson_id: '' }));
+    setForm((prev: any) => ({ ...prev, subject_id: sid, lesson_id: '' }));
     if (!sid) {
       setLessons([]);
       return;
@@ -333,7 +333,7 @@ export default function EditQuizPage() {
 
       // Add options for MCQ questions
       if ((type === 'mcq_single' || type === 'mcq_multi') && newQuestion.options) {
-        const opts = newQuestion.options.map((opt, idx) => ({
+        const opts = newQuestion.options.map((opt: any, idx: number) => ({
           text: opt.text,
           is_correct: opt.is_correct,
           order_index: idx,
@@ -392,7 +392,7 @@ export default function EditQuizPage() {
           if (q.id !== questionId || !q.options) return q;
           return {
             ...q,
-            options: q.options.map((opt) =>
+            options: q.options.map((opt: any) =>
               opt.id === optionId ? { ...opt, ...updates } : opt
             ),
           };
@@ -426,10 +426,10 @@ export default function EditQuizPage() {
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.id !== questionId || !q.options) return q;
-        const filtered = q.options.filter((opt) => opt.id !== optionId);
+        const filtered = q.options.filter((opt: any) => opt.id !== optionId);
         return {
           ...q,
-          options: filtered.map((opt, idx) => ({ ...opt, order_index: idx })),
+          options: filtered.map((opt: any, idx: number) => ({ ...opt, order_index: idx })),
         };
       })
     );
@@ -504,8 +504,8 @@ export default function EditQuizPage() {
       if (question.type === 'mcq_single' || question.type === 'mcq_multi') {
         if (question.options && question.options.length >= 2) {
           const opts = question.options
-            .filter((opt) => opt.text.trim())
-            .map((opt, i) => ({
+            .filter((opt: any) => opt.text.trim())
+            .map((opt: any, i: number) => ({
               text: opt.text.trim(),
               is_correct: opt.is_correct,
               order_index: i,
@@ -517,9 +517,10 @@ export default function EditQuizPage() {
         }
       } else if (question.type === 'true_false') {
         // Update true/false options
+        const correctAnswerBool = question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1';
         const trueFalseOptions = [
-          { text: language === 'ar' ? 'صحيح' : 'True', is_correct: question.correct_answer === true, order_index: 0 },
-          { text: language === 'ar' ? 'خطأ' : 'False', is_correct: question.correct_answer === false, order_index: 1 },
+          { text: language === 'ar' ? 'صحيح' : 'True', is_correct: correctAnswerBool, order_index: 0 },
+          { text: language === 'ar' ? 'خطأ' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
         ];
         await replaceOptions(question.id, trueFalseOptions);
       }
@@ -648,7 +649,7 @@ export default function EditQuizPage() {
                   key={`lesson-${form.lesson_id || 'none'}-${lessons.length}`}
                   value={form.lesson_id && form.lesson_id !== '' ? form.lesson_id : 'NONE'}
                   onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, lesson_id: v === 'NONE' ? '' : v }))
+                    setForm((prev: any) => ({ ...prev, lesson_id: v === 'NONE' ? '' : v }))
                   }
                   disabled={!form.subject_id}
                 >
@@ -1042,7 +1043,7 @@ export default function EditQuizPage() {
                             {language === 'ar' ? 'إضافة خيار' : 'Add Option'}
                           </Button>
                         </div>
-                        {(question.options || []).map((option, optIdx) => (
+                        {(question.options || []).map((option: any, optIdx: number) => (
                           <div
                             key={option.id}
                             className="flex items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-700"
@@ -1057,7 +1058,7 @@ export default function EditQuizPage() {
                                       if (q.id !== question.id || !q.options) return q;
                                       return {
                                         ...q,
-                                        options: q.options.map((opt) => ({
+                                        options: q.options.map((opt: any) => ({
                                           ...opt,
                                           is_correct: opt.id === option.id ? !!checked : false,
                                         })),
@@ -1112,17 +1113,17 @@ export default function EditQuizPage() {
                         </Label>
                         <div className="flex gap-2">
                           <Button
-                            variant={question.correct_answer === true ? 'default' : 'outline'}
+                            variant={(question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1') ? 'default' : 'outline'}
                             onClick={() =>
-                              updateQuestionLocal(question.id, { correct_answer: true })
+                              updateQuestionLocal(question.id, { correct_answer: 'true' })
                             }
                           >
                             {language === 'ar' ? 'صحيح' : 'True'}
                           </Button>
                           <Button
-                            variant={question.correct_answer === false ? 'default' : 'outline'}
+                            variant={(question.correct_answer === 'false' || question.correct_answer === 0 || question.correct_answer === '0') ? 'default' : 'outline'}
                             onClick={() =>
-                              updateQuestionLocal(question.id, { correct_answer: false })
+                              updateQuestionLocal(question.id, { correct_answer: 'false' })
                             }
                           >
                             {language === 'ar' ? 'خطأ' : 'False'}

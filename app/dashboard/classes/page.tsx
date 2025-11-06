@@ -503,7 +503,7 @@ GRANT ALL ON classes TO authenticated;`;
             <Users className="h-4 w-4 mr-2" />
             Toggle View
           </Button>
-          {profile.role === 'admin' && (
+          {profile?.role === 'admin' && (
             <Button 
               onClick={() => {
                 setSelectedClass(null);
@@ -632,7 +632,7 @@ GRANT ALL ON classes TO authenticated;`;
                       <TableHead className="font-semibold font-sans">Duration</TableHead>
                       <TableHead className="font-semibold font-sans">Status</TableHead>
                       <TableHead className="font-semibold font-sans">Published</TableHead>
-                      {profile.role === 'admin' && (
+                      {profile?.role === 'admin' && (
                         <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
                       )}
                     </TableRow>
@@ -718,7 +718,7 @@ GRANT ALL ON classes TO authenticated;`;
                             }}
                           />
                         </TableCell>
-                        {profile.role === 'admin' && (
+                        {profile?.role === 'admin' && (
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

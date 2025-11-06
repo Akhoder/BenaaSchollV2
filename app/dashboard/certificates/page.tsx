@@ -197,7 +197,7 @@ export default function CertificatesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{(t('all') as any) || 'All'}</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="draft">{(t('draft') as any) || 'Draft'}</SelectItem>
                   <SelectItem value="issued">{(t('issued') as any) || 'Issued'}</SelectItem>
                   <SelectItem value="published">{(t('published') as any) || 'Published'}</SelectItem>

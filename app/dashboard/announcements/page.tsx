@@ -156,7 +156,7 @@ export default function AnnouncementsPage() {
     total: announcements.length,
     published: announcements.filter(a => a.is_published).length,
     drafts: announcements.filter(a => !a.is_published).length,
-    myAnnouncements: announcements.filter(a => a.author_id === profile.id).length,
+    myAnnouncements: announcements.filter(a => a.author_id === profile?.id).length,
   };
 
   const roleColors = {
@@ -227,7 +227,7 @@ export default function AnnouncementsPage() {
                 <div className="text-3xl font-bold font-display text-amber-600">{stats.drafts}</div>
               </CardContent>
             </Card>
-            {profile.role !== 'student' && (
+            {profile?.role !== 'student' && (
               <Card className="card-hover glass-strong">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
@@ -263,7 +263,7 @@ export default function AnnouncementsPage() {
                   />
                 </div>
               </div>
-              {profile.role !== 'student' && (
+              {profile?.role !== 'student' && (
                 <div className="w-full md:w-48">
                   <Select value={roleFilter} onValueChange={setRoleFilter}>
                     <SelectTrigger className="font-sans">

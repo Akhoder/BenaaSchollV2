@@ -927,18 +927,18 @@ export default function DashboardPage() {
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
                 <div className="relative w-20 h-20 md:w-24 md:h-24 glass-card flex items-center justify-center border-2 border-primary/30 shadow-xl">
-                  <span className="text-3xl md:text-4xl font-bold text-primary">{profile.full_name.charAt(0).toUpperCase()}</span>
+                  <span className="text-3xl md:text-4xl font-bold text-primary">{profile?.full_name?.charAt(0).toUpperCase() || ''}</span>
                 </div>
               </div>
               <div className="flex-1 pt-2">
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight flex items-center gap-3 animate-fade-in-up">
                   <span className="text-primary">
-                    {t('welcomeBack')}, {profile.full_name}!
+                    {t('welcomeBack')}, {profile?.full_name || ''}!
                   </span>
                   <span className="text-4xl md:text-5xl lg:text-6xl animate-bounce-in">👋</span>
                 </h1>
                 <p className="text-muted-foreground mt-2 text-lg md:text-xl font-medium font-sans animate-fade-in-up" style={{animationDelay: '100ms'}}>
-                  {t(`${profile.role}Dashboard`)}
+                  {t(`${profile?.role || 'user'}Dashboard`)}
                 </p>
               </div>
             </div>
@@ -965,7 +965,7 @@ export default function DashboardPage() {
               <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '400ms'}}>
                 <TrendingUp className="w-4 h-4 text-accent" />
                 <span className="text-sm font-medium">
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                  {profile?.role ? (profile.role.charAt(0).toUpperCase() + profile.role.slice(1)) : ''}
                 </span>
               </div>
             </div>
@@ -973,7 +973,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Admin Dashboard - لوحة المدير */}
-        {profile.role === 'admin' && (
+        {profile?.role === 'admin' && (
           <>
             {/* Floating Orbs Background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -1134,7 +1134,7 @@ export default function DashboardPage() {
         )}
 
         {/* Student Dashboard - لوحة الطالب */}
-        {profile.role === 'student' && (
+        {profile?.role === 'student' && (
           <>
             {/* Statistics Cards - بطاقات الإحصائيات */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1711,7 +1711,7 @@ export default function DashboardPage() {
         )}
 
         {/* Teacher Dashboard - لوحة المعلم */}
-        {profile.role === 'teacher' && (
+        {profile?.role === 'teacher' && (
           <>
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1920,7 +1920,7 @@ export default function DashboardPage() {
         )}
 
         {/* Supervisor Dashboard - لوحة المشرف */}
-        {profile.role === 'supervisor' && (
+        {profile?.role === 'supervisor' && (
           <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <StatCard

@@ -194,7 +194,7 @@ export default function StudentsPage() {
   useRealtimeSubscription({
     table: 'profiles',
     event: '*',
-    enabled: isAuthorized,
+    enabled: isAuthorized ?? false,
     onUpdate: handleUpdate,
     onInsert: handleInsert,
     onDelete: handleDeleteRealtime,
@@ -283,7 +283,7 @@ export default function StudentsPage() {
             <Users className="h-4 w-4 mr-2" />
             Toggle View
           </Button>
-          {profile.role === 'admin' && (
+          {profile?.role === 'admin' && (
             <Button 
               onClick={() => setCreateOpen(true)}
               className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg transition-all duration-300 hover:scale-105"

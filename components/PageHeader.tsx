@@ -10,6 +10,7 @@ interface PageHeaderProps {
   description?: string;
   children?: React.ReactNode;
   className?: string;
+  gradient?: string; // tailwind gradient stops classes e.g. "from-indigo-600 via-purple-600 to-indigo-700"
 }
 
 export function PageHeader({
@@ -17,7 +18,8 @@ export function PageHeader({
   title,
   description,
   children,
-  className
+  className,
+  gradient
 }: PageHeaderProps) {
   return (
     <div className={cn(
@@ -38,8 +40,8 @@ export function PageHeader({
           <div className="flex items-start gap-4">
             {/* Icon */}
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative p-4 bg-gradient-to-r from-primary to-accent rounded-2xl">
+              <div className={cn("absolute inset-0 bg-gradient-to-r rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity", gradient ? gradient : "from-primary to-accent")} />
+              <div className={cn("relative p-4 bg-gradient-to-r rounded-2xl", gradient ? gradient : "from-primary to-accent")}>
                 <Icon className="w-8 h-8 text-white" />
               </div>
             </div>

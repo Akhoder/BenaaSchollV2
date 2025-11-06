@@ -113,7 +113,7 @@ export default function UsersPage() {
     if (!profile || profile.role !== 'admin') return;
     const channel = supabase
       .channel('profiles-updates-users')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
         if (payload.eventType === 'UPDATE') {
           const row = payload.new;
           setUsers(prev => prev.map(u => u.id === row.id ? { ...u, ...row } : u));

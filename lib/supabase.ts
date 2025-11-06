@@ -738,7 +738,7 @@ export async function getMyConversations() {
   const { data: conversations, error } = await supabase
     .from('conversations')
     .select('*')
-    .order('last_message_at', { ascending: false, nullsLast: true })
+    .order('last_message_at', { ascending: false })
     .limit(50);
   
   if (error) {
