@@ -369,12 +369,13 @@ export default function SubjectLessonsPage() {
   };
 
   const handleVideoPlay = async (lessonId: string) => {
+    if (!subjectId || typeof subjectId !== 'string') return;
     const progress = lessonsProgress[lessonId];
     if (!progress || progress.status === 'not_started') {
       const result = await updateLessonProgress(lessonId, 5, 'in_progress');
       if (result && !result.error) {
-        // Reload progress - safeSubjectId is guaranteed to be string after null check
-        const { data } = await fetchAllLessonProgressForSubject(safeSubjectId);
+        // Reload progress
+        const { data } = await fetchAllLessonProgressForSubject(subjectId);
         if (data) {
           const progressMap: Record<string, LessonProgress> = {};
           data.forEach((p: LessonProgress) => {
@@ -383,15 +384,16 @@ export default function SubjectLessonsPage() {
           setLessonsProgress(progressMap);
         }
       }
-    };
+    }
   };
 
   const handleMarkComplete = async (lessonId: string) => {
+    if (!subjectId || typeof subjectId !== 'string') return;
     await updateLessonProgress(lessonId, 100, 'completed');
     toast.success('Lesson marked as completed!');
     
-    // Reload progress - safeSubjectId is guaranteed to be string after null check
-    const { data } = await fetchAllLessonProgressForSubject(safeSubjectId);
+    // Reload progress
+    const { data } = await fetchAllLessonProgressForSubject(subjectId);
     if (data) {
       const progressMap: Record<string, LessonProgress> = {};
       data.forEach((p: LessonProgress) => {
