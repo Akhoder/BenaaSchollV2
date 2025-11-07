@@ -1,5 +1,9 @@
 'use client';
 
+// Force dynamic rendering - this page requires runtime params and auth
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
