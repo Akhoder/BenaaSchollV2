@@ -292,15 +292,20 @@ export default function DashboardPage() {
         });
       } else if (profile.role === 'supervisor') {
         // استعلامات المشرف
-        const [classes, students] = await Promise.all([
-          supabase.from('classes').select('id', { count: 'exact' }).eq('supervisor_id', profile.id),
-          supabase
-            .from('student_enrollments')
-            .select('student_id', { count: 'exact' })
-            .in('class_id',
-              (await supabase.from('classes').select('id').eq('supervisor_id', profile.id)).data?.map(c => c.id) || []
-            ),
-        ]);
+        const classesResult = await supabase
+          .from('classes')
+          .select('id', { count: 'exact' })
+          .eq('supervisor_id', profile.id);
+        
+        const classIds = classesResult.data?.map(c => c.id) || [];
+        
+        const studentsResult = await supabase
+          .from('student_enrollments')
+          .select('student_id', { count: 'exact' })
+          .in('class_id', classIds);
+        
+        const classes = classesResult;
+        const students = studentsResult;
 
         setStats({
           totalClasses: classes.count || 0,
