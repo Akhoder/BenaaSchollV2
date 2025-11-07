@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // ✅ IMAGE OPTIMIZATION: Enable Next.js image optimization
   images: { 
     unoptimized: false, // Changed to false to enable optimization
@@ -37,28 +34,9 @@ const nextConfig = {
   },
   // ضغط الملفات
   compress: true,
-  // تحسين البناء
-  swcMinify: true,
   // ✅ PERFORMANCE: Add production optimizations
   poweredByHeader: false,
   reactStrictMode: true,
-  // ✅ Suppress Supabase Realtime warnings (known issue from library)
-  webpack: (config, { isServer }) => {
-    // Suppress critical dependency warnings from Supabase Realtime
-    config.module = config.module || {};
-    config.module.exprContextCritical = false;
-    config.module.unknownContextCritical = false;
-    
-    // Ignore specific warnings from Supabase
-    config.ignoreWarnings = [
-      {
-        module: /node_modules\/@supabase\/realtime-js/,
-        message: /Critical dependency/,
-      },
-    ];
-    
-    return config;
-  },
   // تحسين التخزين المؤقت
   async headers() {
     return [

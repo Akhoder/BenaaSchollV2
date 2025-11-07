@@ -1,36 +1,14 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Poppins, Cairo } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 
 // ✅ ULTRA MODERN FONTS - خطوط عصرية 2024
-// Poppins - الخط الأكثر عصرية للغة الإنجليزية
-// نظيف، هندسي، احترافي، يستخدم في أفضل المواقع العصرية
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  variable: '--font-poppins',
-  display: 'swap',
-  preload: false, // Disable preload to avoid build-time download issues
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
-  adjustFontFallback: true, // Better fallback handling
-});
-
-// Cairo - أفضل خط عربي عصري من Google Fonts
-// مصمم خصيصاً للغة العربية مع دعم ممتاز للاتينية
-// يستخدم في أشهر المواقع العربية العصرية
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
-  variable: '--font-cairo',
-  display: 'swap',
-  preload: false, // Disable preload to avoid build-time download issues
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
-  adjustFontFallback: true, // Better fallback handling
-});
+// تم تحميل الخطوط عبر CSS @import في globals.css لتجنب مشاكل التحميل في وضع التطوير
+// Poppins & Cairo - يتم تحميلهما من Google Fonts عبر CSS مباشرة
+// Fallback fonts: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif
 
 // Get base URL from environment variable or use default
 // In production, set NEXT_PUBLIC_APP_URL to your domain (e.g., https://benaaschool.ly)
@@ -75,7 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${poppins.variable} ${cairo.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>
