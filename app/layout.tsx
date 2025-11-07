@@ -30,7 +30,12 @@ const cairo = Cairo({
   fallback: ['system-ui', 'arial']
 });
 
+// Get base URL from environment variable or use default
+// In production, set NEXT_PUBLIC_APP_URL to your domain (e.g., https://benaaschool.ly)
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: 'مدرسة البناء العلمي - Madrasat Al-Binaa Al-Ilmi',
   description: 'نظام إدارة مدرسي متعدد اللغات مع التحكم في الوصول القائم على الأدوار - Multi-language school management system with role-based access',
   manifest: '/manifest.json',

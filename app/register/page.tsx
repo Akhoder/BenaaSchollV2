@@ -230,6 +230,10 @@ export default function UltraModernRegisterPage() {
                 <p className="text-xs text-muted-foreground">
                   يجب أن تكون 6 أحرف على الأقل
                 </p>
+                <p className="text-xs text-muted-foreground/80 flex items-center gap-1 mt-1">
+                  <Lock className="w-3 h-3" />
+                  <span>نظامنا يتحقق من كلمات المرور المسربة لحماية حسابك</span>
+                </p>
               </div>
 
               {/* Role */}
