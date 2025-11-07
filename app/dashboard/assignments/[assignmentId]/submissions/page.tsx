@@ -15,6 +15,10 @@ import { toast } from 'sonner';
 import * as api from '@/lib/supabase';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// Force dynamic rendering - this page requires runtime params
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 export default function AssignmentSubmissionsPage() {
   const params = useParams();
   const { profile, loading: authLoading } = useAuth();

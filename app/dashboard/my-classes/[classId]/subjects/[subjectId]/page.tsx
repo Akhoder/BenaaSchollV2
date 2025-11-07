@@ -63,6 +63,10 @@ import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+// Force dynamic rendering - this page requires runtime params
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 export default function SubjectLessonsPage() {
   const params = useParams();
   const router = useRouter();

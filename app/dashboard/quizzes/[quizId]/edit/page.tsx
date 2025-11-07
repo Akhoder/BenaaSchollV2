@@ -34,7 +34,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, fetchQuizBundle, updateQuiz, fetchQuestionsForQuiz, addQuizQuestion, updateQuestion, replaceOptions, addQuizOptions } from '@/lib/supabase';
+
 import { PageHeader } from '@/components/PageHeader';
+
+// Force dynamic rendering - this page requires runtime params
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 interface Question {
   id: string;
