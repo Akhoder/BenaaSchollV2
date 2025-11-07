@@ -1,3 +1,6 @@
 {
-  "template": "nextjs-shadcn"
+  "template": "nextjs-shadcn",
+  "build": {
+    "useTurbopack": false
+  }
 }

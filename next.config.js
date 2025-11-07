@@ -40,9 +40,8 @@ const nextConfig = {
     ];
     return config;
   },
-  // إعدادات Turbopack (Next.js 16+)
-  // إضافة config فارغ لإسكات التحذير
-  turbopack: {},
+  // تعطيل Turbopack بشكل كامل (للتوافق مع bolt.new)
+  // لا نضيف turbopack config على الإطلاق
   // ضغط الملفات
   compress: true,
   // ✅ PERFORMANCE: Add production optimizations
