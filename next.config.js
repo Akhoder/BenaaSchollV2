@@ -32,6 +32,14 @@ const nextConfig = {
       'date-fns'
     ],
   },
+  // استخدام webpack بدلاً من Turbopack
+  webpack: (config, { isServer }) => {
+    // قمع تحذيرات Supabase
+    config.ignoreWarnings = [
+      { module: /node_modules\/@supabase/ },
+    ];
+    return config;
+  },
   // ضغط الملفات
   compress: true,
   // ✅ PERFORMANCE: Add production optimizations
