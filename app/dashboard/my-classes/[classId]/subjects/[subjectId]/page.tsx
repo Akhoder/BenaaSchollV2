@@ -63,18 +63,16 @@ import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-
 export default function SubjectLessonsPage() {
   const params = useParams();
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
-  const classId = (params?.classId as string) || '';
-  const subjectId = (params?.subjectId as string) || '';
   const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Safely extract params with proper type checking and null safety
+  const classId = params && typeof params.classId === 'string' ? params.classId : null;
+  const subjectId = params && typeof params.subjectId === 'string' ? params.subjectId : null;
 
   const [subject, setSubject] = useState<any>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -95,19 +93,29 @@ export default function SubjectLessonsPage() {
   const [issuingCertificate, setIssuingCertificate] = useState(false);
 
   useEffect(() => {
+    // Early return if params are not available (build time or initial render)
     if (!classId || !subjectId) {
       return;
     }
-    if (!authLoading && !profile) {
+    // Don't proceed if auth is still loading
+    if (authLoading) {
+      return;
+    }
+    // Redirect if not authenticated
+    if (!profile) {
       router.push('/login');
       return;
     }
-    if (!authLoading && profile && profile.role !== 'student') {
+    // Redirect if not a student
+    if (profile.role !== 'student') {
       router.push('/dashboard');
       return;
     }
-    if (profile?.role === 'student' && classId && subjectId) {
-      loadData().catch(() => {});
+    // Load data only when all conditions are met
+    if (profile.role === 'student' && classId && subjectId) {
+      loadData().catch((err) => {
+        console.error('Error loading data:', err);
+      });
     }
   }, [profile, authLoading, router, classId, subjectId]);
 
@@ -169,24 +177,29 @@ export default function SubjectLessonsPage() {
   }, [lessons, lessonSearchQuery, lessonStatusFilter, lessonsProgress]);
 
   const loadData = async () => {
+    // Type assertion: at this point, classId and subjectId are guaranteed to be strings
+    // because loadData is only called after null checks in useEffect
     if (!classId || !subjectId) {
       return;
     }
+    const currentClassId = classId as string;
+    const currentSubjectId = subjectId as string;
+    
     try {
       setLoading(true);
       
       // Get subject details
-      const { data: subjects } = await fetchSubjectsForClass(classId);
-      const subjectData = (subjects || []).find((s: any) => s.id === subjectId);
+      const { data: subjects } = await fetchSubjectsForClass(currentClassId);
+      const subjectData = (subjects || []).find((s: any) => s.id === currentSubjectId);
       if (!subjectData) {
         toast.error('Subject not found');
-        router.push(`/dashboard/my-classes/${classId}`);
+        router.push(`/dashboard/my-classes/${currentClassId}`);
         return;
       }
       setSubject(subjectData);
 
       // Load lessons
-      const { data: lessonsData } = await fetchLessonsBySubject(subjectId);
+      const { data: lessonsData } = await fetchLessonsBySubject(currentSubjectId);
       const lessonsList = (lessonsData || []) as Lesson[];
       setLessons(lessonsList);
 
@@ -203,7 +216,7 @@ export default function SubjectLessonsPage() {
       }
 
       // Load progress
-      const { data: progress } = await fetchAllLessonProgressForSubject(subjectId);
+      const { data: progress } = await fetchAllLessonProgressForSubject(currentSubjectId);
       const progressMap: Record<string, LessonProgress> = {};
       if (progress) {
         progress.forEach((p: LessonProgress) => {
@@ -213,7 +226,7 @@ export default function SubjectLessonsPage() {
       setLessonsProgress(progressMap);
 
       // Load assignments for this subject
-      const { data: assns } = await fetchMyAssignmentsForSubject(subjectId);
+      const { data: assns } = await fetchMyAssignmentsForSubject(currentSubjectId);
       setAssignments(assns || []);
       // Load submissions per assignment
       const subs: Record<string, any> = {};
@@ -224,7 +237,7 @@ export default function SubjectLessonsPage() {
       setSubmissions(subs);
 
       // Load quizzes for this subject
-      const { data: qz } = await fetchQuizzesForSubject(subjectId);
+      const { data: qz } = await fetchQuizzesForSubject(currentSubjectId);
       setQuizzes(qz || []);
 
       // Load quizzes for all lessons
@@ -283,7 +296,7 @@ export default function SubjectLessonsPage() {
           const { data: subjectData } = await supabase
             .from('class_subjects')
             .select('auto_publish_certificates')
-            .eq('id', subjectId)
+            .eq('id', currentSubjectId)
             .single();
           
           if (subjectData?.auto_publish_certificates) {
@@ -292,13 +305,13 @@ export default function SubjectLessonsPage() {
               .from('certificates')
               .select('id')
               .eq('student_id', profile.id)
-              .eq('subject_id', subjectId);
+              .eq('subject_id', currentSubjectId);
             
             if (!certError && (!existingCerts || existingCerts.length === 0)) {
               // Check eligibility
               const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
                 p_student_id: profile.id,
-                p_subject_id: subjectId,
+                p_subject_id: currentSubjectId,
               });
               
               if (eligibility && (eligibility as any).eligible) {
@@ -360,8 +373,8 @@ export default function SubjectLessonsPage() {
     if (!progress || progress.status === 'not_started') {
       const result = await updateLessonProgress(lessonId, 5, 'in_progress');
       if (result && !result.error) {
-        // Reload progress
-        const { data } = await fetchAllLessonProgressForSubject(subjectId);
+        // Reload progress - safeSubjectId is guaranteed to be string after null check
+        const { data } = await fetchAllLessonProgressForSubject(safeSubjectId);
         if (data) {
           const progressMap: Record<string, LessonProgress> = {};
           data.forEach((p: LessonProgress) => {
@@ -377,8 +390,8 @@ export default function SubjectLessonsPage() {
     await updateLessonProgress(lessonId, 100, 'completed');
     toast.success('Lesson marked as completed!');
     
-    // Reload progress
-    const { data } = await fetchAllLessonProgressForSubject(subjectId);
+    // Reload progress - safeSubjectId is guaranteed to be string after null check
+    const { data } = await fetchAllLessonProgressForSubject(safeSubjectId);
     if (data) {
       const progressMap: Record<string, LessonProgress> = {};
       data.forEach((p: LessonProgress) => {
@@ -418,8 +431,9 @@ export default function SubjectLessonsPage() {
     }
   };
 
-  // Safety check for build time - handle undefined params during static generation
-  if (!classId || !subjectId) {
+  // Safety check for build time - handle null/undefined params during static generation
+  // This ensures the component can render safely during build time
+  if (classId === null || subjectId === null) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
@@ -428,6 +442,10 @@ export default function SubjectLessonsPage() {
       </DashboardLayout>
     );
   }
+
+  // TypeScript type narrowing: after the check above, we know these are strings
+  const safeClassId: string = classId;
+  const safeSubjectId: string = subjectId;
 
   if (authLoading || loading) {
     return (
@@ -551,7 +569,7 @@ export default function SubjectLessonsPage() {
                         
                         if (availableQuizzes.length > 0) {
                           // Go to first available quiz
-                          router.push(`/dashboard/quizzes/${availableQuizzes[0].id}/take?classId=${classId}&subjectId=${subjectId}`);
+                          router.push(`/dashboard/quizzes/${availableQuizzes[0].id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`);
                         } else {
                           // If no active quiz, switch to lesson to show quizzes
                           const lessonIndex = lessons.findIndex(l => l.id === lesson.id);
@@ -647,7 +665,7 @@ export default function SubjectLessonsPage() {
                   onClick={async () => {
                     try {
                       setIssuingCertificate(true);
-                      const { data, error } = await api.studentIssueCertificate(subjectId);
+                      const { data, error } = await api.studentIssueCertificate(safeSubjectId);
                       if (error) {
                         toast.error(language === 'ar' ? 'فشل إصدار الشهادة' : 'Failed to issue certificate');
                         return;
@@ -688,7 +706,7 @@ export default function SubjectLessonsPage() {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => router.push(`/dashboard/my-classes/${classId}`)}
+            onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -741,7 +759,7 @@ export default function SubjectLessonsPage() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => router.push(`/dashboard/my-classes/${classId}`)}
+                  onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
                   className="mb-3"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1205,7 +1223,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant="outline" 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
@@ -1215,7 +1233,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant={hasRemainingAttempts ? "default" : "outline"} 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           disabled={!hasRemainingAttempts}
                                           className={cn(
                                             hasRemainingAttempts && "bg-purple-600 hover:bg-purple-700 text-white",
@@ -1379,7 +1397,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant="outline" 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
@@ -1389,7 +1407,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant={hasRemainingAttempts ? "default" : "outline"} 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           disabled={!hasRemainingAttempts}
                                           className={cn(
                                             hasRemainingAttempts && "bg-blue-600 hover:bg-blue-700 text-white",
