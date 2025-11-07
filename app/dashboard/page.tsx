@@ -33,7 +33,7 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
-  AlertCircle, Bell, Zap
+  AlertCircle, Bell, Zap, Loader2
 } from 'lucide-react';
 import { QuickStatsChart } from '@/components/Charts';
 import { 

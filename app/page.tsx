@@ -34,7 +34,7 @@ export default function UltraModernLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Floating Orbs Background - مستوحى من أكاديمية زاد */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="orb-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2 opacity-30" />
@@ -392,7 +392,7 @@ export default function UltraModernLandingPage() {
       </section>
 
       {/* Footer - Professional Style */}
-      <footer className="relative bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
+      <footer className="relative z-10 bg-gradient-to-br from-primary via-primary-dark to-primary text-white">
         <div className="container mx-auto px-4 max-w-6xl py-12">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Column 1: Logo & Description */}
