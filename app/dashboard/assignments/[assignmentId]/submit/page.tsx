@@ -17,7 +17,7 @@ export default function SubmitAssignmentPage() {
   const params = useParams();
   const { profile, loading: authLoading } = useAuth();
   const router = useRouter();
-  const assignmentId = params.assignmentId as string;
+  const assignmentId = params?.assignmentId as string;
   const [assignment, setAssignment] = useState<any>(null);
   const [submission, setSubmission] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -26,14 +26,23 @@ export default function SubmitAssignmentPage() {
   const [files, setFiles] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!assignmentId) {
+      router.push('/dashboard/my-assignments');
+      return;
+    }
+    
     if (!authLoading && profile?.role === 'student') {
       loadData();
     } else if (!authLoading) {
       router.push('/dashboard');
     }
-  }, [authLoading, profile, assignmentId]);
+  }, [authLoading, profile, assignmentId, router]);
 
   const loadData = async () => {
+    if (!assignmentId) {
+      return;
+    }
+    
     try {
       setLoading(true);
       // Fetch assignment details
@@ -89,6 +98,17 @@ export default function SubmitAssignmentPage() {
       setSubmitting(false);
     }
   };
+
+  // Safety check for build time
+  if (!assignmentId) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (authLoading || loading) {
     return (
