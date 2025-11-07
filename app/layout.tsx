@@ -12,7 +12,7 @@ import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 
 // Get base URL from environment variable or use default
 // In production, set NEXT_PUBLIC_APP_URL to your domain (e.g., https://benaaschool.ly)
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://benaa-school.bolt.host';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
