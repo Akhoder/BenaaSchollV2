@@ -68,11 +68,18 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function SubjectLessonsPage() {
+  // Hooks must be called unconditionally (React rules)
   const params = useParams();
   const router = useRouter();
-  const { profile, loading: authLoading } = useAuth();
-  const { t, language } = useLanguage();
+  const authContext = useAuth();
+  const languageContext = useLanguage();
   const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Safely extract values with fallbacks for bolt.new build
+  const profile = authContext?.profile ?? null;
+  const authLoading = authContext?.loading ?? true;
+  const t = languageContext?.t ?? (() => '');
+  const language = languageContext?.language ?? 'en';
   
   // Safely extract params with proper type checking and null safety
   const classId = params && typeof params.classId === 'string' ? params.classId : null;
@@ -105,14 +112,26 @@ export default function SubjectLessonsPage() {
     if (authLoading) {
       return;
     }
+    // Don't proceed if router is not available (build time)
+    if (!router || typeof router.push !== 'function') {
+      return;
+    }
     // Redirect if not authenticated
     if (!profile) {
-      router.push('/login');
+      try {
+        router.push('/login');
+      } catch (e) {
+        // Silently fail during build
+      }
       return;
     }
     // Redirect if not a student
     if (profile.role !== 'student') {
-      router.push('/dashboard');
+      try {
+        router.push('/dashboard');
+      } catch (e) {
+        // Silently fail during build
+      }
       return;
     }
     // Load data only when all conditions are met
