@@ -91,6 +91,9 @@ export default function SubjectLessonsPage() {
   const [issuingCertificate, setIssuingCertificate] = useState(false);
 
   useEffect(() => {
+    if (!classId || !subjectId) {
+      return;
+    }
     if (!authLoading && !profile) {
       router.push('/login');
       return;
@@ -162,6 +165,9 @@ export default function SubjectLessonsPage() {
   }, [lessons, lessonSearchQuery, lessonStatusFilter, lessonsProgress]);
 
   const loadData = async () => {
+    if (!classId || !subjectId) {
+      return;
+    }
     try {
       setLoading(true);
       
@@ -407,6 +413,17 @@ export default function SubjectLessonsPage() {
       }
     }
   };
+
+  // Safety check for build time - handle undefined params during static generation
+  if (!classId || !subjectId) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (authLoading || loading) {
     return (
