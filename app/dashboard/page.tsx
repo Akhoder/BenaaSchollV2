@@ -54,6 +54,10 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Force dynamic rendering - this page requires authentication context
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 // ============================================
 // TYPES - تعريف الأنواع
 // ============================================
