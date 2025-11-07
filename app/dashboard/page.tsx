@@ -55,8 +55,10 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Force dynamic rendering - this page requires authentication context
+// Client component - no static generation
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
+export const revalidate = 0; // Disable caching
 
 // ============================================
 // TYPES - تعريف الأنواع
@@ -282,14 +284,14 @@ export default function DashboardPage() {
         });
       } else if (profile.role === 'student') {
         // استعلامات الطالب
-        const enrollments = await supabase
+        const { count } = await supabase
           .from('student_enrollments')
-          .select('class_id', { count: 'exact' })
+          .select('class_id', { count: 'exact', head: true })
           .eq('student_id', profile.id)
           .eq('status', 'active');
 
         setStats({
-          totalClasses: enrollments.count || 0,
+          totalClasses: count || 0,
           totalStudents: 0,
           totalTeachers: 0,
           totalSubjects: 0,
