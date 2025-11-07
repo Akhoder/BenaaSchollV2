@@ -40,8 +40,9 @@ const nextConfig = {
     ];
     return config;
   },
-  // تعطيل Turbopack بشكل كامل (للتوافق مع bolt.new)
-  // لا نضيف turbopack config على الإطلاق
+  // إضافة turbopack config فارغ لإسكات التحذير في Next.js 16+
+  // (bolt.new يستخدم webpack بسبب مشاكل WASM مع Turbopack)
+  turbopack: {},
   // ضغط الملفات
   compress: true,
   // ✅ PERFORMANCE: Add production optimizations
