@@ -14,8 +14,9 @@ const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700', '800'],
   variable: '--font-poppins',
   display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial']
+  preload: false, // Disable preload to avoid build-time download issues
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+  adjustFontFallback: true, // Better fallback handling
 });
 
 // Cairo - أفضل خط عربي عصري من Google Fonts
@@ -26,8 +27,9 @@ const cairo = Cairo({
   weight: ['300', '400', '500', '600', '700', '800', '900'],
   variable: '--font-cairo',
   display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial']
+  preload: false, // Disable preload to avoid build-time download issues
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+  adjustFontFallback: true, // Better fallback handling
 });
 
 // Get base URL from environment variable or use default
