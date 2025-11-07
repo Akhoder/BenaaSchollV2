@@ -439,11 +439,47 @@ export default function SubjectLessonsPage() {
     );
   }
 
-  if (!profile || profile.role !== 'student' || !subject || lessons.length === 0) {
-    return null;
+  // Handle missing data gracefully - return loading state instead of null
+  if (!profile || profile.role !== 'student') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
   }
 
-  const activeLesson = lessons[activeLessonIndex];
+  if (!subject || lessons.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Safety check for activeLesson
+  const activeLesson = lessons[activeLessonIndex] || lessons[0];
+  if (!activeLesson) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const progress = lessonsProgress[activeLesson.id];
   const isCompleted = progress?.status === 'completed';
   const isInProgress = progress?.status === 'in_progress';
