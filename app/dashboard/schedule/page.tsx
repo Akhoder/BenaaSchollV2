@@ -126,7 +126,7 @@ export default function SchedulePage() {
         setEvents((prev) => prev.map((x) => x.id === selected.id ? { ...x, ...payload } : x));
         toast.success('Event updated');
       } else {
-        const insert = { ...payload, created_by: profile.id };
+        const insert = { ...payload, created_by: profile!.id };
         const { data, error } = await supabase.from('schedule_events').insert(insert).select('*').single();
         if (error) throw error;
         setEvents((prev) => [{ ...data }, ...prev]);
@@ -178,7 +178,7 @@ export default function SchedulePage() {
                 <Button variant="outline" size="icon" onClick={() => setWeekStart(addDays(weekStart, -7))}><ChevronLeft className="h-4 w-4" /></Button>
                 <div className="px-2 text-sm font-sans">{formatRange(weekStart)}</div>
                 <Button variant="outline" size="icon" onClick={() => setWeekStart(addDays(weekStart, 7))}><ChevronRight className="h-4 w-4" /></Button>
-                {profile.role !== 'student' && (
+                {profile?.role !== 'student' && (
                   <Button className="btn-gradient ml-2" onClick={() => { setSelected(null); resetForm(); setIsDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Event</Button>
                 )}
               </div>
@@ -186,7 +186,7 @@ export default function SchedulePage() {
           </CardHeader>
           <CardContent>
             <Filters classes={classes} teachers={teachers} filters={filters} onChange={setFilters} />
-            <WeekTable days={getWeekDays(weekStart)} events={filteredEvents(events, filters)} onEdit={onEdit} onDelete={onDelete} canEdit={profile.role !== 'student'} />
+            <WeekTable days={getWeekDays(weekStart)} events={filteredEvents(events, filters)} onEdit={onEdit} onDelete={onDelete} canEdit={profile?.role !== 'student'} />
           </CardContent>
         </Card>
 

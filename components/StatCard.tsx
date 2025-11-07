@@ -10,6 +10,7 @@ interface StatCardProps {
   icon: LucideIcon;
   description?: string;
   color?: 'primary' | 'accent' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  gradient?: string; // tailwind gradient classes e.g. "from-blue-500 to-cyan-500"
   trend?: {
     value: number;
     isPositive: boolean;
@@ -62,6 +63,7 @@ export function StatCard({
   icon: Icon,
   description,
   color = 'primary',
+  gradient,
   trend,
   loading = false,
   className
@@ -104,9 +106,9 @@ export function StatCard({
           {/* Icon */}
           <div className={cn(
             "p-3 rounded-2xl transition-all duration-300 group-hover:scale-110",
-            config.bg
+            gradient ? `bg-gradient-to-r ${gradient}` : config.bg
           )}>
-            <Icon className={cn("w-6 h-6", config.text)} />
+            <Icon className={cn("w-6 h-6", gradient ? "text-white" : config.text)} />
           </div>
         </div>
 

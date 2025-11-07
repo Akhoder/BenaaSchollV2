@@ -60,7 +60,7 @@ interface SortableLessonProps {
   onRemoveAttachment: (id: string) => void;
   getStatusBadge: (status?: LessonStatus) => JSX.Element;
   getVideoEmbedUrl: (url?: string | null) => string | null;
-  t: (key: string) => string;
+  t: (key: any) => string;
 }
 
 function SortableLesson({
@@ -770,9 +770,9 @@ export default function SubjectLessonsPage() {
                   value={filterHasVideo}
                   onChange={(e) => setFilterHasVideo(e.target.value as 'all' | 'with' | 'without')}
                 >
-                  <option value="all">{(t('all') as any) || 'All'}</option>
-                  <option value="with">{(t('withVideo') as any) || 'With video'}</option>
-                  <option value="without">{(t('withoutVideo') as any) || 'Without video'}</option>
+                  <option value="all">All</option>
+                  <option value="with">With video</option>
+                  <option value="without">Without video</option>
                 </select>
               </div>
               <div className="relative">
@@ -806,7 +806,7 @@ export default function SubjectLessonsPage() {
                   <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
                 </div>
                 <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noData') || 'No lessons yet.'}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('addLessonToStart') || 'Add a lesson to get started'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">Add a lesson to get started</p>
               </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
