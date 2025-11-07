@@ -40,6 +40,9 @@ const nextConfig = {
     ];
     return config;
   },
+  // إعدادات Turbopack (Next.js 16+)
+  // إضافة config فارغ لإسكات التحذير
+  turbopack: {},
   // ضغط الملفات
   compress: true,
   // ✅ PERFORMANCE: Add production optimizations
