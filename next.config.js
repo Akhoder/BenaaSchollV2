@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ⚠️ IMPORTANT: This project does NOT use output: 'export'
+  // output: 'export' is incompatible with:
+  // - Server-side features (API routes, authentication, dynamic rendering)
+  // - Client components with dynamic params
+  // - Supabase realtime subscriptions
+  // If you see errors about output: 'export', check CI/CD settings (GitHub Actions, etc.)
+  
   // ✅ IMAGE OPTIMIZATION: Enable Next.js image optimization
   images: { 
     unoptimized: false, // Changed to false to enable optimization
