@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   GraduationCap,
   LayoutDashboard,
@@ -18,7 +19,8 @@ import {
   LogOut,
   Menu,
   UserCircle,
-  MessageSquare
+  MessageSquare,
+  Award
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +41,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: 'My Classes', href: '/dashboard/my-classes', icon: School, roles: ['student'] },
     { name: 'My Assignments', href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
+    { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
     { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
     { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
     { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
@@ -46,6 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin', 'teacher', 'supervisor'] },
     { name: language === 'ar' ? 'المسابقات' : 'Quizzes', href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
+    { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
     { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher', 'student'] },
     { name: language === 'ar' ? 'الحضور' : 'Attendance', href: '/dashboard/attendance', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },
@@ -93,8 +97,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-green-50/20 to-amber-50/10 dark:from-[hsl(142_30%_8%)] dark:via-[hsl(142_25%_10%)] dark:to-[hsl(142_20%_12%)]">
-      <nav className="fixed top-0 z-50 w-full bg-white/95 dark:bg-[hsl(142_25%_10%)]/95 backdrop-blur-lg border-b border-[hsl(var(--border))] shadow-sm">
+    <div className="min-h-screen bg-background">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 bg-pattern-dots opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+      
+      <nav className="fixed top-0 z-50 w-full glass-card border-b border-border shadow-sm">
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start gap-3">
@@ -107,8 +115,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-64 p-0 bg-white dark:bg-[hsl(142_25%_10%)] border-[hsl(var(--border))]">
                   <div className="flex h-full flex-col gap-2 p-4">
                     <div className="flex items-center gap-3 px-3 py-4 border-b border-[hsl(var(--border))]">
-                      <div className="p-2 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl shadow-lg">
-                        <GraduationCap className="h-6 w-6 text-white" />
+                      <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg">
+                        <img 
+                          src="/icons/logo.jpg" 
+                          alt="مدرسة البناء العلمي" 
+                          className="w-12 h-12 object-cover"
+                        />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-lg font-display font-bold text-[hsl(var(--primary))] leading-tight">مدرسة البناء العلمي</span>
@@ -123,8 +135,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Sheet>
 
               <Link href="/dashboard" className="flex items-center gap-3 group">
-                <div className="p-2 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <GraduationCap className="h-5 w-5 text-white" />
+                <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <img 
+                    src="/icons/logo.jpg" 
+                    alt="مدرسة البناء العلمي" 
+                    className="w-10 h-10 object-cover"
+                  />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xl font-display font-bold hidden sm:inline-block text-[hsl(var(--primary))] leading-tight">
@@ -151,21 +167,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SelectContent>
               </Select>
 
-              <div className="flex items-center gap-2 bg-[hsl(var(--primary-light))] dark:bg-[hsl(var(--primary-light))] px-2 sm:px-3 py-1.5 rounded-full border border-[hsl(var(--border))]">
-                <Avatar className="h-8 w-8 ring-2 ring-[hsl(var(--primary))]/20">
-                  <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white text-sm font-semibold">
-                    {profile?.full_name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block text-sm">
-                  <p className="font-semibold text-[hsl(var(--primary))] leading-tight">{profile?.full_name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</p>
-                </div>
-              </div>
-
-              <Button variant="ghost" size="icon" onClick={signOut} title={t('signOut')} className="hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 transition-colors">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 bg-[hsl(var(--primary-light))] dark:bg-[hsl(var(--primary-light))] px-2 sm:px-3 py-1.5 rounded-full border border-[hsl(var(--border))] hover:shadow-md transition">
+                    <Avatar className="h-8 w-8 ring-2 ring-[hsl(var(--primary))]/20">
+                      <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white text-sm font-semibold">
+                        {profile?.full_name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:block text-sm text-left">
+                      <p className="font-semibold text-[hsl(var(--primary))] leading-tight">{profile?.full_name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</p>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={language === 'ar' ? 'end' : 'start'} className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{profile?.full_name}</span>
+                      <span className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {profile?.role === 'admin' && (
+                    <Link href="/dashboard/settings/branding" className="block">
+                      <DropdownMenuItem>
+                        <Settings className="h-4 w-4 mr-2" />
+                        {language === 'ar' ? 'إعدادات الهوية' : 'Branding Settings'}
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  <Link href="/dashboard/my-certificates" className="block">
+                    <DropdownMenuItem>
+                      <Award className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'شهاداتي' : 'My Certificates'}
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-700">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    {language === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

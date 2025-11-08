@@ -1,5 +1,9 @@
 'use client';
 
+// Force dynamic rendering - this page requires runtime params and auth
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,7 +46,10 @@ import {
   Lock,
   Search,
   Filter,
-  X
+  X,
+  Award,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { 
   fetchSubjectsForClass, 
@@ -55,17 +62,28 @@ import {
 } from '@/lib/supabase';
 import { fetchMyAssignmentsForSubject, fetchSubmissionForAssignment } from '@/lib/supabase';
 import { fetchQuizzesForSubject, fetchQuizzesForLesson, fetchStudentAttemptsForQuiz } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function SubjectLessonsPage() {
+  // Hooks must be called unconditionally (React rules)
   const params = useParams();
   const router = useRouter();
-  const { profile, loading: authLoading } = useAuth();
-  const { t, language } = useLanguage();
-  const classId = (params?.classId as string) || '';
-  const subjectId = (params?.subjectId as string) || '';
+  const authContext = useAuth();
+  const languageContext = useLanguage();
   const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Safely extract values with fallbacks for bolt.new build
+  const profile = authContext?.profile ?? null;
+  const authLoading = authContext?.loading ?? true;
+  const t = languageContext?.t ?? (() => '');
+  const language = languageContext?.language ?? 'en';
+  
+  // Safely extract params with proper type checking and null safety
+  const classId = params && typeof params.classId === 'string' ? params.classId : null;
+  const subjectId = params && typeof params.subjectId === 'string' ? params.subjectId : null;
 
   const [subject, setSubject] = useState<any>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -82,18 +100,45 @@ export default function SubjectLessonsPage() {
   const [quizAttempts, setQuizAttempts] = useState<Record<string, any[]>>({});
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [lessonStatusFilter, setLessonStatusFilter] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
+  const [certificateEligibility, setCertificateEligibility] = useState<any>(null);
+  const [issuingCertificate, setIssuingCertificate] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
+    // Early return if params are not available (build time or initial render)
+    if (!classId || !subjectId) {
       return;
     }
-    if (!authLoading && profile && profile.role !== 'student') {
-      router.push('/dashboard');
+    // Don't proceed if auth is still loading
+    if (authLoading) {
       return;
     }
-    if (profile?.role === 'student' && classId && subjectId) {
-      loadData().catch(() => {});
+    // Don't proceed if router is not available (build time)
+    if (!router || typeof router.push !== 'function') {
+      return;
+    }
+    // Redirect if not authenticated
+    if (!profile) {
+      try {
+        router.push('/login');
+      } catch (e) {
+        // Silently fail during build
+      }
+      return;
+    }
+    // Redirect if not a student
+    if (profile.role !== 'student') {
+      try {
+        router.push('/dashboard');
+      } catch (e) {
+        // Silently fail during build
+      }
+      return;
+    }
+    // Load data only when all conditions are met
+    if (profile.role === 'student' && classId && subjectId) {
+      loadData().catch((err) => {
+        console.error('Error loading data:', err);
+      });
     }
   }, [profile, authLoading, router, classId, subjectId]);
 
@@ -155,21 +200,29 @@ export default function SubjectLessonsPage() {
   }, [lessons, lessonSearchQuery, lessonStatusFilter, lessonsProgress]);
 
   const loadData = async () => {
+    // Type assertion: at this point, classId and subjectId are guaranteed to be strings
+    // because loadData is only called after null checks in useEffect
+    if (!classId || !subjectId) {
+      return;
+    }
+    const currentClassId = classId as string;
+    const currentSubjectId = subjectId as string;
+    
     try {
       setLoading(true);
       
       // Get subject details
-      const { data: subjects } = await fetchSubjectsForClass(classId);
-      const subjectData = (subjects || []).find((s: any) => s.id === subjectId);
+      const { data: subjects } = await fetchSubjectsForClass(currentClassId);
+      const subjectData = (subjects || []).find((s: any) => s.id === currentSubjectId);
       if (!subjectData) {
         toast.error('Subject not found');
-        router.push(`/dashboard/my-classes/${classId}`);
+        router.push(`/dashboard/my-classes/${currentClassId}`);
         return;
       }
       setSubject(subjectData);
 
       // Load lessons
-      const { data: lessonsData } = await fetchLessonsBySubject(subjectId);
+      const { data: lessonsData } = await fetchLessonsBySubject(currentSubjectId);
       const lessonsList = (lessonsData || []) as Lesson[];
       setLessons(lessonsList);
 
@@ -186,7 +239,7 @@ export default function SubjectLessonsPage() {
       }
 
       // Load progress
-      const { data: progress } = await fetchAllLessonProgressForSubject(subjectId);
+      const { data: progress } = await fetchAllLessonProgressForSubject(currentSubjectId);
       const progressMap: Record<string, LessonProgress> = {};
       if (progress) {
         progress.forEach((p: LessonProgress) => {
@@ -196,7 +249,7 @@ export default function SubjectLessonsPage() {
       setLessonsProgress(progressMap);
 
       // Load assignments for this subject
-      const { data: assns } = await fetchMyAssignmentsForSubject(subjectId);
+      const { data: assns } = await fetchMyAssignmentsForSubject(currentSubjectId);
       setAssignments(assns || []);
       // Load submissions per assignment
       const subs: Record<string, any> = {};
@@ -207,7 +260,7 @@ export default function SubjectLessonsPage() {
       setSubmissions(subs);
 
       // Load quizzes for this subject
-      const { data: qz } = await fetchQuizzesForSubject(subjectId);
+      const { data: qz } = await fetchQuizzesForSubject(currentSubjectId);
       setQuizzes(qz || []);
 
       // Load quizzes for all lessons
@@ -258,6 +311,41 @@ export default function SubjectLessonsPage() {
         });
         setQuizAttempts(attemptsMap);
       }
+
+      // Check certificate eligibility
+      if (profile?.id) {
+        try {
+          // Check if auto_publish is enabled for this subject
+          const { data: subjectData } = await supabase
+            .from('class_subjects')
+            .select('auto_publish_certificates')
+            .eq('id', currentSubjectId)
+            .single();
+          
+          if (subjectData?.auto_publish_certificates) {
+            // Check if certificate already exists
+            const { data: existingCerts, error: certError } = await supabase
+              .from('certificates')
+              .select('id')
+              .eq('student_id', profile.id)
+              .eq('subject_id', currentSubjectId);
+            
+            if (!certError && (!existingCerts || existingCerts.length === 0)) {
+              // Check eligibility
+              const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+                p_student_id: profile.id,
+                p_subject_id: currentSubjectId,
+              });
+              
+              if (eligibility && (eligibility as any).eligible) {
+                setCertificateEligibility(eligibility);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error checking certificate eligibility:', err);
+        }
+      }
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');
@@ -304,6 +392,7 @@ export default function SubjectLessonsPage() {
   };
 
   const handleVideoPlay = async (lessonId: string) => {
+    if (!subjectId || typeof subjectId !== 'string') return;
     const progress = lessonsProgress[lessonId];
     if (!progress || progress.status === 'not_started') {
       const result = await updateLessonProgress(lessonId, 5, 'in_progress');
@@ -318,10 +407,11 @@ export default function SubjectLessonsPage() {
           setLessonsProgress(progressMap);
         }
       }
-    };
+    }
   };
 
   const handleMarkComplete = async (lessonId: string) => {
+    if (!subjectId || typeof subjectId !== 'string') return;
     await updateLessonProgress(lessonId, 100, 'completed');
     toast.success('Lesson marked as completed!');
     
@@ -366,6 +456,22 @@ export default function SubjectLessonsPage() {
     }
   };
 
+  // Safety check for build time - handle null/undefined params during static generation
+  // This ensures the component can render safely during build time
+  if (classId === null || subjectId === null) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // TypeScript type narrowing: after the check above, we know these are strings
+  const safeClassId: string = classId;
+  const safeSubjectId: string = subjectId;
+
   if (authLoading || loading) {
     return (
       <DashboardLayout>
@@ -376,11 +482,47 @@ export default function SubjectLessonsPage() {
     );
   }
 
-  if (!profile || profile.role !== 'student' || !subject || lessons.length === 0) {
-    return null;
+  // Handle missing data gracefully - return loading state instead of null
+  if (!profile || profile.role !== 'student') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
   }
 
-  const activeLesson = lessons[activeLessonIndex];
+  if (!subject || lessons.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Safety check for activeLesson
+  const activeLesson = lessons[activeLessonIndex] || lessons[0];
+  if (!activeLesson) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const progress = lessonsProgress[activeLesson.id];
   const isCompleted = progress?.status === 'completed';
   const isInProgress = progress?.status === 'in_progress';
@@ -441,7 +583,7 @@ export default function SubjectLessonsPage() {
                   </h4>
                   {/* Quiz Notification Badge */}
                   {quizzesByLesson[lesson.id] && quizzesByLesson[lesson.id].length > 0 && (
-                    <button
+                    <div
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent triggering lesson click
                         const availableQuizzes = quizzesByLesson[lesson.id].filter((q: any) => {
@@ -452,7 +594,7 @@ export default function SubjectLessonsPage() {
                         
                         if (availableQuizzes.length > 0) {
                           // Go to first available quiz
-                          router.push(`/dashboard/quizzes/${availableQuizzes[0].id}/take?classId=${classId}&subjectId=${subjectId}`);
+                          router.push(`/dashboard/quizzes/${availableQuizzes[0].id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`);
                         } else {
                           // If no active quiz, switch to lesson to show quizzes
                           const lessonIndex = lessons.findIndex(l => l.id === lesson.id);
@@ -463,7 +605,7 @@ export default function SubjectLessonsPage() {
                           }
                         }
                       }}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 cursor-pointer"
                     >
                       <Badge 
                         className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer"
@@ -472,7 +614,7 @@ export default function SubjectLessonsPage() {
                         <GraduationCap className="h-3 w-3 mr-1" />
                         {quizzesByLesson[lesson.id].length}
                       </Badge>
-                    </button>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -516,12 +658,80 @@ export default function SubjectLessonsPage() {
   return (
     <DashboardLayout>
       <div className="animate-fade-in">
+        {/* Certificate Eligibility Banner */}
+        {certificateEligibility && (
+          <Card className="card-elegant border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                      {language === 'ar' ? 'شهادة جاهزة للإصدار!' : 'Certificate Ready to Issue!'}
+                    </h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                      {language === 'ar' 
+                        ? `تهانينا! لقد أكملت جميع الدروس والاختبارات في مادة ${subject?.subject_name || ''}. يمكنك الآن إصدار شهادتك مباشرة.`
+                        : `Congratulations! You've completed all lessons and quizzes for ${subject?.subject_name || ''}. You can now issue your certificate.`
+                      }
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-amber-600 dark:text-amber-400">
+                      <span>
+                        {language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
+                      </span>
+                      <span className="font-semibold">{certificateEligibility.grade || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  className="btn-gradient whitespace-nowrap"
+                  onClick={async () => {
+                    try {
+                      setIssuingCertificate(true);
+                      const { data, error } = await api.studentIssueCertificate(safeSubjectId);
+                      if (error) {
+                        toast.error(language === 'ar' ? 'فشل إصدار الشهادة' : 'Failed to issue certificate');
+                        return;
+                      }
+                      toast.success(language === 'ar' ? 'تم إصدار الشهادة بنجاح!' : 'Certificate issued successfully!');
+                      setCertificateEligibility(null);
+                      // Redirect to certificates page
+                      router.push('/dashboard/my-certificates');
+                    } catch (err: any) {
+                      console.error(err);
+                      toast.error(err.message || (language === 'ar' ? 'خطأ في إصدار الشهادة' : 'Error issuing certificate'));
+                    } finally {
+                      setIssuingCertificate(false);
+                    }
+                  }}
+                  disabled={issuingCertificate}
+                >
+                  {issuingCertificate ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Award className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'إصدار الشهادة' : 'Issue Certificate'}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Mobile Header */}
         <div className="lg:hidden mb-4 flex items-center justify-between">
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => router.push(`/dashboard/my-classes/${classId}`)}
+            onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -574,7 +784,7 @@ export default function SubjectLessonsPage() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => router.push(`/dashboard/my-classes/${classId}`)}
+                  onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
                   className="mb-3"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1038,7 +1248,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant="outline" 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
@@ -1048,7 +1258,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant={hasRemainingAttempts ? "default" : "outline"} 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           disabled={!hasRemainingAttempts}
                                           className={cn(
                                             hasRemainingAttempts && "bg-purple-600 hover:bg-purple-700 text-white",
@@ -1212,7 +1422,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant="outline" 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
@@ -1222,7 +1432,7 @@ export default function SubjectLessonsPage() {
                                         <Button 
                                           variant={hasRemainingAttempts ? "default" : "outline"} 
                                           size="sm" 
-                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${classId}&subjectId=${subjectId}`)}
+                                          onClick={() => router.push(`/dashboard/quizzes/${q.id}/take?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
                                           disabled={!hasRemainingAttempts}
                                           className={cn(
                                             hasRemainingAttempts && "bg-blue-600 hover:bg-blue-700 text-white",

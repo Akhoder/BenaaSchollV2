@@ -7,7 +7,7 @@ interface UsePaginationOptions {
 
 interface UsePaginationReturn<T> {
   currentPage: number;
-  setCurrentPage: (page: number) => void;
+  setCurrentPage: (page: number | ((prev: number) => number)) => void;
   itemsPerPage: number;
   setItemsPerPage: (items: number) => void;
   totalPages: number;

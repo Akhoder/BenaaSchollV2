@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,7 +96,7 @@ export default function StudentsPage() {
   const { profile, loading: authLoading, isAuthorized } = useAuthCheck({
     requiredRole: ['admin', 'teacher', 'supervisor'],
   });
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -193,7 +194,7 @@ export default function StudentsPage() {
   useRealtimeSubscription({
     table: 'profiles',
     event: '*',
-    enabled: isAuthorized,
+    enabled: isAuthorized ?? false,
     onUpdate: handleUpdate,
     onInsert: handleInsert,
     onDelete: handleDeleteRealtime,
@@ -238,6 +239,7 @@ export default function StudentsPage() {
     paginatedItems: paginatedStudents,
     startIndex,
     endIndex,
+    itemsPerPage,
   } = usePagination(filteredStudents, { itemsPerPage: 20 });
 
   const stats = {
@@ -250,12 +252,10 @@ export default function StudentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">Loading students...</p>
-          </div>
-        </div>
+        <DashboardLoadingSpinner
+          text={language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}
+          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
+        />
       </DashboardLayout>
     );
   }
@@ -283,50 +283,50 @@ export default function StudentsPage() {
             <Users className="h-4 w-4 mr-2" />
             Toggle View
           </Button>
-          {profile.role === 'admin' && (
+          {profile?.role === 'admin' && (
             <Button 
               onClick={() => setCreateOpen(true)}
-              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
+              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg transition-all duration-300 hover:scale-105"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2 animate-pulse-glow" />
               Add Student
             </Button>
           )}
         </PageHeader>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Total Students
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-success to-success-light rounded-lg">
                 <Users className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.total}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">All students</p>
+              <div className="text-3xl font-bold font-display text-success">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">All students</p>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Enrolled
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-info to-info-light rounded-lg">
                 <BookOpen className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.enrolled}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">In classes</p>
+              <div className="text-3xl font-bold font-display text-info">{stats.enrolled}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">In classes</p>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Not Enrolled
@@ -341,7 +341,7 @@ export default function StudentsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Average Grade
@@ -358,7 +358,7 @@ export default function StudentsPage() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
@@ -372,7 +372,7 @@ export default function StudentsPage() {
                 placeholder="Search by name, email, or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 font-sans"
+                className="pl-10 h-11 font-sans input-modern"
               />
             </div>
           </CardContent>
@@ -414,7 +414,7 @@ export default function StudentsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans">Cancel</Button>
-              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-sans" disabled={savingCreate}
+              <Button className="btn-gradient font-sans" disabled={savingCreate}
                 onClick={async () => {
                   if (!createName.trim() || !createEmail.trim()) { toast.error('Name and email are required'); return; }
                   try {
@@ -443,13 +443,21 @@ export default function StudentsPage() {
         </Dialog>
 
         {/* Students List */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="font-display">Students ({filteredStudents.length})</CardTitle>
+            <CardTitle className="font-display text-gradient">Students ({filteredStudents.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredStudents.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No students found</div>
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <GraduationCap className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No students found</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {searchQuery ? 'Try adjusting your search criteria' : 'No students have been added yet'}
+                </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -622,7 +630,7 @@ export default function StudentsPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
                 Cancel
               </Button>
-              <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-sans" disabled={savingEdit}
+              <Button className="btn-gradient font-sans" disabled={savingEdit}
                 onClick={async () => {
                   if (!selectedStudent) return;
                   try {

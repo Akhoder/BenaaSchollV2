@@ -22,6 +22,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertTriangle } from 'lucide-react';
 
+// Force dynamic rendering - this page requires runtime params
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 export default function TakeQuizPage() {
   const params = useParams();
   const search = useSearchParams();

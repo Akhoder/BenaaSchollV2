@@ -8,17 +8,269 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import * as api from '@/lib/supabase';
 import type { AttachmentType, Lesson } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink } from 'lucide-react';
+import { Image as ImageIcon, FileText, File as FileIcon, ExternalLink, Loader2, Calendar, GripVertical } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { LessonStatus } from '@/lib/supabase';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Force dynamic rendering - this page requires runtime params
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 interface AttachmentDraft {
   file_url: string;
   file_name?: string;
   file_type: AttachmentType;
+}
+
+interface SortableLessonProps {
+  lesson: Lesson;
+  attachments: any[];
+  editingLessonId: string | null;
+  editTitle: string;
+  editDescription: string;
+  editVideoUrl: string;
+  imageErrors: Set<string>;
+  onEditStart: (lesson: Lesson) => void;
+  onEditTitle: (value: string) => void;
+  onEditDescription: (value: string) => void;
+  onEditVideoUrl: (value: string) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onDelete: (id: string) => void;
+  onUpdateStatus: (id: string, status: LessonStatus) => void;
+  onRemoveAttachment: (id: string) => void;
+  getStatusBadge: (status?: LessonStatus) => JSX.Element;
+  getVideoEmbedUrl: (url?: string | null) => string | null;
+  t: (key: any) => string;
+}
+
+function SortableLesson({
+  lesson: l,
+  attachments: atts,
+  editingLessonId,
+  editTitle,
+  editDescription,
+  editVideoUrl,
+  imageErrors,
+  onEditStart,
+  onEditTitle,
+  onEditDescription,
+  onEditVideoUrl,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+  onUpdateStatus,
+  onRemoveAttachment,
+  getStatusBadge,
+  getVideoEmbedUrl,
+  t,
+}: SortableLessonProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: l.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const hasVideo = !!l.video_url;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className="card-hover overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <button
+                {...attributes}
+                {...listeners}
+                className="mt-1 p-1 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label="Drag handle"
+              >
+                <GripVertical className="h-5 w-5" />
+              </button>
+              <CardTitle className="text-lg font-display font-semibold line-clamp-1 flex-1">{l.title}</CardTitle>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getStatusBadge(l.status)}
+              {hasVideo && (
+                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Video</Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                {atts.length} {(t('attachments') as any) || 'Attachments'}
+              </Badge>
+            </div>
+          </div>
+          {/* Status selector */}
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-slate-600 dark:text-slate-400">{(t('status') as any) || 'Status'}:</span>
+            <Select
+              value={l.status || 'draft'}
+              onValueChange={(value) => onUpdateStatus(l.id, value as LessonStatus)}
+            >
+              <SelectTrigger className="h-8 w-32 text-xs input-modern">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">{t('draft') || 'Draft'}</SelectItem>
+                <SelectItem value="published">{t('published') || 'Published'}</SelectItem>
+                <SelectItem value="scheduled">{t('scheduled') || 'Scheduled'}</SelectItem>
+              </SelectContent>
+            </Select>
+            {l.status === 'scheduled' && l.scheduled_at && (
+              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(l.scheduled_at).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {editingLessonId === l.id ? (
+            <div className="space-y-2">
+              <Input value={editTitle} onChange={(e) => onEditTitle(e.target.value)} className="input-modern" />
+              <Textarea value={editDescription} onChange={(e) => onEditDescription(e.target.value)} className="input-modern" />
+              <Input value={editVideoUrl} onChange={(e) => onEditVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
+              <div className="flex gap-2">
+                <Button onClick={onSaveEdit} className="btn-gradient">{t('save') || 'Save'}</Button>
+                <Button variant="outline" onClick={onCancelEdit}>{t('cancel') || 'Cancel'}</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {l.description && (
+                <div className="text-sm text-muted-foreground mt-1 line-clamp-3">{l.description}</div>
+              )}
+              {(() => {
+                const embed = getVideoEmbedUrl(l.video_url);
+                if (embed) {
+                  return (
+                    <div className="mt-3">
+                      <AspectRatio ratio={16 / 9}>
+                        <iframe
+                          src={embed}
+                          className="w-full h-full rounded"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          loading="lazy"
+                        />
+                      </AspectRatio>
+                    </div>
+                  );
+                }
+                if (l.video_url) {
+                  return (
+                    <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
+                      {t('viewVideo') || 'View video'}
+                    </a>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Attachments preview */}
+              {atts.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {atts.slice(0, 4).map((a: any) => {
+                      const type = (a.file_type || '').toLowerCase();
+                      const fileUrl = a.file_url || '';
+                      const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i.test(fileUrl);
+                      const isPdf = type === 'pdf' || /\.pdf(\?|$)/i.test(fileUrl);
+                      
+                      return (
+                        <div key={a.id} className="border rounded p-2 text-xs overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          {isImage ? (
+                            <div className="space-y-1">
+                              <div className="w-full h-16 bg-slate-100 dark:bg-slate-800 rounded border overflow-hidden relative flex items-center justify-center">
+                                {imageErrors.has(a.id || fileUrl) ? (
+                                  <ImageIcon className="h-6 w-6 text-slate-400" />
+                                ) : (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img 
+                                    src={fileUrl} 
+                                    alt={a.file_name || 'attachment'} 
+                                    className="w-full h-full object-cover"
+                                    onError={() => onRemoveAttachment(a.id)}
+                                  />
+                                )}
+                              </div>
+                              <a 
+                                href={fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="block truncate text-blue-600 hover:underline"
+                                title={a.file_name || fileUrl}
+                              >
+                                {a.file_name || 'Image'}
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-center h-16 bg-slate-100 dark:bg-slate-800 rounded border">
+                                {isPdf ? (
+                                  <FileText className="h-6 w-6 text-red-600" />
+                                ) : (
+                                  <FileIcon className="h-6 w-6 text-slate-600" />
+                                )}
+                              </div>
+                              <a 
+                                href={fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="block truncate text-blue-600 hover:underline"
+                                title={a.file_name || fileUrl}
+                              >
+                                {a.file_name || fileUrl}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {atts.length > 4 && (
+                    <div className="text-xs text-slate-500 text-center pt-1">
+                      +{atts.length - 4} {(t('more') as any) || 'more'}...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Quick actions */}
+              <div className="flex gap-2 pt-2">
+                <Button variant="secondary" size="sm" onClick={() => onEditStart(l)}>{t('edit') || 'Edit'}</Button>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(l.id)}>{t('delete') || 'Delete'}</Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function SubjectLessonsPage() {
@@ -29,12 +281,16 @@ export default function SubjectLessonsPage() {
   const { t } = useLanguage();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [attachmentsByLesson, setAttachmentsByLesson] = useState<Record<string, AttachmentDraft[] & any[]>>({});
+  const [lessonSearchQuery, setLessonSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [filterHasVideo, setFilterHasVideo] = useState<'all' | 'with' | 'without'>('all');
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -42,6 +298,8 @@ export default function SubjectLessonsPage() {
   const [isUploadingIdx, setIsUploadingIdx] = useState<number | null>(null);
   const [lessonUploadBusy, setLessonUploadBusy] = useState<Record<string, boolean>>({});
   const [addUrlByLesson, setAddUrlByLesson] = useState<Record<string, string>>({});
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -55,7 +313,15 @@ export default function SubjectLessonsPage() {
     }
   }, [subjectId]);
 
+  // Debounce search query for smoother typing
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(lessonSearchQuery.trim().toLowerCase()), 300);
+    return () => clearTimeout(id);
+  }, [lessonSearchQuery]);
+
   const loadLessons = async () => {
+    try {
+      setLoadingLessons(true);
     const { data, error } = await api.fetchLessonsBySubject(subjectId);
     if (error) {
       console.error(error);
@@ -65,6 +331,7 @@ export default function SubjectLessonsPage() {
     const list = (data || []) as Lesson[];
     setLessons(list);
     const ids = list.map(l => l.id);
+      if (ids.length > 0) {
     const { data: atts } = await api.fetchAttachmentsForLessons(ids);
     const map: Record<string, any[]> = {};
     (atts || []).forEach((a: any) => {
@@ -72,6 +339,12 @@ export default function SubjectLessonsPage() {
       map[a.lesson_id].push(a);
     });
     setAttachmentsByLesson(map);
+      } else {
+        setAttachmentsByLesson({});
+      }
+    } finally {
+      setLoadingLessons(false);
+    }
   };
 
   const onAddAttachment = () => {
@@ -138,6 +411,7 @@ export default function SubjectLessonsPage() {
       setDescription('');
       setVideoUrl('');
       setAttachments([]);
+      setShowAddForm(false);
       await loadLessons();
     } finally {
       setSubmitting(false);
@@ -317,55 +591,128 @@ export default function SubjectLessonsPage() {
     await loadLessons();
   };
 
+  const updateLessonStatus = async (lessonId: string, newStatus: LessonStatus) => {
+    try {
+      const { error } = await api.updateLesson(lessonId, { status: newStatus });
+      if (error) {
+        toast.error('Failed to update status');
+        return;
+      }
+      toast.success('Status updated');
+      await loadLessons();
+    } catch (err) {
+      toast.error('Error updating status');
+    }
+  };
+
+  const getStatusBadge = (status?: LessonStatus) => {
+    if (!status) status = 'draft';
+    const statusConfig = {
+      draft: { label: t('draft') || 'Draft', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+      published: { label: t('published') || 'Published', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      scheduled: { label: t('scheduled') || 'Scheduled', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+    };
+    const config = statusConfig[status] || statusConfig.draft;
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = lessons.findIndex((l) => l.id === active.id);
+    const newIndex = lessons.findIndex((l) => l.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Update local state immediately for better UX
+    const newLessons = arrayMove(lessons, oldIndex, newIndex);
+    setLessons(newLessons);
+
+    // Save to database
+    try {
+      const lessonIds = newLessons.map((l) => l.id);
+      const { error } = await api.updateLessonsOrder(lessonIds);
+      if (error) {
+        // Revert on error
+        setLessons(lessons);
+        toast.error('Failed to save order');
+      } else {
+        toast.success('Order saved');
+      }
+    } catch (err) {
+      // Revert on error
+      setLessons(lessons);
+      toast.error('Error saving order');
+    }
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between pt-1">
+          <h1 className="text-3xl font-display text-gradient">
             {t('lessons') || 'Lessons'}
           </h1>
+          <div className="flex items-center gap-2">
+            {!showAddForm && (
+              <Button className="btn-gradient mt-1" onClick={() => setShowAddForm(true)}>
+                {t('addLesson') || 'Add Lesson'}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <Card>
+        {showAddForm && (
+          <Card className="card-elegant">
           <CardHeader>
-            <CardTitle>{t('addLesson') || 'Add Lesson'}</CardTitle>
+              <CardTitle className="font-display text-gradient">{t('addLesson') || 'Add Lesson'}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateLesson} className="space-y-4">
               <div>
-                <label className="block mb-1">{t('title') || 'Title'}</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('title') || 'Title'} />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('title') || 'Title'}</label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('title') || 'Title'} className="input-modern" />
               </div>
               <div>
-                <label className="block mb-1">{t('description') || 'Description'}</label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('description') || 'Description'} />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('description') || 'Description'}</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('description') || 'Description'} className="input-modern" />
               </div>
               <div>
-                <label className="block mb-1">{t('videoUrl') || 'Video URL (optional)'}</label>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." />
+                <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('videoUrl') || 'Video URL (optional)'}</label>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." className="input-modern" />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{t('attachmentsOptional') || 'Attachments (optional)'}</span>
-                  <Button type="button" variant="secondary" onClick={onAddAttachment}>
+                  <Button type="button" className="btn-gradient" onClick={onAddAttachment}>
                     {t('addAttachment') || 'Add Attachment'}
                   </Button>
                 </div>
                 {attachments.map((att, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-5">
-                      <label className="block mb-1">{t('fileUrl') || 'File URL'}</label>
-                      <Input value={att.file_url} onChange={(e) => onChangeAttachment(idx, 'file_url', e.target.value)} placeholder="https://..." />
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileUrl') || 'File URL'}</label>
+                      <Input value={att.file_url} onChange={(e) => onChangeAttachment(idx, 'file_url', e.target.value)} placeholder="https://..." className="input-modern" />
                     </div>
                     <div className="col-span-3">
-                      <label className="block mb-1">{t('fileName') || 'File name'}</label>
-                      <Input value={att.file_name || ''} onChange={(e) => onChangeAttachment(idx, 'file_name', e.target.value)} placeholder="optional" />
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileName') || 'File name'}</label>
+                      <Input value={att.file_name || ''} onChange={(e) => onChangeAttachment(idx, 'file_name', e.target.value)} placeholder="optional" className="input-modern" />
                     </div>
                     <div className="col-span-3">
-                      <label className="block mb-1">{t('fileType') || 'File type'}</label>
+                      <label className="block mb-1 text-sm text-slate-600 dark:text-slate-300">{t('fileType') || 'File type'}</label>
                       <select
-                        className="block w-full border rounded h-10 px-2"
+                        className="block w-full border rounded h-10 px-2 input-modern"
                         value={att.file_type}
                         onChange={(e) => onChangeAttachment(idx, 'file_type', e.target.value)}
                       >
@@ -401,171 +748,120 @@ export default function SubjectLessonsPage() {
                 ))}
               </div>
 
-              <div className="flex justify-end">
-                <Button disabled={submitting}>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  {t('cancel') || 'Cancel'}
+                </Button>
+                <Button disabled={submitting} className="btn-gradient">
                   {submitting ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
+        )}
 
-        <Card>
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle>{t('lessonsList') || 'Lessons'}</CardTitle>
+            <CardTitle className="font-display text-gradient">{t('lessonsList') || 'Lessons'}</CardTitle>
           </CardHeader>
           <CardContent>
-            {lessons.length === 0 ? (
-              <div className="text-sm text-muted-foreground">{t('noData') || 'No lessons yet.'}</div>
-            ) : (
-              <div className="space-y-3">
-                {lessons.map((l) => (
-                  <Card key={l.id} className="overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-semibold">{l.title}</CardTitle>
-                        <div className="flex gap-2">
-                          {l.video_url && (
-                            <a href={l.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-sm text-emerald-600 underline">
-                              {t('open') || 'Open'} <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
-                          )}
-                          <Button variant="secondary" size="sm" onClick={() => startEdit(l)}>{t('edit') || 'Edit'}</Button>
-                          <Button variant="destructive" size="sm" onClick={() => removeLesson(l.id)}>{t('delete') || 'Delete'}</Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-3">
-                    {editingLessonId === l.id ? (
-                      <div className="space-y-2">
-                        <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                        <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-                        <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} placeholder="https://..." />
-                        <div className="flex gap-2">
-                          <Button onClick={saveEdit}>{t('save') || 'Save'}</Button>
-                          <Button variant="outline" onClick={cancelEdit}>{t('cancel') || 'Cancel'}</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {l.description && (
-                          <div className="text-sm text-muted-foreground mt-1">{l.description}</div>
-                        )}
-                        {(() => {
-                          const embed = getVideoEmbedUrl(l.video_url);
-                          if (embed) {
-                            return (
-                              <div className="mt-3">
-                                <AspectRatio ratio={16 / 9}>
-                                  <iframe
-                                    src={embed}
-                                    className="w-full h-full rounded"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    loading="lazy"
-                                  />
-                                </AspectRatio>
-                              </div>
-                            );
-                          }
-                          if (l.video_url) {
-                            return (
-                              <a className="text-sm text-emerald-600 underline mt-2 inline-block" href={l.video_url!} target="_blank" rel="noreferrer">
-                                {t('viewVideo') || 'View video'}
-                              </a>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </>
-                    )}
-
-                    <div className="mt-3">
-                      <div className="font-medium mb-2">{t('attachments') || 'Attachments'}</div>
-                      {(attachmentsByLesson[l.id] || []).length === 0 ? (
-                        <div className="text-xs text-muted-foreground">{t('noData') || 'No attachments'}</div>
-                      ) : (
-                        <div className="space-y-3">
-                          {(attachmentsByLesson[l.id] || []).map((a: any) => {
-                            const type = (a.file_type || '').toLowerCase();
-                            const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(a.file_url || '');
-                            const isPdf = type === 'pdf' || /\.pdf(\?|$)/i.test(a.file_url || '');
-                            return (
-                              <div key={a.id} className="border rounded p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    {isImage ? (
-                                      <ImageIcon className="h-4 w-4 text-emerald-600" />
-                                    ) : isPdf ? (
-                                      <FileText className="h-4 w-4 text-red-600" />
-                                    ) : (
-                                      <FileIcon className="h-4 w-4 text-slate-600" />
-                                    )}
-                                    <a href={a.file_url} target="_blank" rel="noreferrer" className="text-sm underline text-blue-600">
-                                      {a.file_name || a.file_url}
-                                    </a>
-                                    <span className="text-xs text-slate-500">({a.file_type})</span>
-                                  </div>
-                                  <Button size="sm" variant="destructive" onClick={() => removeAttachment(a.id)}>
-                                    {t('delete') || 'Delete'}
-                                  </Button>
-                                </div>
-                                {isImage && (
-                                  <div className="rounded overflow-hidden border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={a.file_url} alt={a.file_name || 'image'} className="max-h-48 w-auto object-contain mx-auto" />
-                                  </div>
-                                )}
-                                {isPdf && (
-                                  <div className="rounded overflow-hidden border">
-                                    <iframe
-                                      src={a.file_url}
-                                      title={a.file_name || 'pdf'}
-                                      className="w-full h-64"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="mt-3 grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-8">
-                          <input
-                            type="file"
-                            accept="image/*,.pdf,.ppt,.pptx,.doc,.docx"
-                            onChange={(e) => {
-                              if (!e.target.files || e.target.files.length === 0) return;
-                              const file = e.target.files[0];
-                              const maxBytes = 20 * 1024 * 1024;
-                              if (file.size > maxBytes) {
-                                toast.error('File too large (max 20MB)');
-                                return;
-                              }
-                              void uploadAttachmentForLesson(l.id, file);
-                            }}
-                            className="block w-full text-sm"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            placeholder={t('fileUrl') || 'File URL'}
-                            value={addUrlByLesson[l.id] || ''}
-                            onChange={(e) => setAddUrlByLesson(prev => ({ ...prev, [l.id]: e.target.value }))}
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-end">
-                          <Button size="sm" onClick={() => addAttachmentUrlForLesson(l.id)} disabled={!!lessonUploadBusy[l.id]}>
-                            {t('add') || 'Add'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            {/* Filters & Search */}
+            <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="flex gap-2 md:col-span-2">
+                <select
+                  className="input-modern h-10 px-3 rounded"
+                  value={filterHasVideo}
+                  onChange={(e) => setFilterHasVideo(e.target.value as 'all' | 'with' | 'without')}
+                >
+                  <option value="all">All</option>
+                  <option value="with">With video</option>
+                  <option value="without">Without video</option>
+                </select>
               </div>
+              <div className="relative">
+                <Input
+                  placeholder={(t('search') as any) || 'Search lessons...'}
+                  value={lessonSearchQuery}
+                  onChange={(e) => setLessonSearchQuery(e.target.value)}
+                  className="input-modern"
+                />
+              </div>
+            </div>
+            {loadingLessons ? (
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
+                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('loading') || 'Loading...'}</p>
+              </div>
+            ) : (lessons || []).filter(l => {
+              const q = debouncedQuery;
+              const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+              if (!matchesQuery) return false;
+              const hasVideo = !!l.video_url;
+              if (filterHasVideo === 'with' && !hasVideo) return false;
+              if (filterHasVideo === 'without' && hasVideo) return false;
+              return true;
+            }).length === 0 ? (
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noData') || 'No lessons yet.'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">Add a lesson to get started</p>
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={lessons.filter(l => {
+                  const q = debouncedQuery;
+                  const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+                  if (!matchesQuery) return false;
+                  const hasVideo = !!l.video_url;
+                  if (filterHasVideo === 'with' && !hasVideo) return false;
+                  if (filterHasVideo === 'without' && hasVideo) return false;
+                  return true;
+                }).map(l => l.id)} strategy={verticalListSortingStrategy}>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {(lessons || []).filter(l => {
+                      const q = debouncedQuery;
+                      const matchesQuery = !q || (l.title || '').toLowerCase().includes(q) || (l.description || '').toLowerCase().includes(q);
+                      if (!matchesQuery) return false;
+                      const hasVideo = !!l.video_url;
+                      if (filterHasVideo === 'with' && !hasVideo) return false;
+                      if (filterHasVideo === 'without' && hasVideo) return false;
+                      return true;
+                    }).map((l) => {
+                      const atts = attachmentsByLesson[l.id] || [];
+                      return (
+                        <SortableLesson
+                          key={l.id}
+                          lesson={l}
+                          attachments={atts}
+                          editingLessonId={editingLessonId}
+                          editTitle={editTitle}
+                          editDescription={editDescription}
+                          editVideoUrl={editVideoUrl}
+                          imageErrors={imageErrors}
+                          onEditStart={startEdit}
+                          onEditTitle={setEditTitle}
+                          onEditDescription={setEditDescription}
+                          onEditVideoUrl={setEditVideoUrl}
+                          onSaveEdit={saveEdit}
+                          onCancelEdit={cancelEdit}
+                          onDelete={removeLesson}
+                          onUpdateStatus={updateLessonStatus}
+                          onRemoveAttachment={removeAttachment}
+                          getStatusBadge={getStatusBadge}
+                          getVideoEmbedUrl={getVideoEmbedUrl}
+                          t={t}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </CardContent>
         </Card>

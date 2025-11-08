@@ -179,7 +179,7 @@ export default function NewQuizPage() {
           if (q.id !== questionId || !q.options) return q;
           return {
             ...q,
-            options: q.options.map((opt) =>
+            options: q.options.map((opt: any) =>
               opt.id === optionId ? { ...opt, ...updates } : opt
             ),
           };
@@ -213,11 +213,11 @@ export default function NewQuizPage() {
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.id !== questionId || !q.options) return q;
-        const filtered = q.options.filter((opt) => opt.id !== optionId);
+        const filtered = q.options.filter((opt: any) => opt.id !== optionId);
         // Reorder options
         return {
           ...q,
-          options: filtered.map((opt, idx) => ({ ...opt, order_index: idx })),
+          options: filtered.map((opt: any, idx: number) => ({ ...opt, order_index: idx })),
         };
       })
     );
@@ -266,7 +266,7 @@ export default function NewQuizPage() {
       
       if (q.type === 'mcq_single' || q.type === 'mcq_multi') {
         if (!q.options || q.options.length < 2) return false;
-        const validOptions = q.options.filter((opt) => opt.text.trim());
+        const validOptions = q.options.filter((opt: any) => opt.text.trim());
         if (validOptions.length < 2) return false;
         const hasCorrect = validOptions.some((opt) => opt.is_correct);
         if (!hasCorrect) return false;
@@ -350,8 +350,8 @@ export default function NewQuizPage() {
           question.options.length >= 2
         ) {
           const validOptions = question.options
-            .filter((opt) => opt.text.trim())
-            .map((opt, idx) => ({
+            .filter((opt: any) => opt.text.trim())
+            .map((opt: any, idx: number) => ({
               text: opt.text.trim(),
               is_correct: opt.is_correct,
               order_index: idx,
@@ -368,9 +368,10 @@ export default function NewQuizPage() {
 
         // Add options for True/False questions
         if (question.type === 'true_false' && question.correct_answer !== null) {
+          const correctAnswerBool = question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1';
           const trueFalseOptions = [
-            { text: language === 'ar' ? 'صحيح' : 'True', is_correct: question.correct_answer === true, order_index: 0 },
-            { text: language === 'ar' ? 'خطأ' : 'False', is_correct: question.correct_answer === false, order_index: 1 },
+            { text: language === 'ar' ? 'صحيح' : 'True', is_correct: correctAnswerBool, order_index: 0 },
+            { text: language === 'ar' ? 'خطأ' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
           ];
           const { error: optErr } = await addQuizOptions(createdQuestion.id, trueFalseOptions);
           if (optErr) {
@@ -499,7 +500,7 @@ export default function NewQuizPage() {
                 <Select
                   value={form.lesson_id || 'NONE'}
                   onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, lesson_id: v === 'NONE' ? '' : v }))
+                    setForm((prev: any) => ({ ...prev, lesson_id: v === 'NONE' ? '' : v }))
                   }
                   disabled={!form.subject_id}
                 >
@@ -564,7 +565,7 @@ export default function NewQuizPage() {
               <Input
                 className="mt-1"
                 value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => setForm((prev: any) => ({ ...prev, title: e.target.value }))}
                 placeholder={
                   language === 'ar' ? 'أدخل عنوان المسابقة' : 'Enter quiz title'
                 }
@@ -579,7 +580,7 @@ export default function NewQuizPage() {
                 className="mt-1"
                 value={form.description}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                  setForm((prev: any) => ({ ...prev, description: e.target.value }))
                 }
                 placeholder={
                   language === 'ar'
@@ -601,7 +602,7 @@ export default function NewQuizPage() {
                   className="mt-1"
                   value={form.time_limit_minutes}
                   onChange={(e) =>
-                    setForm((prev) => ({
+                    setForm((prev: any) => ({
                       ...prev,
                       time_limit_minutes: Number(e.target.value) || 0,
                     }))
@@ -619,7 +620,7 @@ export default function NewQuizPage() {
                   className="mt-1"
                   value={form.attempts_allowed}
                   onChange={(e) =>
-                    setForm((prev) => ({
+                    setForm((prev: any) => ({
                       ...prev,
                       attempts_allowed: Number(e.target.value) || 1,
                     }))
@@ -640,7 +641,7 @@ export default function NewQuizPage() {
                   className="mt-1"
                   value={form.start_at}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, start_at: e.target.value }))
+                    setForm((prev: any) => ({ ...prev, start_at: e.target.value }))
                   }
                 />
               </div>
@@ -655,7 +656,7 @@ export default function NewQuizPage() {
                   className="mt-1"
                   value={form.end_at}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, end_at: e.target.value }))
+                    setForm((prev: any) => ({ ...prev, end_at: e.target.value }))
                   }
                 />
               </div>
@@ -675,7 +676,7 @@ export default function NewQuizPage() {
                   id="sq"
                   checked={form.shuffle_questions}
                   onCheckedChange={(v) =>
-                    setForm((prev) => ({ ...prev, shuffle_questions: !!v }))
+                    setForm((prev: any) => ({ ...prev, shuffle_questions: !!v }))
                   }
                 />
                 <Label htmlFor="sq">
@@ -688,7 +689,7 @@ export default function NewQuizPage() {
                   id="so"
                   checked={form.shuffle_options}
                   onCheckedChange={(v) =>
-                    setForm((prev) => ({ ...prev, shuffle_options: !!v }))
+                    setForm((prev: any) => ({ ...prev, shuffle_options: !!v }))
                   }
                 />
                 <Label htmlFor="so">
@@ -703,7 +704,7 @@ export default function NewQuizPage() {
                 <Select
                   value={form.show_results_policy}
                   onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, show_results_policy: v as any }))
+                    setForm((prev: any) => ({ ...prev, show_results_policy: v as any }))
                   }
                 >
                   <SelectTrigger className="mt-1">
@@ -883,7 +884,7 @@ export default function NewQuizPage() {
                             {language === 'ar' ? 'إضافة خيار' : 'Add Option'}
                           </Button>
                         </div>
-                        {(question.options || []).map((option, optIdx) => (
+                        {(question.options || []).map((option: any, optIdx: number) => (
                           <div
                             key={option.id}
                             className="flex items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-700"
@@ -898,7 +899,7 @@ export default function NewQuizPage() {
                                       if (q.id !== question.id || !q.options) return q;
                                       return {
                                         ...q,
-                                        options: q.options.map((opt) => ({
+                                        options: q.options.map((opt: any) => ({
                                           ...opt,
                                           is_correct: opt.id === option.id ? !!checked : false,
                                         })),
@@ -953,17 +954,17 @@ export default function NewQuizPage() {
                         </Label>
                         <div className="flex gap-2">
                           <Button
-                            variant={question.correct_answer === true ? 'default' : 'outline'}
+                            variant={(question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1') ? 'default' : 'outline'}
                             onClick={() =>
-                              updateQuestion(question.id, { correct_answer: true })
+                              updateQuestion(question.id, { correct_answer: 'true' })
                             }
                           >
                             {language === 'ar' ? 'صحيح' : 'True'}
                           </Button>
                           <Button
-                            variant={question.correct_answer === false ? 'default' : 'outline'}
+                            variant={(question.correct_answer === 'false' || question.correct_answer === 0 || question.correct_answer === '0') ? 'default' : 'outline'}
                             onClick={() =>
-                              updateQuestion(question.id, { correct_answer: false })
+                              updateQuestion(question.id, { correct_answer: 'false' })
                             }
                           >
                             {language === 'ar' ? 'خطأ' : 'False'}

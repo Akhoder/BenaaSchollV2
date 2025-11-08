@@ -147,10 +147,13 @@ export default function MyAssignmentsPage() {
         />
 
         {assignments.length === 0 ? (
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardContent className="py-12 text-center">
-              <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No assignments yet</p>
+          <Card className="card-elegant">
+            <CardContent className="py-12 text-center animate-fade-in">
+              <div className="relative inline-block mb-4">
+                <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Assignments</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-sans">You don't have any assignments yet. Check back later!</p>
             </CardContent>
           </Card>
         ) : (
@@ -158,11 +161,11 @@ export default function MyAssignmentsPage() {
             {assignments.map((assignment: any) => {
               const submission = submissions[assignment.id];
               return (
-                <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
+                <Card key={assignment.id} className="card-hover">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                        <CardTitle className="text-lg font-display">{assignment.title}</CardTitle>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="outline">{getTypeLabel(assignment.assignment_type)}</Badge>
                           {getStatusBadge(assignment, submission)}
@@ -198,8 +201,7 @@ export default function MyAssignmentsPage() {
                       )}
                     </div>
                     <Button
-                      variant="outline"
-                      className="w-full"
+                      className="btn-gradient w-full transition-all duration-300 hover:scale-105"
                       onClick={() => router.push(`/dashboard/assignments/${assignment.id}/submit`)}
                     >
                       {submission ? 'View Submission' : 'Submit Work'}

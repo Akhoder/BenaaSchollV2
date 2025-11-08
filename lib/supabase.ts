@@ -21,12 +21,17 @@ export interface Profile {
 
 export type AttachmentType = 'image' | 'pdf' | 'ppt' | 'word';
 
+export type LessonStatus = 'draft' | 'published' | 'scheduled';
+
 export interface Lesson {
   id: string;
   subject_id: string;
   title: string;
   description?: string | null;
   video_url?: string | null;
+  status?: LessonStatus;
+  scheduled_at?: string | null;
+  order_index: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -62,6 +67,27 @@ export interface SubjectProgressStats {
   in_progress_lessons: number;
   not_started_lessons: number;
   overall_progress: number;
+}
+
+export type CertificateStatus = 'draft' | 'issued' | 'published';
+export type CertificateGrade = 'A' | 'B' | 'C' | 'D' | 'F' | 'ممتاز' | 'جيد جداً' | 'جيد' | 'مقبول' | 'راسب';
+
+export interface Certificate {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  teacher_id?: string | null;
+  final_score: number;
+  grade: CertificateGrade;
+  status: CertificateStatus;
+  auto_issued: boolean;
+  certificate_number: string;
+  completion_date: string;
+  issued_by?: string | null;
+  issued_at?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SubjectRow {
@@ -367,7 +393,7 @@ export async function fetchLessonsBySubject(subjectId: string) {
     .from('lessons')
     .select('*')
     .eq('subject_id', subjectId)
-    .order('created_at', { ascending: false });
+    .order('order_index', { ascending: true });
 }
 
 export async function createLesson(input: {
@@ -375,15 +401,29 @@ export async function createLesson(input: {
   title: string;
   description?: string;
   video_url?: string;
+  status?: LessonStatus;
+  scheduled_at?: string | null;
 }) {
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userRes?.user) {
     return { data: null, error: userErr || new Error('Not authenticated') } as any;
   }
   const created_by = userRes.user.id;
+  
+  // Get max order_index for this subject
+  const { data: maxOrder } = await supabase
+    .from('lessons')
+    .select('order_index')
+    .eq('subject_id', input.subject_id)
+    .order('order_index', { ascending: false })
+    .limit(1)
+    .single();
+  
+  const order_index = (maxOrder?.order_index ?? -1) + 1;
+  
   return await supabase
     .from('lessons')
-    .insert([{ ...input, created_by }])
+    .insert([{ ...input, created_by, status: input.status || 'draft', order_index }])
     .select('*')
     .single();
 }
@@ -423,7 +463,7 @@ export async function fetchAttachmentsForLessons(lessonIds: string[]) {
     .order('created_at', { ascending: false });
 }
 
-export async function updateLesson(id: string, fields: Partial<Pick<Lesson, 'title' | 'description' | 'video_url'>>) {
+export async function updateLesson(id: string, fields: Partial<Pick<Lesson, 'title' | 'description' | 'video_url' | 'status' | 'scheduled_at'>>) {
   return await supabase
     .from('lessons')
     .update(fields)
@@ -437,6 +477,31 @@ export async function deleteLesson(id: string) {
     .from('lessons')
     .delete()
     .eq('id', id);
+}
+
+export async function updateLessonsOrder(lessonIds: string[]) {
+  // Update order_index for each lesson based on its position in the array
+  const updates = lessonIds.map((lessonId, index) => ({
+    id: lessonId,
+    order_index: index,
+  }));
+  
+  // Use a transaction-like approach: update each lesson
+  const promises = updates.map(({ id, order_index }) =>
+    supabase
+      .from('lessons')
+      .update({ order_index })
+      .eq('id', id)
+  );
+  
+  const results = await Promise.all(promises);
+  const hasError = results.some(r => r.error);
+  
+  if (hasError) {
+    return { data: null, error: new Error('Failed to update order') } as any;
+  }
+  
+  return { data: null, error: null };
 }
 
 export async function deleteLessonAttachment(id: string) {
@@ -673,7 +738,7 @@ export async function getMyConversations() {
   const { data: conversations, error } = await supabase
     .from('conversations')
     .select('*')
-    .order('last_message_at', { ascending: false, nullsLast: true })
+    .order('last_message_at', { ascending: false })
     .limit(50);
   
   if (error) {
@@ -997,12 +1062,21 @@ export async function fetchMyNotifications(limit = 20) {
 }
 
 export async function markNotificationRead(id: string) {
-  return await supabase
+  // Step 1: perform minimal update (no representation) to avoid PostgREST 406 when select is not acceptable
+  const updateRes = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', id);
+
+  if ((updateRes as any)?.error) return updateRes as any;
+
+  // Step 2: fetch the row explicitly (separate SELECT) if needed by callers
+  const fetchRes = await supabase
+    .from('notifications')
     .select('*')
+    .eq('id', id)
     .single();
+  return fetchRes as any;
 }
 
 export async function createNotification(input: { recipient_id?: string | null; class_id?: string | null; role_target?: string | null; title: string; body?: string | null; type?: string | null; link_url?: string | null; }) {
@@ -1316,4 +1390,206 @@ export async function replaceOptions(questionId: string, options: Array<{ text: 
   await supabase.from('quiz_options').delete().eq('question_id', questionId);
   const rows = options.map(o => ({ question_id: questionId, text: o.text, is_correct: !!o.is_correct, order_index: o.order_index ?? 0 }));
   return await supabase.from('quiz_options').insert(rows).select('*');
+}
+
+// ============================================
+// CERTIFICATE FUNCTIONS
+// ============================================
+
+export async function checkCertificateEligibility(studentId: string, subjectId: string) {
+  return await supabase.rpc('check_certificate_eligibility', {
+    p_student_id: studentId,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function autoIssueCertificateIfEligible(studentId: string, subjectId: string) {
+  return await supabase.rpc('auto_issue_certificate_if_eligible', {
+    p_student_id: studentId,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function fetchCertificatesForSubject(subjectId: string) {
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchCertificatesForStudent(studentId?: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = studentId || userRes?.user?.id;
+  if (!uid) return { data: [], error: null } as any;
+  
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('student_id', uid)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false });
+}
+
+export async function fetchCertificateById(certificateId: string) {
+  return await supabase
+    .from('certificates')
+    .select('*')
+    .eq('id', certificateId)
+    .single();
+}
+
+export async function updateCertificateStatus(certificateId: string, status: CertificateStatus, issuedBy?: string) {
+  const updates: any = { status };
+  
+  if (status === 'issued' && !issuedBy) {
+    const { data: userRes } = await supabase.auth.getUser();
+    updates.issued_by = userRes?.user?.id;
+    updates.issued_at = new Date().toISOString();
+  }
+  
+  if (status === 'published') {
+    updates.published_at = new Date().toISOString();
+    if (!updates.issued_by && !issuedBy) {
+      const { data: userRes } = await supabase.auth.getUser();
+      updates.issued_by = userRes?.user?.id;
+    }
+    if (!updates.issued_at) {
+      updates.issued_at = new Date().toISOString();
+    }
+  }
+  
+  return await supabase
+    .from('certificates')
+    .update(updates)
+    .eq('id', certificateId)
+    .select('*')
+    .single();
+}
+
+export async function createCertificateManually(
+  studentId: string,
+  subjectId: string,
+  finalScore: number,
+  grade: CertificateGrade,
+  status: CertificateStatus = 'draft'
+) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  
+  // Get teacher_id from subject
+  const { data: subject } = await supabase
+    .from('class_subjects')
+    .select('teacher_id')
+    .eq('id', subjectId)
+    .single();
+  
+  // Generate certificate number
+  const certNumber = `CERT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+  
+  const insertData: any = {
+    student_id: studentId,
+    subject_id: subjectId,
+    teacher_id: subject?.teacher_id || null,
+    final_score: finalScore,
+    grade: grade,
+    status: status,
+    auto_issued: false,
+    certificate_number: certNumber,
+    completion_date: new Date().toISOString().split('T')[0],
+    issued_by: userRes.user.id,
+    issued_at: new Date().toISOString(),
+  };
+  
+  // If status is published, set published_at
+  if (status === 'published') {
+    insertData.published_at = new Date().toISOString();
+  }
+  
+  return await supabase
+    .from('certificates')
+    .insert([insertData])
+    .select('*')
+    .single();
+}
+
+export async function deleteCertificate(certificateId: string) {
+  return await supabase
+    .from('certificates')
+    .delete()
+    .eq('id', certificateId);
+}
+
+export async function studentIssueCertificate(subjectId: string) {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: null, error: userErr || new Error('Not authenticated') } as any;
+  }
+  
+  return await supabase.rpc('student_issue_certificate', {
+    p_student_id: userRes.user.id,
+    p_subject_id: subjectId,
+  });
+}
+
+export async function checkEligibleSubjectsForStudent() {
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return { data: [], error: userErr } as any;
+  }
+  
+  // Get all enrolled subjects for the student
+  const { data: enrollments } = await supabase
+    .from('student_enrollments')
+    .select('class_id, status')
+    .eq('student_id', userRes.user.id)
+    .eq('status', 'active');
+  
+  if (!enrollments || enrollments.length === 0) {
+    return { data: [], error: null } as any;
+  }
+  
+  const classIds = enrollments.map(e => e.class_id);
+  
+  // Get subjects with auto_publish enabled
+  const { data: subjects } = await supabase
+    .from('class_subjects')
+    .select('id, subject_name, auto_publish_certificates')
+    .in('class_id', classIds)
+    .eq('auto_publish_certificates', true);
+  
+  if (!subjects || subjects.length === 0) {
+    return { data: [], error: null } as any;
+  }
+  
+  // Check eligibility for each subject
+  const eligibleSubjects: Array<{ subject_id: string; subject_name: string; eligibility: any }> = [];
+  
+  for (const subject of subjects) {
+    const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+      p_student_id: userRes.user.id,
+      p_subject_id: subject.id,
+    });
+    
+    if (eligibility && (eligibility as any).eligible) {
+      // Check if certificate doesn't exist yet
+      const { data: existingCerts, error: certError } = await supabase
+        .from('certificates')
+        .select('id')
+        .eq('student_id', userRes.user.id)
+        .eq('subject_id', subject.id);
+      
+      if (!certError && (!existingCerts || existingCerts.length === 0)) {
+        eligibleSubjects.push({
+          subject_id: subject.id,
+          subject_name: subject.subject_name,
+          eligibility: eligibility,
+        });
+      }
+    }
+  }
+  
+  return { data: eligibleSubjects, error: null } as any;
 }

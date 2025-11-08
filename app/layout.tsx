@@ -1,62 +1,21 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Tajawal, Almarai, Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 
-// ✅ FONT OPTIMIZATION: Modern, contemporary fonts for better design
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial']
-});
+// ✅ ULTRA MODERN FONTS - خطوط عصرية 2024
+// تم تحميل الخطوط عبر CSS @import في globals.css لتجنب مشاكل التحميل في وضع التطوير
+// Poppins & Cairo - يتم تحميلهما من Google Fonts عبر CSS مباشرة
+// Fallback fonts: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif
 
-// Modern display font for headings - Very popular in 2024
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-plus-jakarta',
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'arial']
-});
-
-// Modern geometric sans-serif - Clean and professional
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'arial']
-});
-
-// Modern Arabic font - Clean, elegant, professional
-const tajawal = Tajawal({
-  subsets: ['arabic', 'latin'],
-  weight: ['200', '300', '400', '500', '700', '800', '900'],
-  variable: '--font-tajawal',
-  display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial']
-});
-
-// Beautiful Arabic font for headings - Saudi-designed, modern
-const almarai = Almarai({
-  subsets: ['arabic'],
-  weight: ['400', '700', '800'],
-  variable: '--font-almarai',
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'arial']
-});
+// Get base URL from environment variable or use default
+// In production, set NEXT_PUBLIC_APP_URL to your domain (e.g., https://benaaschool.ly)
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://benaa-school.bolt.host';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: 'مدرسة البناء العلمي - Madrasat Al-Binaa Al-Ilmi',
   description: 'نظام إدارة مدرسي متعدد اللغات مع التحكم في الوصول القائم على الأدوار - Multi-language school management system with role-based access',
   manifest: '/manifest.json',
@@ -94,7 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} ${plusJakarta.variable} ${dmSans.variable} ${tajawal.variable} ${almarai.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>

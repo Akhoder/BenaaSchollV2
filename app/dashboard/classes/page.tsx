@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +98,7 @@ interface ClassData {
 
 export default function ClassesPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -384,12 +385,10 @@ export default function ClassesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">Loading classes...</p>
-          </div>
-        </div>
+        <DashboardLoadingSpinner
+          text={language === 'ar' ? 'جاري تحميل الفصول...' : 'Loading classes...'}
+          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
+        />
       </DashboardLayout>
     );
   }
@@ -440,7 +439,7 @@ export default function ClassesPage() {
               <div className="flex gap-4 justify-center">
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="btn-gradient"
                 >
                   Refresh Page
                 </Button>
@@ -504,7 +503,7 @@ GRANT ALL ON classes TO authenticated;`;
             <Users className="h-4 w-4 mr-2" />
             Toggle View
           </Button>
-          {profile.role === 'admin' && (
+          {profile?.role === 'admin' && (
             <Button 
               onClick={() => {
                 setSelectedClass(null);
@@ -520,38 +519,38 @@ GRANT ALL ON classes TO authenticated;`;
         </PageHeader>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Total Classes
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-primary to-primary-hover rounded-lg">
                 <School className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.total}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">All classes</p>
+              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">All classes</p>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 Active Classes
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-success to-success-light rounded-lg">
                 <Calendar className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.active}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Currently running</p>
+              <div className="text-3xl font-bold font-display text-success">{stats.active}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">Currently running</p>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Completed
@@ -566,7 +565,7 @@ GRANT ALL ON classes TO authenticated;`;
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
                 Total Students
@@ -583,11 +582,11 @@ GRANT ALL ON classes TO authenticated;`;
         </div>
 
         {/* Search */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-elegant">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">Search Classes</CardTitle>
+              <CardTitle className="font-display text-gradient">Search Classes</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -597,7 +596,7 @@ GRANT ALL ON classes TO authenticated;`;
                 placeholder="Search by class name, code, or teacher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 font-sans"
+                className="pl-10 h-11 font-sans input-modern"
               />
             </div>
           </CardContent>
@@ -633,7 +632,7 @@ GRANT ALL ON classes TO authenticated;`;
                       <TableHead className="font-semibold font-sans">Duration</TableHead>
                       <TableHead className="font-semibold font-sans">Status</TableHead>
                       <TableHead className="font-semibold font-sans">Published</TableHead>
-                      {profile.role === 'admin' && (
+                      {profile?.role === 'admin' && (
                         <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
                       )}
                     </TableRow>
@@ -719,7 +718,7 @@ GRANT ALL ON classes TO authenticated;`;
                             }}
                           />
                         </TableCell>
-                        {profile.role === 'admin' && (
+                        {profile?.role === 'admin' && (
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

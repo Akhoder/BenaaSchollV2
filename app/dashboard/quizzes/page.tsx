@@ -429,10 +429,10 @@ export default function QuizzesManagePage() {
         </PageHeader>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <Card className="border-slate-200 dark:border-slate-800">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
+          <Card className="card-interactive">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Total Quizzes
               </CardTitle>
             </CardHeader>
@@ -440,19 +440,19 @@ export default function QuizzesManagePage() {
               <div className="text-3xl font-bold font-display">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-interactive">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Open
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.open}</div>
+              <div className="text-3xl font-bold font-display text-success">{stats.open}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-interactive">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Closed
               </CardTitle>
             </CardHeader>
@@ -460,19 +460,19 @@ export default function QuizzesManagePage() {
               <div className="text-3xl font-bold font-display text-slate-600">{stats.closed}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-interactive">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Subject Quizzes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.subject}</div>
+              <div className="text-3xl font-bold font-display text-info">{stats.subject}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="card-interactive">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 Lesson Quizzes
               </CardTitle>
             </CardHeader>
@@ -483,10 +483,10 @@ export default function QuizzesManagePage() {
         </div>
 
         {/* Filters */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-interactive">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-slate-500" />
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <Search className="h-5 w-5 text-muted-foreground" />
               Filters & Search
             </CardTitle>
           </CardHeader>
@@ -498,7 +498,7 @@ export default function QuizzesManagePage() {
                   placeholder="Search quizzes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 input-modern"
                 />
               </div>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
@@ -537,18 +537,23 @@ export default function QuizzesManagePage() {
         </Card>
 
         {/* Quizzes List */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        <Card className="card-interactive animate-fade-in-up delay-200">
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="font-display text-gradient">
               Quizzes ({filteredQuizzes.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredQuizzes.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600" />
-                <p className="mt-4 text-slate-500 dark:text-slate-400">
-                  No quizzes found matching your criteria
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Quizzes Found</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {searchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
+                    ? 'Try adjusting your filters'
+                    : 'No quizzes have been created yet'}
                 </p>
               </div>
             ) : (
