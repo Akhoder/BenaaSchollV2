@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+// Note: force-dynamic removed for GitHub Pages static export compatibility
+// This API route will not work on GitHub Pages (requires server-side rendering)
+// For production, deploy to Vercel, Netlify, or another platform that supports API routes
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET() {
