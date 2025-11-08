@@ -33,6 +33,7 @@ const nextConfig = {
     ],
   },
   // استخدام webpack بدلاً من Turbopack
+  // (bolt.new يستخدم webpack بسبب مشاكل WASM مع Turbopack)
   webpack: (config, { isServer }) => {
     // قمع تحذيرات Supabase
     config.ignoreWarnings = [
@@ -40,45 +41,46 @@ const nextConfig = {
     ];
     return config;
   },
-  // إضافة turbopack config فارغ لإسكات التحذير في Next.js 16+
-  // (bolt.new يستخدم webpack بسبب مشاكل WASM مع Turbopack)
-  turbopack: {},
   // ضغط الملفات
   compress: true,
   // ✅ PERFORMANCE: Add production optimizations
   poweredByHeader: false,
   reactStrictMode: true,
-  // تحسين التخزين المؤقت
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=60, s-maxage=60',
-          },
-        ],
-      },
-    ];
-  },
+  // ملاحظة: headers() تم إزالتها لأنها لا تعمل مع output: 'export'
+  // إذا كنت تحتاج إلى headers للأمان، أضفها في:
+  // - Nginx/Apache (للـ server)
+  // - CDN settings (Cloudflare, Vercel, إلخ)
+  // - أو أزل output: 'export' من إعدادات CI/CD
+  // async headers() {
+  //   return [
+  //     {
+  //       source: '/(.*)',
+  //       headers: [
+  //         {
+  //           key: 'X-Content-Type-Options',
+  //           value: 'nosniff',
+  //         },
+  //         {
+  //           key: 'X-Frame-Options',
+  //           value: 'DENY',
+  //         },
+  //         {
+  //           key: 'X-XSS-Protection',
+  //           value: '1; mode=block',
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       source: '/api/(.*)',
+  //       headers: [
+  //         {
+  //           key: 'Cache-Control',
+  //           value: 'public, max-age=60, s-maxage=60',
+  //         },
+  //       ],
+  //     },
+  //   ];
+  // },
 };
 
 module.exports = nextConfig;

@@ -2,5 +2,8 @@
   "template": "nextjs-shadcn",
   "build": {
     "useTurbopack": false
+  },
+  "env": {
+    "NEXT_PRIVATE_SKIP_TURBO": "1"
   }
 }
