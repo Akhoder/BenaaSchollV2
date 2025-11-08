@@ -12,8 +12,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase, fetchQuizBundle, fetchAttemptsWithAnswers, updateAnswerGrade, recalcAttemptScore, updateAnswerPayload } from '@/lib/supabase';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
+// Client component - generateStaticParams handled in layout.tsx
 export const dynamicParams = true;
 
 export default function GradeQuizPage() {

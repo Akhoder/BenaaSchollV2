@@ -37,8 +37,7 @@ import { supabase, fetchQuizBundle, updateQuiz, fetchQuestionsForQuiz, addQuizQu
 
 import { PageHeader } from '@/components/PageHeader';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
+// Client component - generateStaticParams handled in layout.tsx
 export const dynamicParams = true;
 
 interface Question {

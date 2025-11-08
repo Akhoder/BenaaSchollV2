@@ -54,11 +54,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Force dynamic rendering - this page requires authentication context
-// Client component - no static generation
-export const dynamic = 'force-dynamic';
+// Client component - no static generation needed
+// Note: This is not a dynamic route, so no generateStaticParams needed
 export const dynamicParams = true;
-export const revalidate = 0; // Disable caching
 
 // ============================================
 // TYPES - تعريف الأنواع
