@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ✅ STATIC EXPORT: Required for GitHub Pages deployment
+  output: 'export',
   // ✅ IMAGE OPTIMIZATION: Enable Next.js image optimization
   // Note: GitHub Actions will automatically set unoptimized: true for static export
   images: { 
