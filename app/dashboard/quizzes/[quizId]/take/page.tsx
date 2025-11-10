@@ -1,12 +1,10 @@
-// Server component wrapper for static export compatibility
 import TakeQuizClient from './TakeQuizClient';
 
-// Required for static export with output: 'export'
-export async function generateStaticParams() {
-  return []; // Empty array allows dynamic generation at runtime
-}
+export const dynamic = 'force-static';
 
-export const dynamicParams = true;
+export async function generateStaticParams() {
+  return [];
+}
 
 export default function TakeQuizPage() {
   return <TakeQuizClient />;

@@ -1,11 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ============================================
    📝 GOOGLE FONTS - Load via CSS (Better for Dev)
    ============================================ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ============================================
    ✨ ULTRA MODERN DESIGN SYSTEM 2025
