@@ -30,6 +30,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { DashboardStatsSkeleton, CardGridSkeleton, ListSkeleton } from '@/components/SkeletonLoaders';
+import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
@@ -910,10 +912,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <DashboardLoadingSpinner
-          text={t('loading')}
-          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait...'}
-        />
+        <div className="space-y-6 animate-fade-in">
+          <DashboardStatsSkeleton />
+          <CardGridSkeleton count={3} />
+        </div>
       </DashboardLayout>
     );
   }
@@ -994,40 +996,40 @@ export default function DashboardPage() {
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-              <StatCard
-                title={t('totalStudents')}
-                value={stats.totalStudents}
-                icon={Users}
-                description={t('activeClasses')}
-                color="primary"
-                loading={loadingStats}
-              />
-              <StatCard
-                title={t('totalTeachers')}
-                value={stats.totalTeachers}
-                icon={Users}
-                description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
-                color="accent"
-                loading={loadingStats}
-              />
-              <StatCard
-                title={t('totalClasses')}
-                value={stats.totalClasses}
-                icon={School}
-                description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
-                color="secondary"
-                loading={loadingStats}
-              />
-              <StatCard
-                title={t('subjects')}
-                value={stats.totalSubjects}
-                icon={BookOpen}
-                description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
-                color="success"
-                loading={loadingStats}
-              />
-            </div>
+            {loadingStats ? (
+              <DashboardStatsSkeleton />
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+                <StatCard
+                  title={t('totalStudents')}
+                  value={stats.totalStudents}
+                  icon={Users}
+                  description={t('activeClasses')}
+                  color="primary"
+                />
+                <StatCard
+                  title={t('totalTeachers')}
+                  value={stats.totalTeachers}
+                  icon={Users}
+                  description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
+                  color="accent"
+                />
+                <StatCard
+                  title={t('totalClasses')}
+                  value={stats.totalClasses}
+                  icon={School}
+                  description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
+                  color="secondary"
+                />
+                <StatCard
+                  title={t('subjects')}
+                  value={stats.totalSubjects}
+                  icon={BookOpen}
+                  description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
+                  color="success"
+                />
+              </div>
+            )}
 
             {/* Recent Activity and Quick Actions */}
             <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up delay-200">
@@ -1043,16 +1045,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   {loadingActivity ? (
-                    <div className="space-y-4">
-                      <div className="glass-card p-4 animate-pulse">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                        <div className="h-3 bg-muted rounded w-1/2" />
-                      </div>
-                      <div className="glass-card p-4 animate-pulse">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                        <div className="h-3 bg-muted rounded w-1/2" />
-                      </div>
-                    </div>
+                    <ListSkeleton items={3} />
                   ) : recentActivity.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="inline-flex p-4 bg-muted/50 rounded-2xl mb-3">

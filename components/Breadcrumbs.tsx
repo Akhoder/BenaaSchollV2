@@ -1,9 +1,10 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight, Home, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface BreadcrumbItem {
@@ -14,7 +15,8 @@ interface BreadcrumbItem {
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const router = useRouter();
+  const { t, language } = useLanguage();
 
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const segments = pathname.split('/').filter(Boolean);
@@ -72,38 +74,66 @@ export function Breadcrumbs() {
     return null;
   }
 
-  return (
-    <nav className="flex items-center space-x-1 text-sm text-slate-600 dark:text-slate-400 mb-6">
-      {breadcrumbs.map((breadcrumb, index) => {
-        const isLast = index === breadcrumbs.length - 1;
-        const Icon = breadcrumb.icon;
+  const canGoBack = breadcrumbs.length > 1;
 
-        return (
-          <div key={`${breadcrumb.href}-${index}`} className="flex items-center space-x-1">
-            {index > 0 && (
-              <ChevronRight className="h-4 w-4 text-slate-400" />
-            )}
-            
-            {isLast ? (
-              <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                {Icon && <Icon className="h-4 w-4" />}
-                {breadcrumb.label}
-              </span>
-            ) : (
-              <Link
-                href={breadcrumb.href}
-                className={cn(
-                  "hover:text-slate-900 dark:hover:text-slate-100 transition-colors",
-                  "flex items-center gap-1 hover:underline"
-                )}
-              >
-                {Icon && <Icon className="h-4 w-4" />}
-                {breadcrumb.label}
-              </Link>
-            )}
-          </div>
-        );
-      })}
+  return (
+    <nav 
+      className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 mb-6"
+      aria-label={language === 'ar' ? 'مسار التنقل' : 'Breadcrumb'}
+    >
+      {/* Back Button for Mobile */}
+      {canGoBack && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="lg:hidden min-h-[48px] min-w-[48px]"
+          aria-label={language === 'ar' ? 'رجوع' : 'Go back'}
+        >
+          <ArrowLeft className={cn(
+            "h-5 w-5",
+            language === 'ar' && "rotate-180"
+          )} />
+        </Button>
+      )}
+
+      {/* Breadcrumb Items */}
+      <div className="flex items-center space-x-1 flex-1">
+        {breadcrumbs.map((breadcrumb, index) => {
+          const isLast = index === breadcrumbs.length - 1;
+          const Icon = breadcrumb.icon;
+
+          return (
+            <div key={`${breadcrumb.href}-${index}`} className="flex items-center space-x-1">
+              {index > 0 && (
+                <ChevronRight className="h-4 w-4 text-slate-400" />
+              )}
+              
+              {isLast ? (
+                <span 
+                  className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1"
+                  aria-current="page"
+                >
+                  {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}
+                  {breadcrumb.label}
+                </span>
+              ) : (
+                <Link
+                  href={breadcrumb.href}
+                  className={cn(
+                    "hover:text-slate-900 dark:hover:text-slate-100 transition-colors",
+                    "flex items-center gap-1 hover:underline min-h-[44px] flex items-center"
+                  )}
+                  aria-label={`${breadcrumb.label}, ${language === 'ar' ? 'صفحة' : 'page'}`}
+                >
+                  {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}
+                  {breadcrumb.label}
+                </Link>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </nav>
   );
 }

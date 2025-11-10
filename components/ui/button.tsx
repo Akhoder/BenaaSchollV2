@@ -5,24 +5,38 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-[1.02]',
+        // Primary - Main actions (uses design system primary color)
+        default: 'bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] text-white hover:from-[hsl(var(--primary-dark))] hover:to-[hsl(var(--accent-dark))] shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02]',
+        
+        // Destructive - Delete, remove actions
         destructive:
-          'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40',
+          'bg-gradient-to-r from-[hsl(var(--error))] to-[hsl(var(--error))] text-white hover:from-[hsl(var(--error))] hover:to-[hsl(var(--error))] shadow-lg shadow-error/30 hover:shadow-xl hover:shadow-error/40 hover:scale-[1.02]',
+        
+        // Outline - Secondary actions
         outline:
-          'border-2 border-slate-200 dark:border-slate-700 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md',
+          'border-2 border-[hsl(var(--primary))] bg-transparent text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-light))] hover:border-[hsl(var(--primary-dark))] shadow-sm hover:shadow-md',
+        
+        // Secondary - Alternative actions
         secondary:
-          'bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 text-slate-900 dark:text-slate-50 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-700 dark:hover:to-slate-600 shadow-md hover:shadow-lg',
-        ghost: 'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-50',
-        link: 'text-emerald-600 dark:text-emerald-400 underline-offset-4 hover:underline hover:text-emerald-700 dark:hover:text-emerald-300',
+          'bg-gradient-to-r from-[hsl(var(--secondary))] to-[hsl(var(--secondary))] text-white hover:from-[hsl(var(--secondary))] hover:to-[hsl(var(--secondary))] shadow-md hover:shadow-lg hover:scale-[1.02]',
+        
+        // Ghost - Subtle actions
+        ghost: 'hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]',
+        
+        // Link - Text links
+        link: 'text-[hsl(var(--primary))] underline-offset-4 hover:underline hover:text-[hsl(var(--primary-dark))]',
+        
+        // Success - Positive actions
+        success: 'bg-gradient-to-r from-[hsl(var(--success))] to-[hsl(var(--success))] text-white hover:from-[hsl(var(--success))] hover:to-[hsl(var(--success))] shadow-lg shadow-success/30 hover:shadow-xl hover:shadow-success/40 hover:scale-[1.02]',
       },
       size: {
         default: 'h-11 px-6 py-2.5',
-        sm: 'h-9 rounded-md px-4 text-xs',
-        lg: 'h-12 rounded-lg px-8 text-base',
+        sm: 'h-9 rounded-lg px-4 text-xs',
+        lg: 'h-12 rounded-xl px-8 text-base',
         icon: 'h-11 w-11',
       },
     },

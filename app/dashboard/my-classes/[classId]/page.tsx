@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { CardGridSkeleton, PageHeaderSkeleton, ListSkeleton } from '@/components/SkeletonLoaders';
+import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -101,8 +103,10 @@ export default function ClassViewPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <div className="space-y-6 animate-fade-in">
+          <PageHeaderSkeleton />
+          <CardGridSkeleton count={2} />
+          <ListSkeleton items={3} />
         </div>
       </DashboardLayout>
     );

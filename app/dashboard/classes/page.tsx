@@ -6,7 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
+import { DashboardStatsSkeleton, CardGridSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
+import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { LoadingButton } from '@/components/ProgressIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -385,10 +388,11 @@ export default function ClassesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <DashboardLoadingSpinner
-          text={language === 'ar' ? 'جاري تحميل الفصول...' : 'Loading classes...'}
-          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
-        />
+        <div className="space-y-6 animate-fade-in">
+          <PageHeaderSkeleton />
+          <DashboardStatsSkeleton />
+          <CardGridSkeleton count={3} />
+        </div>
       </DashboardLayout>
     );
   }
@@ -614,12 +618,11 @@ GRANT ALL ON classes TO authenticated;`;
           </CardHeader>
           <CardContent>
             {filteredClasses.length === 0 ? (
-              <div className="text-center py-12">
-                <School className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600" />
-                <p className="mt-4 text-slate-500 dark:text-slate-400 font-sans">
-                  No classes found matching your criteria
-                </p>
-              </div>
+              <EmptyState
+                icon={School}
+                title="No classes found"
+                description={searchQuery ? 'Try adjusting your search criteria' : 'No classes have been created yet'}
+              />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -946,13 +949,12 @@ GRANT ALL ON classes TO authenticated;`;
                 />
                 {formData.image_url && (
                   <div className="mt-2">
-                    <img
+                    <OptimizedImage
                       src={formData.image_url}
                       alt="Class preview"
-                      className="w-20 h-20 object-cover rounded-lg border"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 rounded-lg border"
                     />
                   </div>
                 )}
@@ -996,20 +998,14 @@ GRANT ALL ON classes TO authenticated;`;
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
                     Cancel
                   </Button>
-                  <Button
+                  <LoadingButton
+                    loading={isCreating}
                     onClick={handleSaveClass}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-sans text-white"
                     disabled={isCreating || !formData.name || !formData.start_date || !formData.objectives}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-sans"
                   >
-                    {isCreating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      selectedClass ? 'Update Class' : 'Create Class'
-                    )}
-                  </Button>
+                    {selectedClass ? 'Update Class' : 'Create Class'}
+                  </LoadingButton>
                 </>
               )}
             </DialogFooter>

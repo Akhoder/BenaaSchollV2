@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { DashboardStatsSkeleton, ListSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
+import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, TrendingUp } from 'lucide-react';
@@ -101,15 +103,10 @@ export default function GradesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center animate-fade-in">
-            <div className="relative inline-block">
-              <Loader2 className="h-16 w-16 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
-              <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl animate-pulse"></div>
-            </div>
-            <p className="mt-6 text-lg font-semibold text-slate-700 dark:text-slate-300 font-display">Loading your grades...</p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-sans">Please wait while we fetch your data</p>
-          </div>
+        <div className="space-y-6 animate-fade-in">
+          <PageHeaderSkeleton />
+          <DashboardStatsSkeleton />
+          <ListSkeleton items={5} />
         </div>
       </DashboardLayout>
     );

@@ -3,7 +3,11 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
+import { DashboardStatsSkeleton, TableSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
+import { ErrorDisplay, EmptyState } from '@/components/ErrorDisplay';
+import { InputMask } from '@/components/InputMask';
+import { LoadingButton } from '@/components/ProgressIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -252,10 +256,18 @@ export default function StudentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <DashboardLoadingSpinner
-          text={language === 'ar' ? 'جاري تحميل الطلاب...' : 'Loading students...'}
-          subtext={language === 'ar' ? 'يرجى الانتظار...' : 'Please wait while we fetch the data'}
-        />
+        <div className="space-y-6 animate-fade-in">
+          <PageHeaderSkeleton />
+          <DashboardStatsSkeleton />
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('students')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TableSkeleton rows={5} cols={5} />
+            </CardContent>
+          </Card>
+        </div>
       </DashboardLayout>
     );
   }
@@ -396,7 +408,13 @@ export default function StudentsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium font-sans">Phone (optional)</label>
-                <Input value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} className="mt-1 font-sans" />
+                <InputMask
+                  mask="phone"
+                  value={createPhone}
+                  onChange={(value) => setCreatePhone(value)}
+                  className="mt-1 font-sans"
+                  placeholder="+XXX-XXX-XXXX"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium font-sans">Language</label>
@@ -413,8 +431,9 @@ export default function StudentsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans">Cancel</Button>
-              <Button className="btn-gradient font-sans" disabled={savingCreate}
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans" disabled={savingCreate}>Cancel</Button>
+              <LoadingButton
+                loading={savingCreate}
                 onClick={async () => {
                   if (!createName.trim() || !createEmail.trim()) { toast.error('Name and email are required'); return; }
                   try {
@@ -435,9 +454,10 @@ export default function StudentsPage() {
                     await fetchStudents();
                   } finally { setSavingCreate(false); }
                 }}
+                className="btn-gradient font-sans"
               >
-                {savingCreate ? 'Creating...' : 'Create'}
-              </Button>
+                Create
+              </LoadingButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -449,15 +469,11 @@ export default function StudentsPage() {
           </CardHeader>
           <CardContent>
             {filteredStudents.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <div className="relative inline-block mb-4">
-                  <GraduationCap className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-                </div>
-                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No students found</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                  {searchQuery ? 'Try adjusting your search criteria' : 'No students have been added yet'}
-                </p>
-              </div>
+              <EmptyState
+                icon={GraduationCap}
+                title={searchQuery ? 'No students found' : 'No students yet'}
+                description={searchQuery ? 'Try adjusting your search criteria' : 'No students have been added yet'}
+              />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -630,7 +646,9 @@ export default function StudentsPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
                 Cancel
               </Button>
-              <Button className="btn-gradient font-sans" disabled={savingEdit}
+              <LoadingButton
+                loading={savingEdit}
+                className="btn-gradient font-sans"
                 onClick={async () => {
                   if (!selectedStudent) return;
                   try {
@@ -663,8 +681,8 @@ export default function StudentsPage() {
                   } finally { setSavingEdit(false); }
                 }}
               >
-                {savingEdit ? 'Saving...' : 'Save Changes'}
-              </Button>
+                Save Changes
+              </LoadingButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
