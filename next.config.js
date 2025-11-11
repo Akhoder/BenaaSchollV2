@@ -30,9 +30,16 @@ const nextConfig = {
       },
     ],
   },
-  // ✅ Webpack configuration (للتوافق مع Next.js 13)
-  // ملاحظة: Next.js 16+ يستخدم Turbopack افتراضياً، لكن WASM bindings لا تدعم turbopack config
-  // لذلك نستخدم webpack config فقط (سيتم استخدام webpack تلقائياً إذا كان موجوداً)
+  
+  // ✅ Turbopack configuration (لإسكات تحذير Next.js 16+)
+  // في Next.js 16+، وجود webpack config بدون turbopack config يسبب تحذير
+  // إضافة turbopack: {} فارغ لإسكات التحذير
+  // ملاحظة: إذا ظهرت أخطاء WASM، يمكن إزالة هذا السطر
+  turbopack: {},
+  
+  // ✅ Webpack configuration
+  // Next.js 13: webpack هو الافتراضي
+  // Next.js 16+: وجود webpack config يجعل Next.js يستخدم webpack بدلاً من Turbopack
   webpack: (config, { isServer }) => {
     // قمع تحذيرات Supabase
     config.ignoreWarnings = [
