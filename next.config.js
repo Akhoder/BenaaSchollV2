@@ -39,6 +39,15 @@ const nextConfig = {
     config.ignoreWarnings = [
       { module: /node_modules\/@supabase/ },
     ];
+     // ✅ FIX: Add fallback for missing chunks (prevents MODULE_NOT_FOUND errors)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
     return config;
   },
   
