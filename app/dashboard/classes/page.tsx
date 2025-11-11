@@ -362,7 +362,7 @@ export default function ClassesPage() {
     const matchesSearch =
       (cls.class_name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
       (cls.class_code || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      ((cls.teacher_name || '').toLowerCase().includes((searchQuery || '').toLowerCase()));
+      (cls.teacher_name || '').toLowerCase().includes((searchQuery || '').toLowerCase());
     return matchesSearch;
   });
 
