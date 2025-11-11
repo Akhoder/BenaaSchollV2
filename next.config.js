@@ -30,13 +30,9 @@ const nextConfig = {
       },
     ],
   },
-  // ✅ Turbopack configuration (Next.js 16+)
-  // إضافة turbopack config فارغ لتجنب خطأ webpack config
-  // هذا يخبر Next.js أننا نريد استخدام webpack بدلاً من Turbopack
-  turbopack: {},
-  
   // ✅ Webpack configuration (للتوافق مع Next.js 13)
-  // ملاحظة: في Next.js 16+، يجب إضافة turbopack: {} إذا كان لديك webpack config
+  // ملاحظة: Next.js 16+ يستخدم Turbopack افتراضياً، لكن WASM bindings لا تدعم turbopack config
+  // لذلك نستخدم webpack config فقط (سيتم استخدام webpack تلقائياً إذا كان موجوداً)
   webpack: (config, { isServer }) => {
     // قمع تحذيرات Supabase
     config.ignoreWarnings = [
@@ -60,9 +56,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   // ✅ Build optimizations for CI/CD
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Note: eslint config moved to .eslintrc.json (Next.js 16+)
   typescript: {
     // Don't ignore build errors - fix them instead
     ignoreBuildErrors: false,
