@@ -30,6 +30,21 @@ const nextConfig = {
       },
     ],
   },
+  // ✅ Turbopack configuration (Next.js 16+)
+  // إضافة turbopack config فارغ لتجنب خطأ webpack config
+  // هذا يخبر Next.js أننا نريد استخدام webpack بدلاً من Turbopack
+  turbopack: {},
+  
+  // ✅ Webpack configuration (للتوافق مع Next.js 13)
+  // ملاحظة: في Next.js 16+، يجب إضافة turbopack: {} إذا كان لديك webpack config
+  webpack: (config, { isServer }) => {
+    // قمع تحذيرات Supabase
+    config.ignoreWarnings = [
+      { module: /node_modules\/@supabase/ },
+    ];
+    return config;
+  },
+  
   // تحسينات الأداء
   experimental: {
     optimizePackageImports: [
@@ -38,15 +53,6 @@ const nextConfig = {
       'recharts',
       'date-fns'
     ],
-  },
-  // استخدام webpack بدلاً من Turbopack
-  // (bolt.new يستخدم webpack بسبب مشاكل WASM مع Turbopack)
-  webpack: (config, { isServer }) => {
-    // قمع تحذيرات Supabase
-    config.ignoreWarnings = [
-      { module: /node_modules\/@supabase/ },
-    ];
-    return config;
   },
   // ضغط الملفات
   compress: true,
