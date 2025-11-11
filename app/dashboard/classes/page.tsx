@@ -450,30 +450,32 @@ export default function ClassesPage() {
                 <Button 
                   variant="outline"
                   onClick={() => {
-                    const migrationCode = `-- Copy this code to Supabase SQL Editor
-ALTER TABLE classes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE student_enrollments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE class_subjects DISABLE ROW LEVEL SECURITY;
-
-CREATE TABLE IF NOT EXISTS classes (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  class_code text UNIQUE NOT NULL,
-  class_name text NOT NULL,
-  description text,
-  start_date date NOT NULL,
-  end_date date,
-  level integer NOT NULL CHECK (level >= 1 AND level <= 12),
-  image_url text,
-  goals text,
-  notes text,
-  teacher_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  supervisor_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  is_active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
-GRANT ALL ON classes TO authenticated;`;
+                    const migrationCode = [
+                      '-- Copy this code to Supabase SQL Editor',
+                      'ALTER TABLE classes DISABLE ROW LEVEL SECURITY;',
+                      'ALTER TABLE student_enrollments DISABLE ROW LEVEL SECURITY;',
+                      'ALTER TABLE class_subjects DISABLE ROW LEVEL SECURITY;',
+                      '',
+                      'CREATE TABLE IF NOT EXISTS classes (',
+                      '  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,',
+                      '  class_code text UNIQUE NOT NULL,',
+                      '  class_name text NOT NULL,',
+                      '  description text,',
+                      '  start_date date NOT NULL,',
+                      '  end_date date,',
+                      '  level integer NOT NULL CHECK (level >= 1 AND level <= 12),',
+                      '  image_url text,',
+                      '  goals text,',
+                      '  notes text,',
+                      '  teacher_id uuid REFERENCES profiles(id) ON DELETE SET NULL,',
+                      '  supervisor_id uuid REFERENCES profiles(id) ON DELETE SET NULL,',
+                      '  is_active boolean DEFAULT true,',
+                      '  created_at timestamptz DEFAULT now(),',
+                      '  updated_at timestamptz DEFAULT now()',
+                      ');',
+                      '',
+                      'GRANT ALL ON classes TO authenticated;'
+                    ].join('\n');
                     navigator.clipboard.writeText(migrationCode);
                     toast.success('Migration code copied to clipboard!');
                   }}
