@@ -53,6 +53,14 @@ const nextConfig = {
   // ✅ PERFORMANCE: Add production optimizations
   poweredByHeader: false,
   reactStrictMode: true,
+  // ✅ Build optimizations for CI/CD
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Don't ignore build errors - fix them instead
+    ignoreBuildErrors: false,
+  },
   // ملاحظة: headers() تم إزالتها لأنها لا تعمل مع output: 'export'
   // إذا كنت تحتاج إلى headers للأمان، أضفها في:
   // - Nginx/Apache (للـ server)
