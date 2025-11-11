@@ -203,11 +203,7 @@ export default function ClassesPage() {
       // استخدام الاستعلام المباشر
       const { data, error } = await supabase
         .from('classes')
-        .select(`
-          *,
-          teacher:profiles!teacher_id(full_name),
-          supervisor:profiles!supervisor_id(full_name)
-        `)
+        .select('*, teacher:profiles!teacher_id(full_name), supervisor:profiles!supervisor_id(full_name)')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -476,8 +472,14 @@ export default function ClassesPage() {
                       '',
                       'GRANT ALL ON classes TO authenticated;'
                     ].join('\n');
-                    navigator.clipboard.writeText(migrationCode);
-                    toast.success('Migration code copied to clipboard!');
+                    if (typeof window !== 'undefined' && navigator.clipboard) {
+                      navigator.clipboard.writeText(migrationCode).catch(() => {
+                        toast.error('Failed to copy to clipboard');
+                      });
+                      toast.success('Migration code copied to clipboard!');
+                    } else {
+                      toast.error('Clipboard not available');
+                    }
                   }}
                 >
                   Copy Migration Code
