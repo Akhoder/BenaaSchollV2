@@ -31,12 +31,6 @@ const nextConfig = {
     ],
   },
   
-  // ✅ Turbopack configuration (لإسكات تحذير Next.js 16+)
-  // في Next.js 16+، وجود webpack config بدون turbopack config يسبب تحذير
-  // إضافة turbopack: {} فارغ لإسكات التحذير
-  // ملاحظة: إذا ظهرت أخطاء WASM، يمكن إزالة هذا السطر
-  turbopack: {},
-  
   // ✅ Webpack configuration
   // Next.js 13: webpack هو الافتراضي
   // Next.js 16+: وجود webpack config يجعل Next.js يستخدم webpack بدلاً من Turbopack

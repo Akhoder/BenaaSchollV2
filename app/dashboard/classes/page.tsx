@@ -369,7 +369,7 @@ export default function ClassesPage() {
   // ✅ PAGINATION: Add pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
-  const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil((filteredClasses.length || 0) / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
@@ -781,7 +781,7 @@ GRANT ALL ON classes TO authenticated;`;
             <div className="border-t border-slate-200 dark:border-slate-800 p-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredClasses.length)} of {filteredClasses.length} classes
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredClasses.length || 0)} of {filteredClasses.length || 0} classes
                 </div>
                 <Pagination>
                   <PaginationContent>
