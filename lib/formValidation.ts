@@ -42,17 +42,18 @@ export function validatePassword(password: string, minLength: number = 6): Valid
     };
   }
   
-  // Optional: Add strength requirements
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
+  // ✅ TEMPORARILY DISABLED: Password strength requirements
+  // TODO: Re-enable password strength requirements later
+  // const hasUpperCase = /[A-Z]/.test(password);
+  // const hasLowerCase = /[a-z]/.test(password);
+  // const hasNumbers = /\d/.test(password);
   
-  if (password.length >= 8 && (!hasUpperCase || !hasLowerCase || !hasNumbers)) {
-    return { 
-      isValid: false, 
-      error: 'كلمة المرور يجب أن تحتوي على أحرف كبيرة وصغيرة وأرقام' 
-    };
-  }
+  // if (password.length >= 8 && (!hasUpperCase || !hasLowerCase || !hasNumbers)) {
+  //   return { 
+  //     isValid: false, 
+  //     error: 'كلمة المرور يجب أن تحتوي على أحرف كبيرة وصغيرة وأرقام' 
+  //   };
+  // }
   
   return { isValid: true };
 }
