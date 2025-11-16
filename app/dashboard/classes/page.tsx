@@ -183,7 +183,7 @@ export default function ClassesPage() {
       
       if (createError && createError.code === 'PGRST116') {
         // الجدول غير موجود، عرض رسالة للمستخدم
-        toast.error('Classes table not found. Please run the migration first.');
+        toast.error(language === 'ar' ? 'جدول الفصول غير موجود. يرجى تشغيل الترحيل أولاً.' : 'Classes table not found. Please run the migration first.');
         setClasses([]);
         return;
       }
@@ -196,7 +196,7 @@ export default function ClassesPage() {
 
       if (error) {
         console.error('Error fetching classes:', error);
-        toast.error('Failed to fetch classes');
+        toast.error(language === 'ar' ? 'فشل تحميل الفصول' : 'Failed to fetch classes');
         return;
       }
 
@@ -222,15 +222,15 @@ export default function ClassesPage() {
       // Map counts to classes
       const classesWithCounts = (data || []).map(cls => ({
         ...cls,
-        teacher_name: cls.teacher?.full_name || 'Unassigned',
-        supervisor_name: cls.supervisor?.full_name || 'Unassigned',
+        teacher_name: cls.teacher?.full_name || (language === 'ar' ? 'غير معين' : 'Unassigned'),
+        supervisor_name: cls.supervisor?.full_name || (language === 'ar' ? 'غير معين' : 'Unassigned'),
         student_count: enrollmentCounts[cls.id] || 0,
       }));
       
       setClasses(classesWithCounts);
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error('An unexpected error occurred');
+      toast.error(language === 'ar' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -283,9 +283,9 @@ export default function ClassesPage() {
         
         if (error) {
           console.error('Error updating class:', error);
-          toast.error('Failed to update class');
+          toast.error(language === 'ar' ? 'فشل تحديث الفصل' : 'Failed to update class');
         } else {
-          toast.success('Class updated successfully');
+          toast.success(language === 'ar' ? 'تم تحديث الفصل بنجاح' : 'Class updated successfully');
           setIsDialogOpen(false);
           setSelectedClass(null);
           resetForm();
@@ -310,9 +310,9 @@ export default function ClassesPage() {
 
         if (error) {
           console.error('Error creating class:', error);
-          toast.error('Failed to create class');
+          toast.error(language === 'ar' ? 'فشل إنشاء الفصل' : 'Failed to create class');
         } else {
-          toast.success('Class created successfully');
+          toast.success(language === 'ar' ? 'تم إنشاء الفصل بنجاح' : 'Class created successfully');
           setIsDialogOpen(false);
           resetForm();
           fetchClasses();
@@ -320,7 +320,7 @@ export default function ClassesPage() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error('An error occurred');
+      toast.error(language === 'ar' ? 'حدث خطأ' : 'An error occurred');
     } finally {
       setIsCreating(false);
     }
@@ -334,13 +334,13 @@ export default function ClassesPage() {
         .eq('id', classId);
 
       if (error) {
-        toast.error('Failed to delete class');
+        toast.error(language === 'ar' ? 'فشل حذف الفصل' : 'Failed to delete class');
       } else {
-        toast.success('Class deleted successfully');
+        toast.success(language === 'ar' ? 'تم حذف الفصل بنجاح' : 'Class deleted successfully');
         fetchClasses();
       }
     } catch (err) {
-      toast.error('An error occurred');
+      toast.error(language === 'ar' ? 'حدث خطأ' : 'An error occurred');
     }
     setDeleteConfirmOpen(false);
     setSelectedClass(null);
@@ -412,46 +412,51 @@ export default function ClassesPage() {
     return (
       <DashboardLayout>
         <div className="space-y-6 animate-fade-in">
-          <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-500/20">
+          <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-lg">
             <h1 className="text-3xl font-display font-bold tracking-tight">
-              Classes Management
+              {t('classManagement')}
             </h1>
-            <p className="text-blue-50 mt-1 text-lg font-medium font-sans">
-              Manage school classes and enrollments
+            <p className="text-blue-100 mt-1 text-lg font-medium font-sans">
+              {language === 'ar' ? 'إدارة فصول المدرسة والتسجيلات' : 'Manage school classes and enrollments'}
             </p>
           </div>
 
           <Card className="border-slate-200 dark:border-slate-800">
             <CardContent className="p-8 text-center">
               <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <School className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  Database Setup Required
+                  {t('databaseSetupRequired')}
                 </h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-6">
-                  The classes table needs to be created in your Supabase database. Please follow these steps:
+                  {t('classesTableNeedsToBeCreated')}
                 </p>
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 text-left mb-6">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Steps to Fix:</h4>
+                <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                  {language === 'ar' ? 'خطوات الإصلاح:' : 'Steps to Fix:'}
+                </h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                  <li>Open your Supabase Dashboard</li>
-                  <li>Go to SQL Editor</li>
-                  <li>Copy the migration code from: <code className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">supabase/migrations/20251028030000_disable_rls_temporary.sql</code></li>
-                  <li>Paste and run the SQL code</li>
-                  <li>Refresh this page</li>
+                  <li>{language === 'ar' ? 'افتح لوحة تحكم Supabase' : 'Open your Supabase Dashboard'}</li>
+                  <li>{language === 'ar' ? 'انتقل إلى محرر SQL' : 'Go to SQL Editor'}</li>
+                  <li>
+                    {language === 'ar' ? 'انسخ كود الترحيل من:' : 'Copy the migration code from:'} 
+                    <code className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">supabase/migrations/20251028030000_disable_rls_temporary.sql</code>
+                  </li>
+                  <li>{language === 'ar' ? 'الصق وقم بتشغيل كود SQL' : 'Paste and run the SQL code'}</li>
+                  <li>{language === 'ar' ? 'حدّث هذه الصفحة' : 'Refresh this page'}</li>
                 </ol>
               </div>
 
               <div className="flex gap-4 justify-center">
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="btn-gradient"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Refresh Page
+                  {language === 'ar' ? 'تحديث الصفحة' : 'Refresh Page'}
                 </Button>
                 <Button 
                   variant="outline"
@@ -484,15 +489,15 @@ export default function ClassesPage() {
                     ].join('\n');
                     if (typeof window !== 'undefined' && navigator.clipboard) {
                       navigator.clipboard.writeText(migrationCode).catch(() => {
-                        toast.error('Failed to copy to clipboard');
+                        toast.error(language === 'ar' ? 'فشل النسخ إلى الحافظة' : 'Failed to copy to clipboard');
                       });
-                      toast.success('Migration code copied to clipboard!');
+                      toast.success(language === 'ar' ? 'تم نسخ كود الترحيل إلى الحافظة!' : 'Migration code copied to clipboard!');
                     } else {
-                      toast.error('Clipboard not available');
+                      toast.error(language === 'ar' ? 'الحافظة غير متاحة' : 'Clipboard not available');
                     }
                   }}
                 >
-                  Copy Migration Code
+                  {t('copyMigrationCode')}
                 </Button>
               </div>
             </CardContent>
@@ -508,18 +513,17 @@ export default function ClassesPage() {
         {/* Enhanced Header */}
         <PageHeader 
           icon={School}
-          title="Classes Management"
-          description="Manage and organize all classes in the system"
-          gradient="from-blue-600 via-purple-600 to-blue-700"
+          title={t('classManagement')}
+          description={t('manageAndOrganizeClasses')}
         >
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-            className="border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+            className="border-border bg-background hover:bg-accent text-foreground"
           >
             <Users className="h-4 w-4 mr-2" />
-            Toggle View
+            {t('toggleView')}
           </Button>
           {profile?.role === 'admin' && (
             <Button 
@@ -528,10 +532,10 @@ export default function ClassesPage() {
                 setIsViewing(false);
                 setIsDialogOpen(true);
               }}
-              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Class
+              {t('addClass')}
             </Button>
           )}
         </PageHeader>
@@ -541,60 +545,60 @@ export default function ClassesPage() {
           <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                Total Classes
+                {t('totalClasses')}
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-primary to-primary-hover rounded-lg">
+              <div className="p-2 bg-primary rounded-lg">
                 <School className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">All classes</p>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('allClasses')}</p>
             </CardContent>
           </Card>
 
           <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                Active Classes
+                {t('activeClasses')}
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-success to-success-light rounded-lg">
+              <div className="p-2 bg-success rounded-lg">
                 <Calendar className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-success">{stats.active}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">Currently running</p>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('currentlyRunning')}</p>
             </CardContent>
           </Card>
 
           <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Completed
+                {language === 'ar' ? 'مكتملة' : 'Completed'}
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+              <div className="p-2 bg-amber-500 rounded-lg">
                 <BookOpen className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-amber-600">{stats.completed}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Finished classes</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('finishedClasses')}</p>
             </CardContent>
           </Card>
 
           <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Total Students
+                {t('totalStudents')}
               </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+              <div className="p-2 bg-purple-600 rounded-lg">
                 <Users className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-purple-600">{stats.totalStudents}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Enrolled students</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('enrolledStudents')}</p>
             </CardContent>
           </Card>
         </div>
@@ -604,14 +608,14 @@ export default function ClassesPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display text-gradient">Search Classes</CardTitle>
+              <CardTitle className="font-display text-foreground">{t('searchClasses')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Search by class name, code, or teacher..."
+                placeholder={t('searchByClassNameCodeOrTeacher')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-11 font-sans input-modern"
@@ -626,7 +630,7 @@ export default function ClassesPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-display">
                 <School className="h-5 w-5 text-blue-600" />
-                Classes ({filteredClasses.length})
+                {t('classes')} ({filteredClasses.length})
               </CardTitle>
             </div>
           </CardHeader>
@@ -634,23 +638,23 @@ export default function ClassesPage() {
             {filteredClasses.length === 0 ? (
               <EmptyState
                 icon={School}
-                title="No classes found"
-                description={searchQuery ? 'Try adjusting your search criteria' : 'No classes have been created yet'}
+                title={t('noClassesFound')}
+                description={searchQuery ? t('tryAdjustingSearchCriteria') : t('noClassesCreatedYet')}
               />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold font-sans">Class</TableHead>
-                      <TableHead className="font-semibold font-sans">Code</TableHead>
-                      <TableHead className="font-semibold font-sans">Level</TableHead>
-                      <TableHead className="font-semibold font-sans">Students</TableHead>
-                      <TableHead className="font-semibold font-sans">Duration</TableHead>
-                      <TableHead className="font-semibold font-sans">Status</TableHead>
-                      <TableHead className="font-semibold font-sans">Published</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('class')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('code')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('level')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('students')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('duration')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('status')}</TableHead>
+                      <TableHead className="font-semibold font-sans">{t('published')}</TableHead>
                       {profile?.role === 'admin' && (
-                        <TableHead className="text-right font-semibold font-sans">Actions</TableHead>
+                        <TableHead className="text-right font-semibold font-sans">{t('actions')}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -664,14 +668,14 @@ export default function ClassesPage() {
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10 ring-2 ring-blue-500/20">
                               <AvatarImage src={cls.image_url} />
-                              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
+                              <AvatarFallback className="bg-blue-600 text-white font-semibold">
                                 {(cls.class_name || '?').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-semibold font-sans">{cls.class_name}</div>
                               <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                                Level {cls.level}
+                                {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
                               </div>
                             </div>
                           </div>
@@ -682,8 +686,8 @@ export default function ClassesPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold">
-                            Level {cls.level}
+                          <Badge className="bg-blue-600 text-white font-semibold">
+                            {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
                           </Badge>
                         </TableCell>
                         
@@ -697,11 +701,11 @@ export default function ClassesPage() {
                           <div className="text-sm font-sans">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 text-slate-400" />
-                              {new Date(cls.start_date).toLocaleDateString()}
+                              {new Date(cls.start_date).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                             </div>
                             {cls.end_date && (
                               <div className="text-xs text-slate-500">
-                                to {new Date(cls.end_date).toLocaleDateString()}
+                                {language === 'ar' ? 'إلى' : 'to'} {new Date(cls.end_date).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                               </div>
                             )}
                           </div>
@@ -716,7 +720,7 @@ export default function ClassesPage() {
                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
                             )}
                           >
-                            {cls.end_date && new Date(cls.end_date) <= new Date() ? 'Completed' : 'Active'}
+                            {cls.end_date && new Date(cls.end_date) <= new Date() ? t('completed') : t('active')}
                           </Badge>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
@@ -728,7 +732,7 @@ export default function ClassesPage() {
                                 .update({ published: val })
                                 .eq('id', cls.id);
                               if (error) {
-                                toast.error('Failed to update');
+                                toast.error(language === 'ar' ? 'فشل التحديث' : 'Failed to update');
                               } else {
                                 setClasses(prev => prev.map(c => c.id === cls.id ? { ...c, published: val } : c));
                               }
@@ -744,7 +748,7 @@ export default function ClassesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel className="font-display">Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel className="font-display">{t('actions')}</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -755,7 +759,7 @@ export default function ClassesPage() {
                                   }}
                                 >
                                   <Eye className="mr-2 h-4 w-4" />
-                                  View Details
+                                  {t('viewDetails')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -766,7 +770,7 @@ export default function ClassesPage() {
                                   }}
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
-                                  Edit
+                                  {t('edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-red-600"
@@ -776,7 +780,7 @@ export default function ClassesPage() {
                                   }}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
+                                  {t('delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -795,7 +799,7 @@ export default function ClassesPage() {
             <div className="border-t border-slate-200 dark:border-slate-800 p-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredClasses.length || 0)} of {filteredClasses.length || 0} classes
+                  {t('showing')} {startIndex + 1} {t('to')} {Math.min(endIndex, filteredClasses.length || 0)} {t('of')} {filteredClasses.length || 0} {t('classesCount')}
                 </div>
                 <Pagination>
                   <PaginationContent>
@@ -866,37 +870,37 @@ export default function ClassesPage() {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">
-                {isViewing ? 'View Class' : selectedClass ? 'Edit Class' : 'Create New Class'}
+                {isViewing ? t('viewClass') : selectedClass ? t('editClass') : t('createNewClass')}
               </DialogTitle>
               <DialogDescription className="font-sans">
                 {isViewing
-                  ? 'View class information'
+                  ? t('viewClassInformation')
                   : selectedClass
-                    ? 'Update class information'
-                    : 'Add a new class to the system'}
+                    ? t('updateClassInformation')
+                    : t('addNewClassToSystem')}
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6 py-4">
               {/* Class Code (Auto Generated) */}
               <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
-                <Label className="text-sm font-medium font-sans">Class Code (Auto Generated)</Label>
+                <Label className="text-sm font-medium font-sans">{t('classCodeAutoGenerated')}</Label>
                 <div className="mt-2 p-3 bg-white dark:bg-slate-800 border rounded-md font-mono text-sm">
                   {selectedClass ? selectedClass.class_code : generateClassCode()}
                 </div>
                 <p className="text-xs text-slate-500 mt-1 font-sans">
-                  This code is automatically generated and cannot be changed
+                  {t('classCodeAutoGeneratedDesc')}
                 </p>
               </div>
 
               {/* Class Name */}
               <div>
-                <Label htmlFor="name" className="text-sm font-medium font-sans">Class Name *</Label>
+                <Label htmlFor="name" className="text-sm font-medium font-sans">{t('classNameRequired')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter class name"
+                  placeholder={t('enterClassName')}
                   className="mt-1 font-sans"
                   disabled={isViewing}
                   required
@@ -906,7 +910,7 @@ export default function ClassesPage() {
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start_date" className="text-sm font-medium font-sans">Start Date *</Label>
+                  <Label htmlFor="start_date" className="text-sm font-medium font-sans">{t('startDateRequired')}</Label>
                   <Input
                     id="start_date"
                     type="date"
@@ -918,7 +922,7 @@ export default function ClassesPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end_date" className="text-sm font-medium font-sans">End Date (Optional)</Label>
+                  <Label htmlFor="end_date" className="text-sm font-medium font-sans">{t('endDateOptional')}</Label>
                   <Input
                     id="end_date"
                     type="date"
@@ -932,18 +936,18 @@ export default function ClassesPage() {
 
               {/* Level */}
               <div>
-                <Label htmlFor="level" className="text-sm font-medium font-sans">Level *</Label>
+                <Label htmlFor="level" className="text-sm font-medium font-sans">{t('levelRequired')}</Label>
                 <Select
                   value={formData.level.toString()}
                   onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
                 >
                   <SelectTrigger className="mt-1 font-sans" disabled={isViewing}>
-                    <SelectValue placeholder="Select level" />
+                    <SelectValue placeholder={t('selectLevel')} />
                   </SelectTrigger>
                   <SelectContent>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((level) => (
                       <SelectItem key={level} value={level.toString()}>
-                        Level {level}
+                        {language === 'ar' ? `المستوى ${level}` : `Level ${level}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -952,7 +956,7 @@ export default function ClassesPage() {
 
               {/* Image URL */}
               <div>
-                <Label htmlFor="image_url" className="text-sm font-medium font-sans">Class Image URL (Optional)</Label>
+                <Label htmlFor="image_url" className="text-sm font-medium font-sans">{t('classImageUrlOptional')}</Label>
                 <Input
                   id="image_url"
                   value={formData.image_url}
@@ -965,7 +969,7 @@ export default function ClassesPage() {
                   <div className="mt-2">
                     <OptimizedImage
                       src={formData.image_url}
-                      alt="Class preview"
+                      alt={language === 'ar' ? 'معاينة الفصل' : 'Class preview'}
                       width={80}
                       height={80}
                       className="w-20 h-20 rounded-lg border"
@@ -976,12 +980,12 @@ export default function ClassesPage() {
 
               {/* Objectives */}
               <div>
-                <Label htmlFor="objectives" className="text-sm font-medium font-sans">Objectives *</Label>
+                <Label htmlFor="objectives" className="text-sm font-medium font-sans">{t('objectivesRequired')}</Label>
                 <Textarea
                   id="objectives"
                   value={formData.objectives}
                   onChange={(e) => setFormData({ ...formData, objectives: e.target.value })}
-                  placeholder="Describe the learning objectives for this class..."
+                  placeholder={t('describeLearningObjectives')}
                   className="mt-1 font-sans min-h-[100px]"
                   disabled={isViewing}
                   required
@@ -990,12 +994,12 @@ export default function ClassesPage() {
 
               {/* Notes */}
               <div>
-                <Label htmlFor="notes" className="text-sm font-medium font-sans">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="text-sm font-medium font-sans">{t('notesOptional')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional notes about this class..."
+                  placeholder={t('additionalNotes')}
                   className="mt-1 font-sans min-h-[80px]"
                   disabled={isViewing}
                 />
@@ -1005,20 +1009,20 @@ export default function ClassesPage() {
             <DialogFooter>
               {isViewing ? (
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                  Close
+                  {t('close')}
                 </Button>
               ) : (
                 <>
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <LoadingButton
                     loading={isCreating}
                     onClick={handleSaveClass}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-sans text-white"
+                    className="bg-blue-600 hover:bg-blue-700 font-sans text-white"
                     disabled={isCreating || !formData.name || !formData.start_date || !formData.objectives}
                   >
-                    {selectedClass ? 'Update Class' : 'Create Class'}
+                    {selectedClass ? t('updateClass') : t('createClass')}
                   </LoadingButton>
                 </>
               )}
@@ -1030,34 +1034,34 @@ export default function ClassesPage() {
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Confirm Deletion</DialogTitle>
+              <DialogTitle className="text-2xl font-display">{t('confirmDeletion')}</DialogTitle>
               <DialogDescription className="font-sans">
-                Are you sure you want to delete this class? This action cannot be undone.
+                {t('deleteClassConfirm')}
               </DialogDescription>
             </DialogHeader>
             {selectedClass && (
               <div className="py-4 space-y-2">
                 <p className="font-sans">
-                  <strong>Class:</strong> {selectedClass.class_name}
+                  <strong>{t('class')}:</strong> {selectedClass.class_name}
                 </p>
                 <p className="font-sans">
-                  <strong>Code:</strong> {selectedClass.class_code}
+                  <strong>{t('code')}:</strong> {selectedClass.class_code}
                 </p>
                 <p className="font-sans">
-                  <strong>Level:</strong> {selectedClass.level}
+                  <strong>{t('level')}:</strong> {selectedClass.level}
                 </p>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="font-sans">
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => selectedClass && handleDelete(selectedClass.id)}
                 className="font-sans"
               >
-                Delete
+                {t('delete')}
               </Button>
             </DialogFooter>
           </DialogContent>
