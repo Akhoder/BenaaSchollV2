@@ -483,23 +483,45 @@ export default function SubjectLessonsPage() {
 
   const loadSubjectInfo = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get the subject with class_id
+      const { data: subjectData, error: subjectError } = await supabase
         .from('class_subjects')
-        .select('subject_name, class_id, classes!inner(name)')
+        .select('subject_name, class_id')
         .eq('id', subjectId)
         .single();
       
-      if (error) {
-        console.error('Error loading subject info:', error);
+      if (subjectError) {
+        console.error('Error loading subject info:', subjectError);
+        toast.error(t('errorLoadingLessons'));
         return;
       }
       
+      if (!subjectData) {
+        console.error('Subject not found');
+        return;
+      }
+      
+      let className = '';
+      // Then, get the class name if class_id exists
+      if (subjectData.class_id) {
+        const { data: classData, error: classError } = await supabase
+          .from('classes')
+          .select('class_name')
+          .eq('id', subjectData.class_id)
+          .single();
+        
+        if (!classError && classData) {
+          className = classData.class_name || '';
+        }
+      }
+      
       setSubjectInfo({
-        subject_name: data?.subject_name || '',
-        class_name: (data?.classes as any)?.name || ''
+        subject_name: subjectData.subject_name || '',
+        class_name: className
       });
     } catch (err) {
       console.error('Error loading subject info:', err);
+      toast.error(t('errorLoadingSubjectInfo'));
     }
   };
 
@@ -865,16 +887,8 @@ export default function SubjectLessonsPage() {
         
         <PageHeader
           icon={BookOpen}
-          title={
-            subjectInfo 
-              ? `${subjectInfo.subject_name} - ${t('lessons')}`
-              : t('lessons')
-          }
-          description={
-            subjectInfo
-              ? `${t('manageLessons')} - ${t('class')}: ${subjectInfo.class_name}`
-              : t('manageLessons')
-          }
+          title={t('lessons')}
+          description={t('manageLessons')}
         >
           <Button 
             className="bg-primary hover:bg-primary/90 text-white" 
