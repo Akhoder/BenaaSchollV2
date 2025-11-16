@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { DashboardStatsSkeleton, CardGridSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
@@ -106,6 +107,8 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  // ✅ PERFORMANCE: Debounce search to reduce re-renders
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -166,6 +169,7 @@ export default function ClassesPage() {
     }
   }, [isDialogOpen, selectedClass]);
 
+  // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and authLoading
   useEffect(() => {
     if (!authLoading && !profile) {
       router.push('/login');
@@ -181,9 +185,10 @@ export default function ClassesPage() {
     if (profile && ['admin', 'teacher', 'supervisor'].includes(profile.role)) {
       fetchClasses();
     }
-  }, [profile, authLoading, router]);
+  }, [profile?.id, profile?.role, authLoading, fetchClasses, router]);
 
-  const fetchClasses = async () => {
+  // ✅ PERFORMANCE: Memoize fetchClasses to prevent unnecessary re-renders
+  const fetchClasses = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -246,7 +251,7 @@ export default function ClassesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const generateClassCode = () => {
     const prefix = 'CLS';
@@ -354,13 +359,16 @@ export default function ClassesPage() {
     });
   };
 
-  const filteredClasses = classes.filter((cls) => {
-    const matchesSearch =
-      (cls.class_name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (cls.class_code || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (cls.teacher_name || '').toLowerCase().includes((searchQuery || '').toLowerCase());
-    return matchesSearch;
-  });
+  // ✅ PERFORMANCE: Use debounced search and memoize filtered results
+  const filteredClasses = useMemo(() => {
+    return classes.filter((cls) => {
+      const matchesSearch =
+        (cls.class_name || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase()) ||
+        (cls.class_code || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase()) ||
+        (cls.teacher_name || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase());
+      return matchesSearch;
+    });
+  }, [classes, debouncedSearchQuery]);
 
   // ✅ PAGINATION: Add pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -370,9 +378,10 @@ export default function ClassesPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
 
+  // ✅ PERFORMANCE: Reset page when debounced search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
   const stats = {
     total: classes.length,

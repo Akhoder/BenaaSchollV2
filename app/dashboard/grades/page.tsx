@@ -47,12 +47,19 @@ export default function GradesPage() {
         return;
       }
 
+      // ✅ PERFORMANCE: Get all subjects in parallel instead of sequential loop
+      const classIds = classes.map((c: any) => c.id);
+      const subjectsPromises = classIds.map((classId: string) => 
+        fetchSubjectsForClass(classId).then(({ data }) => ({ classId, subjects: data || [] }))
+      );
+      const subjectsResults = await Promise.all(subjectsPromises);
+      
       // Get all assignments and grades for enrolled subjects
       const allGrades: any[] = [];
       const subjectNames: Record<string, string> = {};
 
-      for (const cls of classes) {
-        const { data: subjects } = await fetchSubjectsForClass(cls.id);
+      subjectsResults.forEach(({ classId, subjects }) => {
+        const cls = classes.find((c: any) => c.id === classId);
         for (const subject of (subjects || [])) {
           subjectNames[subject.id] = subject.subject_name;
           

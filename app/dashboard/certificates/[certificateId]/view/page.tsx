@@ -15,9 +15,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function CertificateViewPage() {
   const params = useParams();

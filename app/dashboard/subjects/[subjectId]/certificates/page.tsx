@@ -20,9 +20,6 @@ import { Loader2, Award, CheckCircle, XCircle, Eye, Printer, Download, FileCheck
 import { supabase } from '@/lib/supabase';
 import { Switch } from '@/components/ui/switch';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function SubjectCertificatesPage() {
   const params = useParams();

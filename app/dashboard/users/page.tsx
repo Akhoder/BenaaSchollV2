@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDebounce } from '@/hooks/useDebounce';
+import { getUsersOptimized } from '@/lib/optimizedQueries';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +81,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  // ✅ PERFORMANCE: Debounce search to reduce re-renders
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -92,6 +96,7 @@ export default function UsersPage() {
   const [newPw, setNewPw] = useState('');
   const [savingPw, setSavingPw] = useState(false);
 
+  // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and authLoading
   useEffect(() => {
     if (!authLoading && !profile) {
       router.push('/login');
@@ -106,9 +111,9 @@ export default function UsersPage() {
     if (profile?.role === 'admin') {
       fetchUsers();
     }
-  }, [profile, authLoading, router]);
+  }, [profile?.id, profile?.role, authLoading, fetchUsers, router]);
 
-  // Realtime updates for profiles
+  // ✅ PERFORMANCE: Optimize realtime subscription - only depend on profile.id
   useEffect(() => {
     if (!profile || profile.role !== 'admin') return;
     const channel = supabase
@@ -129,39 +134,29 @@ export default function UsersPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [profile?.id, profile?.role]);
 
-  const fetchUsers = async () => {
+  // ✅ PERFORMANCE: Use optimized query function with caching and memoize
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      // Use the admin function to bypass RLS
-      const { data, error } = await supabase.rpc('get_all_profiles');
+      const { data, error } = await getUsersOptimized();
 
       if (error) {
         console.error('Error fetching users:', error);
         toast.error('Failed to fetch users');
-        // If RPC fails, try direct query as fallback
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-          toast.error('Unable to load users');
-        } else {
-          setUsers(fallbackData || []);
-        }
+        setUsers([]);
       } else {
         setUsers(data || []);
       }
     } catch (err) {
       console.error('Unexpected error:', err);
       toast.error('An unexpected error occurred');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDelete = async (userId: string) => {
     try {
@@ -198,13 +193,17 @@ export default function UsersPage() {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  // ✅ PERFORMANCE: Use debounced search and memoize filtered results
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        (user.full_name || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase()) ||
+        (user.email || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase()) ||
+        (user.phone || '').toLowerCase().includes((debouncedSearchQuery || '').toLowerCase());
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, debouncedSearchQuery, roleFilter]);
 
   // ✅ PAGINATION: Add pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -214,9 +213,10 @@ export default function UsersPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
+  // ✅ PERFORMANCE: Reset page when debounced search or role filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, roleFilter]);
+  }, [debouncedSearchQuery, roleFilter]);
 
   const stats = {
     total: users.length,

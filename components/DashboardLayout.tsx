@@ -166,6 +166,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       <Link
                         key={item.name}
                         href={item.href}
+                        prefetch={true}
                         className={cn(
                           'group flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative',
                           'hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))]',
@@ -206,6 +207,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={item.name}
                     href={item.href}
+                    prefetch={true}
                     className={cn(
                       'group flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative',
                       'hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))]',
@@ -292,7 +294,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SheetContent>
               </Sheet>
 
-              <Link href="/dashboard" className="flex items-center gap-3 group">
+              <Link href="/dashboard" prefetch={true} className="flex items-center gap-3 group">
                 <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <OptimizedImage
                     src="/icons/logo.jpg"
@@ -351,14 +353,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {profile?.role === 'admin' && (
-                    <Link href="/dashboard/settings/branding" className="block">
+                    <Link href="/dashboard/settings/branding" prefetch={true} className="block">
                       <DropdownMenuItem>
                         <Settings className="h-4 w-4 mr-2" />
                         {language === 'ar' ? 'إعدادات الهوية' : 'Branding Settings'}
                       </DropdownMenuItem>
                     </Link>
                   )}
-                  <Link href="/dashboard/my-certificates" className="block">
+                  <Link href="/dashboard/my-certificates" prefetch={true} className="block">
                     <DropdownMenuItem>
                       <Award className="h-4 w-4 mr-2" />
                       {language === 'ar' ? 'شهاداتي' : 'My Certificates'}

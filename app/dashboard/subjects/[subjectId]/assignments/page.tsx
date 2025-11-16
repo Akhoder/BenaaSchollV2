@@ -17,9 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function SubjectAssignmentsPage() {
   const params = useParams();

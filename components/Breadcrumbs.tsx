@@ -120,6 +120,7 @@ export function Breadcrumbs() {
               ) : (
                 <Link
                   href={breadcrumb.href}
+                  prefetch={true}
                   className={cn(
                     "hover:text-slate-900 dark:hover:text-slate-100 transition-colors",
                     "flex items-center gap-1 hover:underline min-h-[44px] flex items-center"

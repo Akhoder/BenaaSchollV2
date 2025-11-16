@@ -53,14 +53,12 @@ import {
 import { getStatsOptimized } from '@/lib/optimizedQueries';
 import { ChartsWithSuspense } from '@/components/LazyComponents';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Force dynamic rendering - this page requires authentication context
-// Client component - no static generation
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-export const revalidate = 0; // Disable caching
+// Client component - no static generation needed
 
 // ============================================
 // TYPES - تعريف الأنواع
@@ -156,14 +154,14 @@ export default function DashboardPage() {
   // EFFECTS - التأثيرات الجانبية
   // ============================================
 
-  // التحقق من تسجيل الدخول
+  // ✅ PERFORMANCE: Optimize dependencies - only depend on user.id and loading
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user?.id, loading, router]);
 
-  // تحميل الإحصائيات عند تحميل الملف الشخصي
+  // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and role
   useEffect(() => {
     if (profile) {
       fetchStats().catch(err => {
@@ -171,18 +169,26 @@ export default function DashboardPage() {
         toast.error(language === 'ar' ? 'فشل تحميل الإحصائيات' : 'Failed to load statistics');
       });
       
-      // تحميل بيانات الطالب
+      // ✅ PERFORMANCE: Load student data in parallel instead of sequential
       if (profile.role === 'student') {
-        void loadStudentData();
-        void loadStudentSchedule();
-        void loadStudentStats();
-        void loadUpcomingAssignments();
+        Promise.all([
+          loadStudentData(),
+          loadStudentSchedule(),
+          loadStudentStats(),
+          loadUpcomingAssignments()
+        ]).catch(err => {
+          console.error('Error loading student data:', err);
+        });
       }
       
-      // تحميل بيانات المعلم
+      // ✅ PERFORMANCE: Load teacher data in parallel
       if (profile.role === 'teacher') {
-        void loadTeacherData();
-        void loadTeacherSchedule();
+        Promise.all([
+          loadTeacherData(),
+          loadTeacherSchedule()
+        ]).catch(err => {
+          console.error('Error loading teacher data:', err);
+        });
       }
 
       // تحميل النشاط الحديث للمدير
@@ -190,7 +196,7 @@ export default function DashboardPage() {
         void loadRecentActivity();
       }
     }
-  }, [profile]);
+  }, [profile?.id, profile?.role]);
 
   // بناء الإشعارات من الواجبات والأحداث
   useEffect(() => {
@@ -1095,9 +1101,11 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <div className="space-y-3">
-                  <button 
+                  {/* ✅ PERFORMANCE: Use Link with prefetch for faster navigation */}
+                  <Link 
+                    href="/dashboard/students"
+                    prefetch={true}
                     className="w-full btn-primary flex items-center justify-between group"
-                    onClick={() => router.push('/dashboard/students')}
                     aria-label={language === 'ar' ? 'إضافة طالب جديد' : 'Add new student'}
                   >
                     <div className="flex items-center gap-2">
@@ -1105,10 +1113,11 @@ export default function DashboardPage() {
                       <span>{language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}</span>
                     </div>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                  <button 
+                  </Link>
+                  <Link 
+                    href="/dashboard/classes"
+                    prefetch={true}
                     className="w-full btn-glass flex items-center justify-between group"
-                    onClick={() => router.push('/dashboard/classes')}
                     aria-label={language === 'ar' ? 'إنشاء فصل جديد' : 'Create new class'}
                   >
                     <div className="flex items-center gap-2">
@@ -1116,10 +1125,11 @@ export default function DashboardPage() {
                       <span>{language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}</span>
                     </div>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                  <button 
+                  </Link>
+                  <Link 
+                    href="/dashboard/teachers"
+                    prefetch={true}
                     className="w-full btn-outline flex items-center justify-between group"
-                    onClick={() => router.push('/dashboard/teachers')}
                     aria-label={language === 'ar' ? 'إضافة معلم جديد' : 'Add new teacher'}
                   >
                     <div className="flex items-center gap-2">
@@ -1127,7 +1137,7 @@ export default function DashboardPage() {
                       <span>{language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}</span>
                     </div>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -1182,15 +1192,19 @@ export default function DashboardPage() {
                       <Calendar className="h-5 w-5 text-blue-600" />
                       {language === 'ar' ? 'جدول اليوم' : "Today's Schedule"}
                     </CardTitle>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => router.push('/dashboard/schedule')} 
-                      className="text-sm"
+                    <Link 
+                      href="/dashboard/schedule"
+                      prefetch={true}
                     >
-                      {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-sm"
+                      >
+                        {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1275,30 +1289,33 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    onClick={() => router.push('/dashboard/schedule')}
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {language === 'ar' ? 'الجدول الدراسي' : 'Schedule'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    onClick={() => router.push('/dashboard/my-classes')}
-                  >
-                    <School className="h-4 w-4 mr-2" />
-                    {language === 'ar' ? 'الفصول' : 'Classes'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    onClick={() => router.push('/dashboard/grades')}
-                  >
-                    <Award className="h-4 w-4 mr-2" />
-                    {language === 'ar' ? 'الدرجات' : 'Grades'}
-                  </Button>
+                  <Link href="/dashboard/schedule" prefetch={true} className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start" 
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'الجدول الدراسي' : 'Schedule'}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/my-classes" prefetch={true} className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start" 
+                    >
+                      <School className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'الفصول' : 'Classes'}
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/grades" prefetch={true} className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start" 
+                    >
+                      <Award className="h-4 w-4 mr-2" />
+                      {language === 'ar' ? 'الدرجات' : 'Grades'}
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -1375,15 +1392,16 @@ export default function DashboardPage() {
                       <FileText className="h-5 w-5 text-amber-600" />
                       {language === 'ar' ? 'الواجبات القادمة' : 'Upcoming Assignments'}
                     </CardTitle>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => router.push('/dashboard/my-assignments')} 
-                      className="text-sm"
-                    >
-                      {language === 'ar' ? 'عرض الكل' : 'View All'} 
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
+                    <Link href="/dashboard/my-assignments" prefetch={true}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-sm"
+                      >
+                        {language === 'ar' ? 'عرض الكل' : 'View All'} 
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1438,16 +1456,17 @@ export default function DashboardPage() {
                                 <span>• {assignment.class_name}</span>
                               </div>
                             </div>
-                            <Button 
-                              size="sm" 
-                              className="btn-gradient transition-all duration-300 hover:scale-105"
-                              onClick={() => router.push(`/dashboard/assignments/${assignment.id}/submit`)}
-                            >
-                              {assignment.submission 
-                                ? (language === 'ar' ? 'عرض' : 'View') 
-                                : (language === 'ar' ? 'إرسال' : 'Submit')
-                              }
-                            </Button>
+                            <Link href={`/dashboard/assignments/${assignment.id}/submit`} prefetch={true}>
+                              <Button
+                                size="sm" 
+                                className="btn-gradient transition-all duration-300 hover:scale-105"
+                              >
+                                {assignment.submission 
+                                  ? (language === 'ar' ? 'عرض' : 'View') 
+                                  : (language === 'ar' ? 'إرسال' : 'Submit')
+                                }
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       );
@@ -1487,23 +1506,23 @@ export default function DashboardPage() {
                       <p className="text-sm font-sans mb-6">
                         {language === 'ar' ? 'استعرض الفصول المتاحة وابدأ التعلم!' : 'Browse available classes and start learning!'}
                       </p>
-                      <Button 
-                        className="btn-gradient animate-pulse-glow"
-                        onClick={() => router.push('/dashboard/classes')} 
-                      >
-                        {language === 'ar' ? 'استعراض الفصول المتاحة' : 'Browse Available Classes'}
-                      </Button>
+                      <Link href="/dashboard/classes" prefetch={true}>
+                        <Button 
+                          className="btn-gradient animate-pulse-glow"
+                        >
+                          {language === 'ar' ? 'استعراض الفصول المتاحة' : 'Browse Available Classes'}
+                        </Button>
+                      </Link>
                     </div>
                   ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {publishedClasses
                         .filter((c: any) => myClassEnrollments[c.id])
                         .map((c: any) => (
-                          <Card 
-                            key={c.id} 
-                            className="card-hover overflow-hidden cursor-pointer"
-                            onClick={() => router.push(`/dashboard/my-classes/${c.id}`)}
-                          >
+                          <Link key={c.id} href={`/dashboard/my-classes/${c.id}`} prefetch={true}>
+                            <Card 
+                              className="card-hover overflow-hidden cursor-pointer"
+                            >
                             <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
                               <div className="flex items-start gap-4">
                                 {/* Class Image */}
@@ -1553,6 +1572,7 @@ export default function DashboardPage() {
                               </div>
                             </CardHeader>
                           </Card>
+                          </Link>
                         ))}
                     </div>
                   )}
@@ -1770,15 +1790,19 @@ export default function DashboardPage() {
                       <Calendar className="h-5 w-5 text-blue-600" />
                       {language === 'ar' ? 'جدول اليوم' : 'Today\'s Schedule'}
                     </CardTitle>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => router.push('/dashboard/schedule')} 
-                      className="text-sm"
+                    <Link 
+                      href="/dashboard/schedule"
+                      prefetch={true}
                     >
-                      {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-sm"
+                      >
+                        {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1868,11 +1892,10 @@ export default function DashboardPage() {
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {teacherClasses.map((cls: any) => (
-                        <Card 
-                          key={cls.id} 
-                          className="card-hover overflow-hidden cursor-pointer"
-                          onClick={() => router.push(`/dashboard/classes/${cls.id}`)}
-                        >
+                        <Link key={cls.id} href={`/dashboard/classes/${cls.id}`} prefetch={true}>
+                          <Card 
+                            className="card-hover overflow-hidden cursor-pointer"
+                          >
                           <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
                             <div className="flex items-start gap-4">
                               <div className="relative flex-shrink-0">
@@ -1914,6 +1937,7 @@ export default function DashboardPage() {
                             </div>
                           </CardHeader>
                         </Card>
+                        </Link>
                       ))}
                     </div>
                   )}

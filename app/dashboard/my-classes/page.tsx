@@ -48,13 +48,19 @@ export default function MyClassesPage() {
       }
       setClasses((myClasses || []) as any[]);
 
-      // Load subjects for each class
-      const subs: Record<string, any[]> = {};
-      for (const cls of (myClasses || [])) {
-        const { data: subjects } = await fetchSubjectsForClass(cls.id);
-        subs[cls.id] = (subjects || []) as any[];
+      // ✅ PERFORMANCE: Load subjects in parallel instead of sequential loop
+      if (myClasses && myClasses.length > 0) {
+        const subjectsPromises = myClasses.map((cls: any) => 
+          fetchSubjectsForClass(cls.id).then(({ data }) => ({ classId: cls.id, subjects: data || [] }))
+        );
+        
+        const subjectsResults = await Promise.all(subjectsPromises);
+        const subs: Record<string, any[]> = {};
+        subjectsResults.forEach(({ classId, subjects }) => {
+          subs[classId] = subjects as any[];
+        });
+        setSubjectsByClass(subs);
       }
-      setSubjectsByClass(subs);
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');

@@ -5,9 +5,6 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2, CheckCircle2, XCircle, QrCode, ShieldCheck, Share2, Copy } from 'lucide-react';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function VerifyCertificatePage() {
   const params = useParams();

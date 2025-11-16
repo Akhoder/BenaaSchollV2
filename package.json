@@ -13,6 +13,7 @@
     "dev:auto": "start-dev.bat",
     "build": "next build",
     "start": "next start",
+    "start:port": "next start -p",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },

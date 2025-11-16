@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 // ذاكرة تخزين مؤقت بسيطة للاستعلامات
 const queryCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 2 * 60 * 1000; // ✅ OPTIMIZED: 2 دقائق بدلاً من 5 (reduced stale data risk)
+const CACHE_DURATION = 1 * 60 * 1000; // ✅ OPTIMIZED: 1 دقيقة (faster updates, less stale data)
 
 // دالة مساعدة لتنظيف الذاكرة المؤقتة
 const cleanupCache = () => {
@@ -18,19 +18,32 @@ const cleanupCache = () => {
 };
 
 // دالة مساعدة للحصول على البيانات من الذاكرة المؤقتة أو قاعدة البيانات
+// ✅ PERFORMANCE: Returns cached data immediately if available (optimistic loading)
 export const getCachedData = async <T>(
   cacheKey: string,
   queryFn: () => Promise<{ data: T | null; error: any }>,
-  useCache: boolean = true
-): Promise<{ data: T | null; error: any }> => {
+  useCache: boolean = true,
+  returnCachedImmediately: boolean = true // ✅ NEW: Return cached data immediately
+): Promise<{ data: T | null; error: any; fromCache?: boolean }> => {
   // تنظيف الذاكرة المؤقتة
   cleanupCache();
 
-  // التحقق من الذاكرة المؤقتة
-  if (useCache && queryCache.has(cacheKey)) {
+  // ✅ OPTIMISTIC LOADING: Return cached data immediately if available
+  if (useCache && returnCachedImmediately && queryCache.has(cacheKey)) {
     const cached = queryCache.get(cacheKey)!;
     if (Date.now() - cached.timestamp < CACHE_DURATION) {
-      return { data: cached.data, error: null };
+      // Return cached data immediately, then refresh in background
+      queryFn().then((result) => {
+        if (!result.error && useCache) {
+          queryCache.set(cacheKey, {
+            data: result.data,
+            timestamp: Date.now()
+          });
+        }
+      }).catch(() => {
+        // Silently fail background refresh
+      });
+      return { data: cached.data, error: null, fromCache: true };
     }
   }
 
@@ -45,7 +58,7 @@ export const getCachedData = async <T>(
     });
   }
 
-  return result;
+  return { ...result, fromCache: false };
 };
 
 // استعلامات محسنة للطلاب

@@ -15,6 +15,7 @@ import { getStudentsOptimized } from '@/lib/optimizedQueries';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { usePagination } from '@/hooks/usePagination';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useDebounce } from '@/hooks/useDebounce';
 import { filterBySearch } from '@/lib/tableUtils';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -104,6 +105,8 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  // ✅ PERFORMANCE: Debounce search to reduce re-renders
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -116,21 +119,27 @@ export default function StudentsPage() {
   const [savingCreate, setSavingCreate] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Fetch students function
+  // Fetch students function with optimistic loading
   const fetchStudents = useCallback(async () => {
     if (!profile) return;
     
     try {
-      setLoading(true);
-      
-      const { data: allStudents, error } = await getStudentsOptimized(
+      // ✅ PERFORMANCE: Only show loading if no cached data
+      const { data: allStudents, error, fromCache } = await getStudentsOptimized(
         profile.role || 'student', 
         profile.id
       );
       
+      // ✅ OPTIMISTIC LOADING: Don't show loading if data is from cache
+      if (!fromCache) {
+        setLoading(true);
+      }
+      
       if (error) {
         console.error('Error fetching students:', error);
-        toast.error(getErrorMessage(error));
+        if (!fromCache) {
+          toast.error(getErrorMessage(error));
+        }
         setStudents([]);
         return;
       }
@@ -173,9 +182,10 @@ export default function StudentsPage() {
     }
   }, [profile]);
 
-  // Fetch students when authorized
+  // ✅ PERFORMANCE: Fetch students immediately when authorized
   useEffect(() => {
     if (isAuthorized && profile) {
+      // Start fetching immediately - don't wait for render
       fetchStudents();
     }
   }, [isAuthorized, profile?.id, fetchStudents]);
@@ -226,14 +236,14 @@ export default function StudentsPage() {
     }
   }, []);
 
-  // Filter students using utility function
+  // ✅ PERFORMANCE: Filter students using debounced search query
   const filteredStudents = useMemo(() => {
-    return filterBySearch(students, searchQuery, (student) => [
+    return filterBySearch(students, debouncedSearchQuery, (student) => [
       student.full_name,
       student.email,
       student.phone || '',
     ]);
-  }, [students, searchQuery]);
+  }, [students, debouncedSearchQuery]);
 
   // Use pagination hook
   const {

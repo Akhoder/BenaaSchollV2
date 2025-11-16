@@ -27,9 +27,6 @@ import {
 import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function ClassViewPage() {
   const params = useParams();
@@ -83,15 +80,21 @@ export default function ClassViewPage() {
       const subjectsList = (subjectsData || []) as any[];
       setSubjects(subjectsList);
 
-      // Load progress for each subject
-      const progressMap: Record<string, any> = {};
-      for (const subject of subjectsList) {
-        const { data: progress } = await getSubjectProgressStats(subject.id);
-        if (progress) {
-          progressMap[subject.id] = progress;
-        }
+      // ✅ PERFORMANCE: Load progress in parallel instead of sequential loop
+      if (subjectsList.length > 0) {
+        const progressPromises = subjectsList.map((subject: any) =>
+          getSubjectProgressStats(subject.id).then(({ data }) => ({ subjectId: subject.id, progress: data }))
+        );
+        
+        const progressResults = await Promise.all(progressPromises);
+        const progressMap: Record<string, any> = {};
+        progressResults.forEach(({ subjectId, progress }) => {
+          if (progress) {
+            progressMap[subjectId] = progress;
+          }
+        });
+        setSubjectProgress(progressMap);
       }
-      setSubjectProgress(progressMap);
     } catch (e) {
       console.error(e);
       toast.error('Error loading data');

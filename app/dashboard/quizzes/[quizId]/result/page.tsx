@@ -9,9 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { supabase, fetchQuizBundle, fetchAnswersForAttempt } from '@/lib/supabase';
 
-// Force dynamic rendering - this page requires runtime params
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 export default function QuizResultPage() {
   const params = useParams();
