@@ -62,49 +62,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   // Organized navigation with groups for better UX
   const navigationGroups: NavGroup[] = [
     {
-      title: language === 'ar' ? 'الرئيسية' : 'Main',
+      title: t('main'),
       items: [
         { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'supervisor'] },
       ],
       roles: ['admin', 'teacher', 'student', 'supervisor']
     },
     {
-      title: language === 'ar' ? 'الطلاب' : 'Student',
+      title: t('student'),
       items: [
-        { name: 'My Classes', href: '/dashboard/my-classes', icon: School, roles: ['student'] },
-        { name: 'My Assignments', href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
+        { name: t('myClasses'), href: '/dashboard/my-classes', icon: School, roles: ['student'] },
+        { name: t('myAssignments'), href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
         { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['student'] },
       ],
       roles: ['student']
     },
     {
-      title: language === 'ar' ? 'الأكاديمية' : 'Academic',
+      title: t('academic'),
       items: [
         { name: t('classes'), href: '/dashboard/classes', icon: School, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('students'), href: '/dashboard/students', icon: Users, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('subjects'), href: '/dashboard/subjects', icon: BookOpen, roles: ['admin', 'teacher', 'supervisor'] },
-        { name: language === 'ar' ? 'المسابقات' : 'Quizzes', href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
+        { name: t('quizzes'), href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },
     {
-      title: language === 'ar' ? 'الإدارة' : 'Administration',
+      title: t('administration'),
       items: [
         { name: t('users'), href: '/dashboard/users', icon: Users, roles: ['admin'] },
-        { name: 'Teachers', href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
-        { name: language === 'ar' ? 'الحضور' : 'Attendance', href: '/dashboard/attendance', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },
-        { name: language === 'ar' ? 'تقرير الحضور' : 'Attendance Report', href: '/dashboard/attendance/report', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },
+        { name: t('teachers'), href: '/dashboard/teachers', icon: Users, roles: ['admin'] },
+        { name: t('attendance'), href: '/dashboard/attendance', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },
+        { name: t('attendanceReport'), href: '/dashboard/attendance/report', icon: Calendar, roles: ['admin', 'teacher', 'supervisor'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },
     {
-      title: language === 'ar' ? 'عام' : 'General',
+      title: t('general'),
       items: [
         { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
-        { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
+        { name: t('messages'), href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
         { name: t('announcements'), href: '/dashboard/announcements', icon: FileText, roles: ['admin', 'teacher', 'student', 'supervisor'] },
       ],
       roles: ['admin', 'teacher', 'student', 'supervisor']
@@ -356,20 +356,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <Link href="/dashboard/settings/branding" prefetch={true} className="block">
                       <DropdownMenuItem>
                         <Settings className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'إعدادات الهوية' : 'Branding Settings'}
+                        {t('brandingSettings')}
                       </DropdownMenuItem>
                     </Link>
                   )}
                   <Link href="/dashboard/my-certificates" prefetch={true} className="block">
                     <DropdownMenuItem>
                       <Award className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'شهاداتي' : 'My Certificates'}
+                      {t('myCertificates')}
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-700">
                     <LogOut className="h-4 w-4 mr-2" />
-                    {language === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
+                    {t('signOut')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

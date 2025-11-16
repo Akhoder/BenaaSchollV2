@@ -41,19 +41,19 @@ export function MobileBottomNav() {
         {
           href: '/dashboard/my-classes',
           icon: School,
-          label: language === 'ar' ? 'فصولي' : 'My Classes',
+          label: t('myClasses'),
           roles: ['student']
         },
         {
           href: '/dashboard/my-assignments',
           icon: FileText,
-          label: language === 'ar' ? 'الواجبات' : 'Assignments',
+          label: t('myAssignments'),
           roles: ['student']
         },
         {
           href: '/dashboard/messages',
           icon: MessageSquare,
-          label: 'Messages',
+          label: t('messages'),
           roles: ['admin', 'teacher', 'student', 'supervisor']
         },
       ];
@@ -77,7 +77,7 @@ export function MobileBottomNav() {
         {
           href: '/dashboard/messages',
           icon: MessageSquare,
-          label: 'Messages',
+          label: t('messages'),
           roles: ['admin', 'teacher', 'student', 'supervisor']
         },
       ];
