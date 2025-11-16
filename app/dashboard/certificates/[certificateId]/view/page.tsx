@@ -225,7 +225,7 @@ export default function CertificateViewPage() {
       // keep template borders/shadows intact to match on-screen appearance
       clone.style.boxSizing = 'border-box';
       // Enforce Arabic-friendly text rendering
-      clone.style.fontFamily = "Almarai, Tajawal, system-ui, sans-serif";
+      clone.style.fontFamily = "Cairo, system-ui, sans-serif";
       clone.style.letterSpacing = 'normal';
       clone.style.wordSpacing = 'normal';
       clone.style.unicodeBidi = 'isolate-override';
@@ -251,7 +251,7 @@ export default function CertificateViewPage() {
       ];
       problematicSelectors.forEach((sel) => {
         clone.querySelectorAll<HTMLElement>(sel).forEach((el) => {
-          el.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
+          el.style.fontFamily = "Cairo, system-ui, sans-serif";
           el.style.letterSpacing = 'normal';
           el.style.wordSpacing = 'normal';
           el.style.textTransform = 'none';
@@ -267,7 +267,7 @@ export default function CertificateViewPage() {
       style.textContent = `
         * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-variant-ligatures: normal; -webkit-font-feature-settings: 'liga' 1, 'calt' 1; font-feature-settings: 'liga' 1, 'calt' 1; }
         [dir="rtl"], [lang="ar"] { direction: rtl !important; text-align: right !important; }
-        h1, h2, h3, .font-display { font-family: 'Cairo', 'Almarai', 'Tajawal', system-ui, sans-serif !important; letter-spacing: normal; }
+        h1, h2, h3, .font-display { font-family: 'Cairo', system-ui, sans-serif !important; letter-spacing: normal; }
         p, span, div { letter-spacing: normal; word-spacing: normal; }
       `;
       root.appendChild(style);
@@ -282,8 +282,7 @@ export default function CertificateViewPage() {
           document.head.appendChild(link);
         }
       };
-      ensureFontLink('pdf-fonts-almarai-tajawal', 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap');
-      ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+      ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
       // Apply template CSS and class
       const templateCSS = getCertificateTemplateCSS(template, { royalGold: branding.royal_gold, royalBgTint: branding.royal_bg_tint });
@@ -495,7 +494,7 @@ export default function CertificateViewPage() {
             className={`${template==='modern' ? 'cert-template-modern' : template==='royal' ? 'cert-template-royal' : 'cert-template-classic'} relative rounded-lg shadow-2xl p-12 print:p-16 print:shadow-none`}
             dir="rtl"
             lang="ar"
-            style={{ fontFamily: "'Almarai', 'Tajawal', system-ui, sans-serif" }}
+            style={{ fontFamily: "'Cairo', system-ui, sans-serif" }}
           >
             {branding?.watermark_enabled && (
               (() => {

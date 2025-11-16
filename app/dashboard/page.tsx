@@ -35,9 +35,8 @@ import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
-  AlertCircle, Bell, Zap, Loader2
+  AlertCircle, Bell, Zap, Loader2, BarChart3, Sparkles
 } from 'lucide-react';
-import { QuickStatsChart } from '@/components/Charts';
 import { 
   supabase, 
   fetchPublishedClasses, 
@@ -51,7 +50,9 @@ import {
   fetchMyNotifications 
 } from '@/lib/supabase';
 import { getStatsOptimized } from '@/lib/optimizedQueries';
-import { ChartsWithSuspense } from '@/components/LazyComponents';
+import { AdminCharts } from '@/components/AdminCharts';
+import { QuickInsights } from '@/components/QuickInsights';
+import { EnhancedActivityTimeline } from '@/components/EnhancedActivityTimeline';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -69,15 +70,22 @@ interface DashboardStats {
   totalTeachers: number;
   totalClasses: number;
   totalSubjects: number;
+  // ✅ NEW: Additional metrics
+  attendanceRate?: number;
+  completionRate?: number;
+  activeUsers?: number;
+  // ✅ NEW: Trends (comparison with previous period)
+  trends?: {
+    students: { value: number; isPositive: boolean };
+    teachers: { value: number; isPositive: boolean };
+    classes: { value: number; isPositive: boolean };
+    subjects: { value: number; isPositive: boolean };
+    attendance?: { value: number; isPositive: boolean };
+    completion?: { value: number; isPositive: boolean };
+  };
 }
 
-interface RecentActivity {
-  id: string;
-  type: 'student_registered' | 'class_created' | 'teacher_added' | 'enrollment' | 'assignment_created';
-  title: string;
-  timestamp: Date;
-  icon: string;
-}
+// ✅ Note: RecentActivity interface moved to EnhancedActivityTimeline component
 
 interface ScheduleEvent {
   id: string;
@@ -123,6 +131,10 @@ export default function DashboardPage() {
     totalTeachers: 0,
     totalClasses: 0,
     totalSubjects: 0,
+    attendanceRate: undefined,
+    completionRate: undefined,
+    activeUsers: undefined,
+    trends: undefined,
   });
   
   const [publishedClasses, setPublishedClasses] = useState<any[]>([]);
@@ -135,7 +147,6 @@ export default function DashboardPage() {
   const [averageGrade, setAverageGrade] = useState<number | null>(null);
   const [attendanceRate, setAttendanceRate] = useState<number | null>(null);
   const [classProgress, setClassProgress] = useState<ClassProgress>({});
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   // Teacher-specific stats
   const [teacherClassCount, setTeacherClassCount] = useState<number>(0);
   const [teacherStudentCount, setTeacherStudentCount] = useState<number>(0);
@@ -146,7 +157,6 @@ export default function DashboardPage() {
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [loadingActivity, setLoadingActivity] = useState(false);
   const [loadingTeacherData, setLoadingTeacherData] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
@@ -191,10 +201,7 @@ export default function DashboardPage() {
         });
       }
 
-      // تحميل النشاط الحديث للمدير
-      if (profile.role === 'admin') {
-        void loadRecentActivity();
-      }
+      // ✅ Note: Recent Activity is now handled by EnhancedActivityTimeline component
     }
   }, [profile?.id, profile?.role]);
 
@@ -336,70 +343,8 @@ export default function DashboardPage() {
     }
   };
 
-  /**
-   * جلب النشاط الحديث للمدير
-   * يجلب البيانات الحقيقية من قاعدة البيانات
-   */
-  const loadRecentActivity = async () => {
-    if (!profile || profile.role !== 'admin') return;
-    
-    try {
-      setLoadingActivity(true);
-      const activities: RecentActivity[] = [];
-      
-      // جلب آخر 5 طلاب مسجلين
-      const { data: recentStudents } = await supabase
-        .from('profiles')
-        .select('id, full_name, created_at')
-        .eq('role', 'student')
-        .order('created_at', { ascending: false })
-        .limit(3);
-      
-      if (recentStudents) {
-        recentStudents.forEach((student) => {
-          activities.push({
-            id: `student-${student.id}`,
-            type: 'student_registered',
-            title: language === 'ar' 
-              ? `طالب جديد: ${student.full_name}` 
-              : `New student: ${student.full_name}`,
-            timestamp: new Date(student.created_at),
-            icon: 'users',
-          });
-        });
-      }
-      
-      // جلب آخر 5 فصول منشأة
-      const { data: recentClasses } = await supabase
-        .from('classes')
-        .select('id, class_name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(2);
-      
-      if (recentClasses) {
-        recentClasses.forEach((cls) => {
-          activities.push({
-            id: `class-${cls.id}`,
-            type: 'class_created',
-            title: language === 'ar' 
-              ? `تم إنشاء فصل: ${cls.class_name}` 
-              : `Class created: ${cls.class_name}`,
-            timestamp: new Date(cls.created_at),
-            icon: 'school',
-          });
-        });
-      }
-      
-      // ترتيب حسب التاريخ الأحدث
-      activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      setRecentActivity(activities.slice(0, 5));
-    } catch (err) {
-      console.error('Error loading recent activity:', err);
-      toast.error(language === 'ar' ? 'فشل تحميل النشاط الحديث' : 'Failed to load recent activity');
-    } finally {
-      setLoadingActivity(false);
-    }
-  };
+  // ✅ Note: Recent Activity is now handled by EnhancedActivityTimeline component
+  // The old loadRecentActivity function has been removed
 
   /**
    * جلب بيانات الطالب (الفصول المنشورة والتسجيلات)
@@ -933,67 +878,142 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header Section - قسم الترحيب */}
-        <div className="glass-card-gradient p-8 md:p-12 text-foreground relative overflow-hidden animate-fade-in-up">
-          {/* Floating Orbs */}
-          <div className="absolute top-10 right-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute bottom-10 left-10 w-40 h-40 bg-accent/20 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
-          <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-secondary/20 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}}></div>
-          
-          <div className="relative z-10">
-            {/* Avatar and Welcome */}
-            <div className="flex items-start gap-4 md:gap-6">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div className="relative w-20 h-20 md:w-24 md:h-24 glass-card flex items-center justify-center border-2 border-primary/30 shadow-xl">
-                  <span className="text-3xl md:text-4xl font-bold text-primary">{profile?.full_name?.charAt(0).toUpperCase() || ''}</span>
+        {/* ✅ Compact Hero Section - قسم الترحيب المدمج */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/50 shadow-lg bg-gradient-to-br from-primary/5 via-accent/3 to-secondary/5">
+          {/* Subtle Background Pattern */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-2xl"></div>
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              {/* ✅ Compact Avatar */}
+              <div className="relative group flex-shrink-0">
+                {/* Glow Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-br from-primary to-accent rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+                
+                {/* Avatar Container */}
+                <div className="relative w-16 h-16 md:w-20 md:h-20">
+                  {/* Outer Ring */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/30 p-0.5">
+                    <div className="w-full h-full rounded-2xl bg-background/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
+                      <span className="text-2xl md:text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
+                        {profile?.full_name?.charAt(0).toUpperCase() || ''}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Status Indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-success rounded-full border-2 border-background shadow-md flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 pt-2">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight flex items-center gap-3 animate-fade-in-up">
-                  <span className="text-primary">
-                    {t('welcomeBack')}, {profile?.full_name || ''}!
-                  </span>
-                  <span className="text-4xl md:text-5xl lg:text-6xl animate-bounce-in">👋</span>
-                </h1>
-                <p className="text-muted-foreground mt-2 text-lg md:text-xl font-medium font-sans animate-fade-in-up" style={{animationDelay: '100ms'}}>
-                  {t(`${profile?.role || 'user'}Dashboard`)}
-                </p>
+
+              {/* Welcome Text */}
+              <div className="flex-1 min-w-0">
+                {/* Main Heading */}
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold tracking-tight">
+                    <span className="bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent">
+                      {t('welcomeBack')}, {profile?.full_name || ''}
+                    </span>
+                  </h1>
+                  {/* ✅ Replaced emoji with icon */}
+                  <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary animate-pulse" />
+                  </div>
+                </div>
+
+                {/* Subtitle and Quick Stats */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <p className="text-sm md:text-base text-muted-foreground font-medium">
+                    {t(`${profile?.role || 'user'}Dashboard`)}
+                  </p>
+
+                  {/* Quick Stats Row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* System Status */}
+                    <div className="group relative px-3 py-1.5 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-200">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <div className="w-2 h-2 bg-success rounded-full"></div>
+                          <div className="absolute inset-0 w-2 h-2 bg-success rounded-full animate-ping opacity-50"></div>
+                        </div>
+                        <span className="text-xs font-medium text-foreground">
+                          {language === 'ar' ? 'متصل' : 'Online'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="group relative px-3 py-1.5 rounded-lg bg-background/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-200">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-medium text-foreground">
+                          {new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Role Badge */}
+                    <div className="group relative px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 transition-all duration-200">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                          {profile?.role ? (profile.role.charAt(0).toUpperCase() + profile.role.slice(1)) : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {/* Status and Quick Info */}
-            <div className="mt-6 md:mt-8 flex flex-wrap items-center gap-3">
-              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '200ms'}}>
-                <div className="w-2.5 h-2.5 bg-success rounded-full animate-pulse-glow"></div>
-                <span className="text-sm font-medium">
-                  {language === 'ar' ? 'نظام متصل' : 'System Online'}
-                </span>
+
+            {/* ✅ Compact Additional Info Bar (Admin Only) */}
+            {profile?.role === 'admin' && (
+              <div className="mt-4 pt-4 border-t border-border/30">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-primary/10">
+                        <Users className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{language === 'ar' ? 'المستخدمين' : 'Users'}</p>
+                        <p className="text-sm font-bold text-foreground">{stats.totalStudents + stats.totalTeachers}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-accent/10">
+                        <School className="w-3.5 h-3.5 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{language === 'ar' ? 'الفصول' : 'Classes'}</p>
+                        <p className="text-sm font-bold text-foreground">{stats.totalClasses}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
+                    <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>
+                    <span className="text-xs font-semibold text-success">
+                      {language === 'ar' ? 'جميع الأنظمة تعمل' : 'All systems operational'}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '300ms'}}>
-                <Calendar className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">
-                  {new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </span>
-              </div>
-              <div className="glass-card px-4 py-2 flex items-center gap-2 animate-fade-in-up" style={{animationDelay: '400ms'}}>
-                <TrendingUp className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">
-                  {profile?.role ? (profile.role.charAt(0).toUpperCase() + profile.role.slice(1)) : ''}
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Admin Dashboard - لوحة المدير */}
         {profile?.role === 'admin' && (
-          <>
+          <div className="space-y-8">
             {/* Floating Orbs Background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
               <div className="orb-primary w-64 h-64 top-20 left-10" />
@@ -1001,150 +1021,247 @@ export default function DashboardPage() {
               <div className="orb-secondary w-64 h-64 bottom-20 left-1/3" />
             </div>
 
-            {/* Statistics Cards */}
-            {loadingStats ? (
-              <DashboardStatsSkeleton />
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-                <StatCard
-                  title={t('totalStudents')}
-                  value={stats.totalStudents}
-                  icon={Users}
-                  description={t('activeClasses')}
-                  color="primary"
-                />
-                <StatCard
-                  title={t('totalTeachers')}
-                  value={stats.totalTeachers}
-                  icon={Users}
-                  description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
-                  color="accent"
-                />
-                <StatCard
-                  title={t('totalClasses')}
-                  value={stats.totalClasses}
-                  icon={School}
-                  description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
-                  color="secondary"
-                />
-                <StatCard
-                  title={t('subjects')}
-                  value={stats.totalSubjects}
-                  icon={BookOpen}
-                  description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
-                  color="success"
-                />
-              </div>
-            )}
-
-            {/* Recent Activity and Quick Actions */}
-            <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up delay-200">
-              {/* Recent Activity Card */}
-              <div className="glass-card-hover p-6">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-xl">
-                      <TrendingUp className="w-5 h-5 text-success" />
-                    </div>
-                    <span className="text-primary">{t('recentActivity')}</span>
-                  </h3>
-                </div>
+            {/* ============================================
+                SECTION 1: Main Statistics
+                ============================================ */}
+            <section className="space-y-6">
+              {/* Section Header */}
+              <div className="flex items-center justify-between">
                 <div>
-                  {loadingActivity ? (
-                    <ListSkeleton items={3} />
-                  ) : recentActivity.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="inline-flex p-4 bg-muted/50 rounded-2xl mb-3">
-                        <Clock className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {language === 'ar' ? 'لا يوجد نشاط حديث' : 'No recent activity'}
-                      </p>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl">
+                      <TrendingUp className="w-5 h-5 text-primary" />
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {recentActivity.map((activity, index) => (
-                        <div 
-                          key={activity.id} 
-                          className="glass-card p-4 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl">
-                              {activity.icon === 'users' && <Users className="w-5 h-5 text-white" />}
-                              {activity.icon === 'school' && <School className="w-5 h-5 text-white" />}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-foreground">
-                                {activity.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatTimeAgo(activity.timestamp)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <span>{language === 'ar' ? 'الإحصائيات الرئيسية' : 'Main Statistics'}</span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1 ml-12">
+                    {language === 'ar' ? 'نظرة شاملة على النظام' : 'Overview of your system'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Statistics Cards */}
+              {loadingStats ? (
+                <DashboardStatsSkeleton />
+              ) : (
+                <>
+                  {/* Main Stats with Trends */}
+                  <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                      title={t('totalStudents')}
+                      value={stats.totalStudents}
+                      icon={Users}
+                      description={language === 'ar' ? 'إجمالي الطلاب' : 'Total students'}
+                      color="primary"
+                      trend={stats.trends?.students}
+                    />
+                    <StatCard
+                      title={t('totalTeachers')}
+                      value={stats.totalTeachers}
+                      icon={Users}
+                      description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
+                      color="accent"
+                      trend={stats.trends?.teachers}
+                    />
+                    <StatCard
+                      title={t('totalClasses')}
+                      value={stats.totalClasses}
+                      icon={School}
+                      description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
+                      color="secondary"
+                      trend={stats.trends?.classes}
+                    />
+                    <StatCard
+                      title={t('subjects')}
+                      value={stats.totalSubjects}
+                      icon={BookOpen}
+                      description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
+                      color="success"
+                      trend={stats.trends?.subjects}
+                    />
+                  </div>
+
+                  {/* Additional Metrics */}
+                  {(stats.attendanceRate !== undefined || stats.completionRate !== undefined || stats.activeUsers !== undefined) && (
+                    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {stats.attendanceRate !== undefined && (
+                        <StatCard
+                          title={language === 'ar' ? 'معدل الحضور' : 'Attendance Rate'}
+                          value={`${stats.attendanceRate}%`}
+                          icon={CheckCircle2}
+                          description={language === 'ar' ? 'آخر 30 يوم' : 'Last 30 days'}
+                          color="success"
+                          gradient="from-emerald-500 to-teal-500"
+                        />
+                      )}
+                      {stats.completionRate !== undefined && (
+                        <StatCard
+                          title={language === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}
+                          value={`${stats.completionRate}%`}
+                          icon={Award}
+                          description={language === 'ar' ? 'الدروس المكتملة' : 'Lessons completed'}
+                          color="info"
+                          gradient="from-blue-500 to-cyan-500"
+                        />
+                      )}
+                      {stats.activeUsers !== undefined && (
+                        <StatCard
+                          title={language === 'ar' ? 'المستخدمون النشطون' : 'Active Users'}
+                          value={stats.activeUsers}
+                          icon={Zap}
+                          description={language === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'}
+                          color="warning"
+                          gradient="from-amber-500 to-orange-500"
+                        />
+                      )}
                     </div>
                   )}
-                </div>
-              </div>
+                </>
+              )}
+            </section>
 
-              {/* Quick Actions Card */}
-              <div className="glass-card-hover p-6">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold flex items-center gap-3">
-                    <div className="p-2 bg-accent/10 rounded-xl">
-                      <Zap className="w-5 h-5 text-accent" />
-                    </div>
-                    <span className="text-primary">{t('quickActions')}</span>
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {/* ✅ PERFORMANCE: Use Link with prefetch for faster navigation */}
-                  <Link 
-                    href="/dashboard/students"
-                    prefetch={true}
-                    className="w-full btn-primary flex items-center justify-between group"
-                    aria-label={language === 'ar' ? 'إضافة طالب جديد' : 'Add new student'}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users className="w-5 h-5" />
-                      <span>{language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}</span>
-                    </div>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  <Link 
-                    href="/dashboard/classes"
-                    prefetch={true}
-                    className="w-full btn-glass flex items-center justify-between group"
-                    aria-label={language === 'ar' ? 'إنشاء فصل جديد' : 'Create new class'}
-                  >
-                    <div className="flex items-center gap-2">
-                      <School className="w-5 h-5" />
-                      <span>{language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}</span>
-                    </div>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  <Link 
-                    href="/dashboard/teachers"
-                    prefetch={true}
-                    className="w-full btn-outline flex items-center justify-between group"
-                    aria-label={language === 'ar' ? 'إضافة معلم جديد' : 'Add new teacher'}
-                  >
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5" />
-                      <span>{language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}</span>
-                    </div>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/50"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <div className="bg-background px-4">
+                  <div className="w-2 h-2 rounded-full bg-primary/20"></div>
                 </div>
               </div>
             </div>
 
-            {/* Charts */}
-                   <ChartsWithSuspense />
-          </>
+            {/* ============================================
+                SECTION 2: Activity & Quick Actions
+                ============================================ */}
+            <section className="space-y-6">
+              {/* Section Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-accent/20 to-secondary/20 rounded-xl">
+                      <Clock className="w-5 h-5 text-accent" />
+                    </div>
+                    <span>{language === 'ar' ? 'النشاط والإجراءات' : 'Activity & Actions'}</span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1 ml-12">
+                    {language === 'ar' ? 'آخر الأنشطة والإجراءات السريعة' : 'Recent activity and quick actions'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Enhanced Activity Timeline and Quick Actions */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                {/* Enhanced Activity Timeline */}
+                <EnhancedActivityTimeline />
+
+                {/* ✅ Enhanced Quick Actions Card */}
+                <Card className="glass-card-hover border-0 shadow-xl overflow-hidden">
+                  <CardHeader className="pb-4 border-b border-border/50">
+                    <CardTitle className="flex items-center gap-3 text-xl font-bold">
+                      <div className="p-2.5 bg-gradient-to-br from-accent/20 to-primary/20 rounded-xl backdrop-blur-sm">
+                        <Zap className="w-5 h-5 text-accent" />
+                      </div>
+                      <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        {t('quickActions')}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-3">
+                    {/* ✅ PERFORMANCE: Use Link with prefetch for faster navigation */}
+                    <Link 
+                      href="/dashboard/students"
+                      prefetch={true}
+                      className="w-full btn-primary flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
+                      aria-label={language === 'ar' ? 'إضافة طالب جديد' : 'Add new student'}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        <span className="font-semibold">{language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                    <Link 
+                      href="/dashboard/classes"
+                      prefetch={true}
+                      className="w-full btn-glass flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg"
+                      aria-label={language === 'ar' ? 'إنشاء فصل جديد' : 'Create new class'}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                          <School className="w-5 h-5" />
+                        </div>
+                        <span className="font-semibold">{language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                    <Link 
+                      href="/dashboard/teachers"
+                      prefetch={true}
+                      className="w-full btn-outline flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:border-primary/50"
+                      aria-label={language === 'ar' ? 'إضافة معلم جديد' : 'Add new teacher'}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <GraduationCap className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="font-semibold">{language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/50"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <div className="bg-background px-4">
+                  <div className="w-2 h-2 rounded-full bg-primary/20"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* ============================================
+                SECTION 3: Analytics & Insights
+                ============================================ */}
+            <section className="space-y-6">
+              {/* Section Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-info/20 to-success/20 rounded-xl">
+                      <BarChart3 className="w-5 h-5 text-info" />
+                    </div>
+                    <span>{language === 'ar' ? 'التحليلات والرؤى' : 'Analytics & Insights'}</span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1 ml-12">
+                    {language === 'ar' ? 'الرسوم البيانية والرؤى السريعة' : 'Charts and quick insights'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Charts and Quick Insights */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+                {/* Charts - Takes 2 columns on large screens */}
+                <div className="lg:col-span-2">
+                  <AdminCharts />
+                </div>
+                
+                {/* Quick Insights - Takes 1 column on large screens */}
+                <div className="lg:col-span-1">
+                  <QuickInsights />
+                </div>
+              </div>
+            </section>
+          </div>
         )}
 
         {/* Student Dashboard - لوحة الطالب */}

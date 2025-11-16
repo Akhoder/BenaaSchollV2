@@ -15,7 +15,7 @@ const config: Config = {
         heading: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
         arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
         poppins: ['var(--font-poppins)', 'sans-serif'],
-        cairo: ['var(--font-cairo)', 'sans-serif'],
+        cairo: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

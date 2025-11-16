@@ -169,25 +169,8 @@ export default function ClassesPage() {
     }
   }, [isDialogOpen, selectedClass]);
 
-  // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and authLoading
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-      return;
-    }
-
-    // Check if user has access (admin, teacher, or supervisor)
-    if (authLoading === false && profile && !['admin', 'teacher', 'supervisor'].includes(profile.role)) {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (profile && ['admin', 'teacher', 'supervisor'].includes(profile.role)) {
-      fetchClasses();
-    }
-  }, [profile?.id, profile?.role, authLoading, fetchClasses, router]);
-
   // ✅ PERFORMANCE: Memoize fetchClasses to prevent unnecessary re-renders
+  // ✅ FIX: Define fetchClasses BEFORE useEffect that uses it
   const fetchClasses = useCallback(async () => {
     try {
       setLoading(true);
@@ -252,6 +235,24 @@ export default function ClassesPage() {
       setLoading(false);
     }
   }, []);
+
+  // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and authLoading
+  useEffect(() => {
+    if (!authLoading && !profile) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user has access (admin, teacher, or supervisor)
+    if (authLoading === false && profile && !['admin', 'teacher', 'supervisor'].includes(profile.role)) {
+      router.push('/dashboard');
+      return;
+    }
+
+    if (profile && ['admin', 'teacher', 'supervisor'].includes(profile.role)) {
+      fetchClasses();
+    }
+  }, [profile?.id, profile?.role, authLoading, fetchClasses, router]);
 
   const generateClassCode = () => {
     const prefix = 'CLS';
