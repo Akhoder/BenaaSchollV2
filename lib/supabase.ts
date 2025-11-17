@@ -1274,7 +1274,12 @@ export async function fetchStaffQuizzes() {
       attempts_allowed,
       created_at,
       subject:class_subjects!subject_id(id, subject_name),
-      lesson:lessons!lesson_id(id, title)
+      lesson:lessons!lesson_id(
+        id, 
+        title, 
+        subject_id,
+        subject:class_subjects!subject_id(id, subject_name)
+      )
     `)
     .order('created_at', { ascending: false });
 }

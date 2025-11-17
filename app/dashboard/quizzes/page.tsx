@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { usePagination } from '@/hooks/usePagination';
+import { useDebounce } from '@/hooks/useDebounce';
 import { filterBySearch } from '@/lib/tableUtils';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,6 +83,7 @@ export default function QuizzesManagePage() {
   const [publishing, setPublishing] = useState<string | null>(null);
   const [notifying, setNotifying] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'subject' | 'lesson'>('all');
@@ -92,26 +94,37 @@ export default function QuizzesManagePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedQuizForAction, setSelectedQuizForAction] = useState<any | null>(null);
 
-  // Load quizzes and subjects
+  // Load quizzes and subjects in parallel for better performance
   const loadData = useCallback(async () => {
     if (!isAuthorized) return;
     
     try {
       setLoading(true);
-      const { data, error } = await fetchStaffQuizzes();
-      if (error) {
-        console.error('Error fetching quizzes:', error);
-        toast.error(getErrorMessage(error));
+      const [quizzesResult, subjectsResult] = await Promise.all([
+        fetchStaffQuizzes(),
+        supabase
+          .from('class_subjects')
+          .select('id, subject_name')
+          .order('subject_name')
+      ]);
+
+      if (quizzesResult.error) {
+        console.error('Error fetching quizzes:', quizzesResult.error);
+        toast.error(getErrorMessage(quizzesResult.error));
         return;
       }
-      setQuizzes(data || []);
-
-      // Load subjects for filter
-      const { data: subs } = await supabase
-        .from('class_subjects')
-        .select('id, subject_name')
-        .order('subject_name');
-      setSubjects(subs || []);
+      
+      const quizzesData = quizzesResult.data || [];
+      const subjectsData = subjectsResult.data || [];
+      
+      // Debug: Log to check data structure
+      if (quizzesData.length > 0) {
+        console.log('Sample quiz data:', quizzesData[0]);
+        console.log('Subjects data:', subjectsData);
+      }
+      
+      setQuizzes(quizzesData);
+      setSubjects(subjectsData);
     } catch (err) {
       console.error('Unexpected error:', err);
       toast.error(getErrorMessage(err));
@@ -126,13 +139,26 @@ export default function QuizzesManagePage() {
     }
   }, [isAuthorized, loadData]);
 
+  // Helper functions to avoid repetition
+  const isQuizActive = useCallback((quiz: any) => {
+    return !quiz.end_at || new Date(quiz.end_at) > new Date();
+  }, []);
+
+  const isSubjectQuiz = useCallback((quiz: any) => {
+    return quiz.subject_id && !quiz.lesson_id;
+  }, []);
+
+  const isLessonQuiz = useCallback((quiz: any) => {
+    return !!quiz.lesson_id;
+  }, []);
+
   // Filter quizzes
   const filteredQuizzes = useMemo(() => {
     let filtered = quizzes;
 
-    // Search filter
-    if (searchQuery.trim()) {
-      filtered = filterBySearch(filtered, searchQuery, (quiz) => [
+    // Search filter (using debounced query)
+    if (debouncedSearchQuery.trim()) {
+      filtered = filterBySearch(filtered, debouncedSearchQuery, (quiz) => [
         quiz.title || '',
         quiz.description || '',
         quiz.subject?.subject_name || '',
@@ -143,7 +169,7 @@ export default function QuizzesManagePage() {
     // Status filter
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter((q) => {
-        const active = !q.end_at || new Date(q.end_at) > new Date();
+        const active = isQuizActive(q);
         return statusFilter === 'OPEN' ? active : !active;
       });
     }
@@ -156,14 +182,14 @@ export default function QuizzesManagePage() {
     // Type filter (subject vs lesson)
     if (typeFilter !== 'all') {
       filtered = filtered.filter((q) => {
-        if (typeFilter === 'subject') return q.subject_id && !q.lesson_id;
-        if (typeFilter === 'lesson') return q.lesson_id;
+        if (typeFilter === 'subject') return isSubjectQuiz(q);
+        if (typeFilter === 'lesson') return isLessonQuiz(q);
         return true;
       });
     }
 
     return filtered;
-  }, [quizzes, searchQuery, statusFilter, subjectFilter, typeFilter]);
+  }, [quizzes, debouncedSearchQuery, statusFilter, subjectFilter, typeFilter, isQuizActive, isSubjectQuiz, isLessonQuiz]);
 
   // Pagination
   const {
@@ -225,7 +251,7 @@ export default function QuizzesManagePage() {
     }
   }, [t]);
 
-  // Publish quiz
+  // Publish quiz - optimized with batch processing
   const publish = useCallback(async (quiz: any) => {
     try {
       setPublishing(quiz.id);
@@ -235,22 +261,35 @@ export default function QuizzesManagePage() {
           toast.error(getErrorMessage(error));
           return;
         }
+        
+        // Process notifications in batches for better performance
+        const batchSize = 10;
+        const studentsList = students || [];
         let successCount = 0;
         let errorCount = 0;
-        for (const s of (students || [])) {
-          const { error: notifError } = await createNotification({
-            recipient_id: s.id,
-            title: t('newQuiz').replace('{title}', quiz.title),
-            body: quiz.description || t('newQuizAvailable'),
-            link_url: `/dashboard/quizzes/${quiz.id}/take`,
+
+        for (let i = 0; i < studentsList.length; i += batchSize) {
+          const batch = studentsList.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map((s: any) =>
+              createNotification({
+                recipient_id: s.id,
+                title: t('newQuiz').replace('{title}', quiz.title),
+                body: quiz.description || t('newQuizAvailable'),
+                link_url: `/dashboard/quizzes/${quiz.id}/take`,
+              })
+            )
+          );
+
+          results.forEach((result) => {
+            if (result.status === 'fulfilled' && !result.value.error) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
           });
-          if (notifError) {
-            console.error('Error creating notification:', notifError);
-            errorCount++;
-          } else {
-            successCount++;
-          }
         }
+
         if (errorCount > 0) {
           toast.error(t('failedToSendNotifications').replace('{count}', errorCount.toString()));
         } else {
@@ -340,7 +379,7 @@ export default function QuizzesManagePage() {
     }
   }, [selectedQuizForAction, loadData, t]);
 
-  // Notify results
+  // Notify results - optimized with batch processing
   const notifyResults = useCallback(async (quiz: any) => {
     try {
       setNotifying(quiz.id);
@@ -356,22 +395,35 @@ export default function QuizzesManagePage() {
           toast.error(getErrorMessage(error));
           return;
         }
+        
+        // Process notifications in batches for better performance
+        const batchSize = 10;
+        const studentsList = students || [];
         let successCount = 0;
         let errorCount = 0;
-        for (const s of (students || [])) {
-          const { error: notifError } = await createNotification({
-            recipient_id: s.id,
-            title: t('resultsAvailable').replace('{title}', quiz.title),
-            body: t('quizResultsAvailable'),
-            link_url: `/dashboard/quizzes/${quiz.id}/result`,
+
+        for (let i = 0; i < studentsList.length; i += batchSize) {
+          const batch = studentsList.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map((s: any) =>
+              createNotification({
+                recipient_id: s.id,
+                title: t('resultsAvailable').replace('{title}', quiz.title),
+                body: t('quizResultsAvailable'),
+                link_url: `/dashboard/quizzes/${quiz.id}/result`,
+              })
+            )
+          );
+
+          results.forEach((result) => {
+            if (result.status === 'fulfilled' && !result.value.error) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
           });
-          if (notifError) {
-            console.error('Error creating notification:', notifError);
-            errorCount++;
-          } else {
-            successCount++;
-          }
         }
+
         if (errorCount > 0) {
           toast.error(t('failedToSendNotifications').replace('{count}', errorCount.toString()));
         } else {
@@ -390,9 +442,9 @@ export default function QuizzesManagePage() {
 
   // Stats
   const stats = useMemo(() => {
-    const openCount = quizzes.filter((q) => !q.end_at || new Date(q.end_at) > new Date()).length;
-    const subjectCount = quizzes.filter((q) => q.subject_id && !q.lesson_id).length;
-    const lessonCount = quizzes.filter((q) => q.lesson_id).length;
+    const openCount = quizzes.filter(isQuizActive).length;
+    const subjectCount = quizzes.filter(isSubjectQuiz).length;
+    const lessonCount = quizzes.filter(isLessonQuiz).length;
     return {
       total: quizzes.length,
       open: openCount,
@@ -400,7 +452,7 @@ export default function QuizzesManagePage() {
       subject: subjectCount,
       lesson: lessonCount,
     };
-  }, [quizzes]);
+  }, [quizzes, isQuizActive, isSubjectQuiz, isLessonQuiz]);
 
   if (authLoading || loading) {
     return (
@@ -496,16 +548,16 @@ export default function QuizzesManagePage() {
         </div>
 
         {/* Filters */}
-        <Card className="card-interactive">
+        <Card className="card-hover glass-strong">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Search className="h-5 w-5 text-muted-foreground" />
               {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
-              <div className="relative">
+              <div className="relative md:col-span-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   placeholder={t('searchQuizzes')}
@@ -550,11 +602,21 @@ export default function QuizzesManagePage() {
         </Card>
 
         {/* Quizzes List */}
-        <Card className="card-interactive animate-fade-in-up delay-200">
+        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
           <CardHeader>
-            <CardTitle className="font-display text-gradient">
-              {t('quizzes')} ({filteredQuizzes.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-display">
+                {t('quizzes')} ({filteredQuizzes.length})
+              </CardTitle>
+              {filteredQuizzes.length > 0 && (
+                <Badge variant="outline" className="text-sm">
+                  {t('showingQuizzes')
+                    .replace('{start}', (startIndex + 1).toString())
+                    .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
+                    .replace('{total}', filteredQuizzes.length.toString())}
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {filteredQuizzes.length === 0 ? (
@@ -564,7 +626,7 @@ export default function QuizzesManagePage() {
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noQuizzesFound')}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                  {searchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
+                  {debouncedSearchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
                     ? t('tryAdjustingFilters')
                     : t('noQuizzesCreatedYet')}
                 </p>
@@ -572,135 +634,162 @@ export default function QuizzesManagePage() {
             ) : (
               <div className="space-y-4">
                 {paginatedQuizzes.map((quiz: any) => {
-                  const active = !quiz.end_at || new Date(quiz.end_at) > new Date();
-                  const isSubjectQuiz = quiz.subject_id && !quiz.lesson_id;
-                  const isLessonQuiz = quiz.lesson_id;
+                  const active = isQuizActive(quiz);
+                  const isSubQuiz = isSubjectQuiz(quiz);
+                  const isLessQuiz = isLessonQuiz(quiz);
 
                   return (
                     <Card
                       key={quiz.id}
-                      className="card-hover glass-strong border-slate-200 dark:border-slate-800"
+                      className={`card-hover glass-strong border-2 transition-all duration-300 ${
+                        isLessQuiz
+                          ? 'border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600'
+                          : isSubQuiz
+                          ? 'border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600'
+                          : active
+                          ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
                     >
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-3 flex-wrap">
-                              <h3 className="font-semibold text-lg text-foreground">{quiz.title}</h3>
-                              <Badge
-                                variant={active ? 'default' : 'secondary'}
-                                className={
-                                  active
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700'
-                                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                                }
-                              >
-                                {active ? t('open') : t('closed')}
-                              </Badge>
-                              {isSubjectQuiz && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                                  <BookOpen className="h-3 w-3 mr-1" />
-                                  {t('subjectLabel')}
-                                </Badge>
-                              )}
-                              {isLessonQuiz && (
-                                <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300 border-purple-200 dark:border-purple-800">
-                                  <GraduationCap className="h-3 w-3 mr-1" />
-                                  {t('lessonLabel')}
-                                </Badge>
-                              )}
-                            </div>
-
-                            {quiz.description && (
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">
-                                {quiz.description}
-                              </p>
-                            )}
-
-                            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-3">
-                              {quiz.subject && (
+                      <CardContent className="p-0">
+                        {/* Subject & Lesson Info Section */}
+                        {(quiz.subject_id || quiz.lesson_id || quiz.lesson?.subject_id) && (
+                          <div className={`px-6 pt-4 pb-3 border-b ${
+                            isLessQuiz
+                              ? 'bg-purple-50/30 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'
+                              : isSubQuiz
+                              ? 'bg-blue-50/30 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                              : 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700'
+                          }`}>
+                            <div className="flex items-center gap-4 flex-wrap">
+                              {(quiz.subject_id || quiz.lesson?.subject_id) && (
                                 <div className="flex items-center gap-2">
-                                  <BookOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                                  <span className="text-slate-600 dark:text-slate-400 truncate">
-                                    <strong className="text-slate-700 dark:text-slate-300">{t('subjectLabel')}:</strong> {quiz.subject.subject_name}
-                                  </span>
+                                  <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                                    <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{t('subjectLabel')}</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                      {(() => {
+                                        // Try to get subject name from multiple sources
+                                        // 1. Direct subject relation
+                                        if (quiz.subject?.subject_name) {
+                                          return quiz.subject.subject_name;
+                                        }
+                                        // 2. Subject from lesson
+                                        if (quiz.lesson?.subject?.subject_name) {
+                                          return quiz.lesson.subject.subject_name;
+                                        }
+                                        // 3. Find by subject_id directly
+                                        if (quiz.subject_id) {
+                                          const foundSubject = subjects.find(s => s.id === quiz.subject_id);
+                                          if (foundSubject?.subject_name) {
+                                            return foundSubject.subject_name;
+                                          }
+                                        }
+                                        // 4. Find by lesson's subject_id
+                                        if (quiz.lesson?.subject_id) {
+                                          const foundSubject = subjects.find(s => s.id === quiz.lesson.subject_id);
+                                          if (foundSubject?.subject_name) {
+                                            return foundSubject.subject_name;
+                                          }
+                                        }
+                                        return '—';
+                                      })()}
+                                    </p>
+                                  </div>
                                 </div>
                               )}
                               {quiz.lesson && (
                                 <div className="flex items-center gap-2">
-                                  <GraduationCap className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                                  <span className="text-slate-600 dark:text-slate-400 truncate">
-                                    <strong className="text-slate-700 dark:text-slate-300">{t('lessonLabel')}:</strong> {quiz.lesson.title}
-                                  </span>
+                                  <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30">
+                                    <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">{t('lessonLabel')}</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                      {quiz.lesson.title}
+                                    </p>
+                                  </div>
                                 </div>
                               )}
-                              <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  <strong className="text-slate-700 dark:text-slate-300">{t('attempts')}:</strong> {quiz.attempts_allowed || 1}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  <strong className="text-slate-700 dark:text-slate-300">{t('created')}:</strong> {formatDateTime(quiz.created_at)}
-                                </span>
+                              <div className="ml-auto">
+                                {isLessQuiz && (
+                                  <Badge className="bg-purple-500 text-white border-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700 font-medium">
+                                    <GraduationCap className="h-3 w-3 mr-1.5" />
+                                    {t('lessonQuizzes')}
+                                  </Badge>
+                                )}
+                                {isSubQuiz && (
+                                  <Badge className="bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-700 font-medium">
+                                    <BookOpen className="h-3 w-3 mr-1.5" />
+                                    {t('subjectQuizzes')}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
-
-                            {(quiz.start_at || quiz.end_at) && (
-                              <div className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                <Calendar className="h-4 w-4 flex-shrink-0" />
-                                <span>
-                                  {quiz.start_at ? formatDateTime(quiz.start_at) : '—'} →{' '}
-                                  {quiz.end_at ? formatDateTime(quiz.end_at) : '—'}
-                                </span>
-                              </div>
-                            )}
                           </div>
+                        )}
 
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}
-                              className="hidden sm:flex"
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              {t('edit')}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}
-                              className="hidden sm:flex"
-                            >
-                              <Award className="h-4 w-4 mr-1" />
-                              {t('gradeAction')}
-                            </Button>
-                            {active ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCloseQuizClick(quiz)}
-                                className="hidden sm:flex"
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                {t('close')}
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenQuizClick(quiz)}
-                                className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hidden sm:flex"
-                              >
-                              <Play className="h-4 w-4 mr-1" />
-                              {t('openAction')}
-                              </Button>
-                            )}
+                        {/* Header Section */}
+                        <div className={`relative p-6 pb-4 ${
+                          active
+                            ? 'bg-slate-50/50 dark:bg-slate-900/30'
+                            : 'bg-slate-50/30 dark:bg-slate-900/20'
+                        }`}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+                                  active
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                    : 'bg-slate-200 dark:bg-slate-700'
+                                }`}>
+                                  <FileText className={`h-5 w-5 ${
+                                    active
+                                      ? 'text-emerald-600 dark:text-emerald-400'
+                                      : 'text-slate-500 dark:text-slate-400'
+                                  }`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-xl text-foreground mb-2 leading-tight">
+                                    {quiz.title}
+                                  </h3>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge
+                                      variant={active ? 'default' : 'secondary'}
+                                      className={`font-medium ${
+                                        active
+                                          ? 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700'
+                                          : 'bg-slate-500 text-white border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+                                      }`}
+                                    >
+                                      {active ? (
+                                        <>
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          {t('open')}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <X className="h-3 w-3 mr-1" />
+                                          {t('closed')}
+                                        </>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {quiz.description && (
+                                <p className="text-sm text-slate-700 dark:text-slate-300 mb-0 line-clamp-2 leading-relaxed pl-14">
+                                  {quiz.description}
+                                </p>
+                              )}
+                            </div>
+
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -768,6 +857,103 @@ export default function QuizzesManagePage() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-6 pt-4">
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                              <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                                <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('attempts')}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  {quiz.attempts_allowed || 1}
+                                </p>
+                              </div>
+                            </div>
+                            {quiz.time_limit_minutes && (
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30">
+                                <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
+                                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-0.5">{t('timeLimit')}</p>
+                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {quiz.time_limit_minutes} {t('minutes')}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                              <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                                <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('created')}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  {formatDateTime(quiz.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {(quiz.start_at || quiz.end_at) && (
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30 mb-4">
+                              <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('timeRange')}</p>
+                                <p className="text-sm text-slate-900 dark:text-slate-100">
+                                  {quiz.start_at ? formatDateTime(quiz.start_at) : '—'} →{' '}
+                                  {quiz.end_at ? formatDateTime(quiz.end_at) : '—'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Actions Bar */}
+                          <div className="flex items-center gap-2 pt-4 border-t border-slate-200 dark:border-slate-800 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}
+                              className="flex-1 sm:flex-initial"
+                            >
+                              <Edit className="h-4 w-4 mr-1.5" />
+                              {t('edit')}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}
+                              className="flex-1 sm:flex-initial"
+                            >
+                              <Award className="h-4 w-4 mr-1.5" />
+                              {t('gradeAction')}
+                            </Button>
+                            {active ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCloseQuizClick(quiz)}
+                                className="flex-1 sm:flex-initial"
+                              >
+                                <X className="h-4 w-4 mr-1.5" />
+                                {t('close')}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenQuizClick(quiz)}
+                                className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 flex-1 sm:flex-initial"
+                              >
+                                <Play className="h-4 w-4 mr-1.5" />
+                                {t('openAction')}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>

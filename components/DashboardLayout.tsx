@@ -128,7 +128,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }));
   };
 
-  const NavItems = () => (
+  // Find the most specific matching item across all groups
+  const findMostSpecificMatch = (pathname: string): string | null => {
+    let exactMatch: string | null = null;
+    let bestPartialMatch: string | null = null;
+    let bestPartialMatchLength = 0;
+
+    filteredGroups.forEach(group => {
+      group.items.forEach(item => {
+        // Exact match is always best - return immediately if found
+        if (pathname === item.href) {
+          exactMatch = item.href;
+        }
+        // Check if pathname starts with item.href + '/'
+        else if (pathname.startsWith(item.href + '/') && item.href.length > bestPartialMatchLength) {
+          bestPartialMatch = item.href;
+          bestPartialMatchLength = item.href.length;
+        }
+      });
+    });
+
+    // Exact match always wins
+    return exactMatch || bestPartialMatch;
+  };
+
+  const NavItems = () => {
+    const mostSpecificMatch = findMostSpecificMatch(pathname);
+    
+    return (
     <>
       {filteredGroups.map((group) => {
         const isGroupOpen = openGroups[group.title] ?? true; // Default to open
@@ -160,7 +187,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <CollapsibleContent className="space-y-1 mt-1">
                   {group.items.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                    // Use the most specific match found across all groups
+                    const isActive = mostSpecificMatch === item.href;
 
                     return (
                       <Link
@@ -172,7 +200,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           'hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))]',
                           'hover:shadow-md hover:-translate-y-0.5',
                           'min-h-[44px]', // Touch-friendly
-                          isActive && 'bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white shadow-lg',
+                          isActive && 'bg-[hsl(var(--primary))] text-white shadow-lg border-2 border-[hsl(var(--primary))] dark:border-[hsl(var(--primary))]',
                           !isActive && 'text-[hsl(var(--foreground))]'
                         )}
                         aria-current={isActive ? 'page' : undefined}
@@ -189,9 +217,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           'font-medium transition-colors text-sm sm:text-base',
                           isActive ? 'text-white' : 'text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))]'
                         )}>{item.name}</span>
-                        {isActive && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl opacity-0 group-hover:opacity-10 transition-opacity" />
-                        )}
                       </Link>
                     );
                   })}
@@ -201,7 +226,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               // Single item groups don't need collapsible
               group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                // Use the most specific match found across all groups
+                const isActive = mostSpecificMatch === item.href;
 
                 return (
                   <Link
@@ -235,7 +261,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         );
       })}
     </>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
