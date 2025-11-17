@@ -30,7 +30,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback((key: TranslationKey): string => {
-    return translations[language][key] || translations.en[key] || key;
+    const langTranslations = translations[language] as Record<TranslationKey, string>;
+    return langTranslations[key] || translations.en[key] || key;
   }, [language]);
 
   useEffect(() => {

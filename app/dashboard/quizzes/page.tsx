@@ -675,7 +675,7 @@ export default function QuizzesManagePage() {
                               className="hidden sm:flex"
                             >
                               <Award className="h-4 w-4 mr-1" />
-                              {t('grade')}
+                              {t('gradeAction')}
                             </Button>
                             {active ? (
                               <Button
@@ -694,8 +694,8 @@ export default function QuizzesManagePage() {
                                 onClick={() => handleOpenQuizClick(quiz)}
                                 className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hidden sm:flex"
                               >
-                                <Play className="h-4 w-4 mr-1" />
-                                {t('open')}
+                              <Play className="h-4 w-4 mr-1" />
+                              {t('openAction')}
                               </Button>
                             )}
                             <DropdownMenu>
@@ -711,7 +711,7 @@ export default function QuizzesManagePage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}>
                                   <Award className="h-4 w-4 mr-2" />
-                                  {t('grade')}
+                                  {t('gradeAction')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {active ? (
@@ -722,7 +722,7 @@ export default function QuizzesManagePage() {
                                 ) : (
                                   <DropdownMenuItem onClick={() => handleOpenQuizClick(quiz)}>
                                     <Play className="h-4 w-4 mr-2" />
-                                    {t('open')}
+                                    {t('openAction')}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem 

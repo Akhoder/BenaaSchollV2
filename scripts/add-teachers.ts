@@ -9,7 +9,7 @@
  * node -r ts-node/register scripts/add-teachers.ts
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User } from '@supabase/supabase-js';
 
 // Load environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -54,6 +54,16 @@ const teachers = [
   }
 ];
 
+async function findUserByEmail(email: string): Promise<User | null> {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) {
+    console.error(`❌ Error listing users: ${error.message}`);
+    return null;
+  }
+  const target = email.toLowerCase();
+  return data.users.find((user) => user.email?.toLowerCase() === target) ?? null;
+}
+
 async function addTeachers() {
   console.log('🚀 Starting to add teachers...\n');
 
@@ -62,10 +72,10 @@ async function addTeachers() {
     console.log(`📝 Adding teacher ${i + 1}/3: ${teacher.full_name} (${teacher.email})`);
 
     try {
-      // Check if user already exists
-      const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(teacher.email);
+      // Check if user already exists via admin list
+      const existingUser = await findUserByEmail(teacher.email);
       
-      if (existingUser?.user) {
+      if (existingUser) {
         console.log(`⚠️  User already exists: ${teacher.email}`);
         
         // Update profile to ensure role is teacher
@@ -77,7 +87,7 @@ async function addTeachers() {
             phone: teacher.phone,
             language_preference: teacher.language_preference
           })
-          .eq('id', existingUser.user.id);
+          .eq('id', existingUser.id);
 
         if (updateError) {
           console.error(`❌ Error updating profile: ${updateError.message}`);

@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Users, Plus, MoreVertical, Edit, Search, Mail, Phone, Activity, Globe, TrendingUp, Trash2, School, GraduationCap, Filter } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Language } from '@/lib/translations';
 import {
   Pagination,
   PaginationContent,
@@ -49,6 +50,9 @@ interface TeacherProfile {
 }
 
 const ITEMS_PER_PAGE = 20;
+
+const isSupportedLanguage = (value?: string | null): value is Language =>
+  value === 'en' || value === 'ar' || value === 'fr';
 
 export default function TeachersPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -316,7 +320,7 @@ export default function TeachersPage() {
       full_name: t.full_name || '',
       phone: t.phone || '',
       avatar_url: t.avatar_url || '',
-      language_preference: t.language_preference || language,
+      language_preference: isSupportedLanguage(t.language_preference) ? t.language_preference : language,
     });
     setIsDialogOpen(true);
   }, [language]);

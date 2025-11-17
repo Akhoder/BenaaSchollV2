@@ -58,18 +58,17 @@ export default function GradesPage() {
       const allGrades: any[] = [];
       const subjectNames: Record<string, string> = {};
 
-      subjectsResults.forEach(({ classId, subjects }) => {
-        const cls = classes.find((c: any) => c.id === classId);
-        for (const subject of (subjects || [])) {
+      for (const { classId, subjects } of subjectsResults) {
+        for (const subject of subjects || []) {
           subjectNames[subject.id] = subject.subject_name;
-          
+
           // Get submissions for this subject's assignments
           const { data: assignments } = await api.supabase
             .from('assignments')
             .select('id, title, total_points')
             .eq('subject_id', subject.id)
             .in('status', ['published', 'closed']);
-          
+
           if (assignments && assignments.length > 0) {
             for (const assignment of assignments) {
               const { data: submission } = await api.fetchSubmissionForAssignment(assignment.id);

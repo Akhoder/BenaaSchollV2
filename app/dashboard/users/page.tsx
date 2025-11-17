@@ -96,6 +96,28 @@ export default function UsersPage() {
   const [newPw, setNewPw] = useState('');
   const [savingPw, setSavingPw] = useState(false);
 
+  // ✅ PERFORMANCE: Use optimized query function with caching and memoize
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await getUsersOptimized();
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Failed to fetch users');
+        setUsers([]);
+      } else {
+        setUsers(data || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error('An unexpected error occurred');
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and authLoading
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -135,28 +157,6 @@ export default function UsersPage() {
       supabase.removeChannel(channel);
     };
   }, [profile?.id, profile?.role]);
-
-  // ✅ PERFORMANCE: Use optimized query function with caching and memoize
-  const fetchUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await getUsersOptimized();
-
-      if (error) {
-        console.error('Error fetching users:', error);
-        toast.error('Failed to fetch users');
-        setUsers([]);
-      } else {
-        setUsers(data || []);
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      toast.error('An unexpected error occurred');
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleDelete = async (userId: string) => {
     try {

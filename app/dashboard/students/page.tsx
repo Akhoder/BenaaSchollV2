@@ -10,7 +10,7 @@ import { InputMask } from '@/components/InputMask';
 import { LoadingButton } from '@/components/ProgressIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getStudentsOptimized } from '@/lib/optimizedQueries';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { usePagination } from '@/hooks/usePagination';
@@ -19,6 +19,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { filterBySearch } from '@/lib/tableUtils';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Language } from '@/lib/translations';
 import {
   Select,
   SelectContent,
@@ -60,6 +61,9 @@ import {
   Award,
   Loader2,
   MoreVertical,
+  LayoutGrid,
+  List,
+  Globe,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -81,8 +85,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-// duplicate import removed
-
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 interface StudentProfile {
   id: string;
   email: string;
@@ -96,6 +99,9 @@ interface StudentProfile {
   enrolled_classes?: number;
   average_grade?: string;
 }
+
+const isSupportedLanguage = (value?: string | null): value is Language =>
+  value === 'en' || value === 'ar' || value === 'fr';
 
 export default function StudentsPage() {
   const { profile, loading: authLoading, isAuthorized } = useAuthCheck({
@@ -115,9 +121,42 @@ export default function StudentsPage() {
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
   const [createPhone, setCreatePhone] = useState('');
-  const [createLang, setCreateLang] = useState('ar');
+  const [createLang, setCreateLang] = useState<Language>(language);
   const [savingCreate, setSavingCreate] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editLanguage, setEditLanguage] = useState<Language>(language);
+  const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'notEnrolled'>('all');
+  const languageOptions = useMemo(
+    () => [
+      { value: 'en' as Language, label: t('languageEnglish') },
+      { value: 'ar' as Language, label: t('languageArabic') },
+      { value: 'fr' as Language, label: t('languageFrench') },
+    ],
+    [t]
+  );
+  const getLanguageLabel = useCallback(
+    (value?: string | null) => {
+      const normalized = isSupportedLanguage(value) ? value : 'en';
+      return languageOptions.find((option) => option.value === normalized)?.label || languageOptions[0]?.label || '';
+    },
+    [languageOptions]
+  );
+
+  useEffect(() => {
+    setCreateLang(language);
+  }, [language]);
+
+  useEffect(() => {
+    if (selectedStudent) {
+      setEditLanguage(
+        isSupportedLanguage(selectedStudent.language_preference)
+          ? selectedStudent.language_preference
+          : language
+      );
+    } else {
+      setEditLanguage(language);
+    }
+  }, [selectedStudent, language]);
 
   // Fetch students function with optimistic loading
   const fetchStudents = useCallback(async () => {
@@ -224,7 +263,7 @@ export default function StudentsPage() {
       if (error) {
         toast.error(getErrorMessage(error));
       } else {
-        toast.success('Student deleted successfully');
+      toast.success(t('studentDeleted'));
         // Optimistic update - realtime will sync
         setStudents(prev => prev.filter(s => s.id !== studentId));
       }
@@ -234,16 +273,24 @@ export default function StudentsPage() {
       setDeleteConfirmOpen(false);
       setSelectedStudent(null);
     }
-  }, []);
+  }, [t]);
 
   // ✅ PERFORMANCE: Filter students using debounced search query
   const filteredStudents = useMemo(() => {
-    return filterBySearch(students, debouncedSearchQuery, (student) => [
+    let result = filterBySearch(students, debouncedSearchQuery, (student) => [
       student.full_name,
       student.email,
       student.phone || '',
     ]);
-  }, [students, debouncedSearchQuery]);
+
+    if (enrollmentFilter === 'enrolled') {
+      result = result.filter((student) => (student.enrolled_classes || 0) > 0);
+    } else if (enrollmentFilter === 'notEnrolled') {
+      result = result.filter((student) => (student.enrolled_classes || 0) === 0);
+    }
+
+    return result;
+  }, [students, debouncedSearchQuery, enrollmentFilter]);
 
   // Use pagination hook
   const {
@@ -255,6 +302,9 @@ export default function StudentsPage() {
     endIndex,
     itemsPerPage,
   } = usePagination(filteredStudents, { itemsPerPage: 20 });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, enrollmentFilter, setCurrentPage]);
 
   const stats = {
     total: students.length,
@@ -262,6 +312,40 @@ export default function StudentsPage() {
     notEnrolled: students.filter((s) => (s.enrolled_classes || 0) === 0).length,
     averageGrade: 'B+',
   };
+
+  const statsConfig = useMemo(
+    () => [
+      {
+        title: t('totalStudents'),
+        value: stats.total,
+        subtitle: t('allStudentsLabel'),
+        icon: Users,
+        accent: 'from-success to-success-light',
+      },
+      {
+        title: t('enrolled'),
+        value: stats.enrolled,
+        subtitle: t('inClasses'),
+        icon: BookOpen,
+        accent: 'from-info to-info-light',
+      },
+      {
+        title: t('notEnrolled'),
+        value: stats.notEnrolled,
+        subtitle: t('needEnrollment'),
+        icon: User,
+        accent: 'from-amber-500 to-orange-500',
+      },
+      {
+        title: t('averageGrade'),
+        value: stats.averageGrade,
+        subtitle: t('overallAverage'),
+        icon: Award,
+        accent: 'from-fuchsia-500 to-rose-500',
+      },
+    ],
+    [stats, t]
+  );
 
   if (authLoading || loading) {
     return (
@@ -292,91 +376,66 @@ export default function StudentsPage() {
         {/* Enhanced Header */}
         <PageHeader 
           icon={GraduationCap}
-          title={`${t('students')} Management`}
-          description="Manage and track all students in the system"
+          title={t('studentsManagement')}
+          description={t('studentsManagementDescription')}
           gradient="from-emerald-600 via-teal-600 to-emerald-700"
         >
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-            className="border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(value) => value && setViewMode(value as 'list' | 'grid')}
+            className="rounded-full border border-emerald-100/60 bg-emerald-900/20 p-1 text-white backdrop-blur-lg shadow-inner shadow-emerald-900/30"
+            aria-label={t('viewMode')}
           >
-            <Users className="h-4 w-4 mr-2" />
-            Toggle View
-          </Button>
+            <ToggleGroupItem
+              value="list"
+              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-800 data-[state=on]:shadow-lg data-[state=on]:shadow-emerald-500/30 text-white/80 hover:text-white"
+            >
+              <List className="h-4 w-4" />
+              {t('listView')}
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="grid"
+              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-800 data-[state=on]:shadow-lg data-[state=on]:shadow-emerald-500/30 text-white/80 hover:text-white"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              {t('gridView')}
+            </ToggleGroupItem>
+          </ToggleGroup>
           {profile?.role === 'admin' && (
             <Button 
               onClick={() => setCreateOpen(true)}
               className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg transition-all duration-300 hover:scale-105"
             >
               <Plus className="h-4 w-4 mr-2 animate-pulse-glow" />
-              Add Student
+              {t('addStudent')}
             </Button>
           )}
         </PageHeader>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-          <Card className="card-interactive">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                Total Students
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-success to-success-light rounded-lg">
-                <Users className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-success">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">All students</p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-interactive">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                Enrolled
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-info to-info-light rounded-lg">
-                <BookOpen className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-info">{stats.enrolled}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">In classes</p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-interactive">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Not Enrolled
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
-                <User className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-amber-600">{stats.notEnrolled}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Need enrollment</p>
-            </CardContent>
-          </Card>
-
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Average Grade
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                <Award className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-purple-600">{stats.averageGrade}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Overall average</p>
-            </CardContent>
-          </Card>
+          {statsConfig.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.title} className="card-interactive">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-2 bg-gradient-to-br ${stat.accent} rounded-lg`}>
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold font-display text-slate-900 dark:text-white">
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 font-sans">{stat.subtitle}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Search and Filters */}
@@ -384,18 +443,38 @@ export default function StudentsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">Search & Filter</CardTitle>
+              <CardTitle className="font-display">{t('searchAndFilter')}</CardTitle>
             </div>
+            <CardDescription className="font-sans">
+              {t('searchStudentsHelper')}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Search by name, email, or phone..."
+                placeholder={t('searchStudentsPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-11 font-sans input-modern"
               />
+            </div>
+            <div className="grid gap-4 pt-4 md:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {t('enrollmentFilterLabel')}
+                </label>
+                <Select value={enrollmentFilter} onValueChange={(value) => setEnrollmentFilter(value as 'all' | 'enrolled' | 'notEnrolled')}>
+                  <SelectTrigger className="mt-1 font-sans">
+                    <SelectValue placeholder={t('enrollmentFilterLabel')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('filterAllEnrollment')}</SelectItem>
+                    <SelectItem value="enrolled">{t('filterEnrolled')}</SelectItem>
+                    <SelectItem value="notEnrolled">{t('filterNotEnrolled')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -404,20 +483,22 @@ export default function StudentsPage() {
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Add Student</DialogTitle>
-              <DialogDescription className="font-sans">Create a new student profile</DialogDescription>
+              <DialogTitle className="text-2xl font-display">{t('addStudent')}</DialogTitle>
+              <DialogDescription className="font-sans">{t('createStudentDescription')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium font-sans">Full Name</label>
+                <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                 <Input value={createName} onChange={(e) => setCreateName(e.target.value)} className="mt-1 font-sans" />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">Email</label>
+                <label className="text-sm font-medium font-sans">{t('email')}</label>
                 <Input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} className="mt-1 font-sans" />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">Phone (optional)</label>
+                <label className="text-sm font-medium font-sans">
+                  {t('phone')} ({t('optional')})
+                </label>
                 <InputMask
                   mask="phone"
                   value={createPhone}
@@ -427,25 +508,29 @@ export default function StudentsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">Language</label>
-                <Select value={createLang} onValueChange={setCreateLang}>
+                <label className="text-sm font-medium font-sans">{t('language')}</label>
+                <Select value={createLang} onValueChange={(value) => setCreateLang(value as Language)}>
                   <SelectTrigger className="mt-1 font-sans">
-                    <SelectValue />
+                    <SelectValue placeholder={t('language')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">العربية</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
+                    {languageOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans" disabled={savingCreate}>Cancel</Button>
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans" disabled={savingCreate}>
+                {t('cancel')}
+              </Button>
               <LoadingButton
                 loading={savingCreate}
                 onClick={async () => {
-                  if (!createName.trim() || !createEmail.trim()) { toast.error('Name and email are required'); return; }
+                  if (!createName.trim() || !createEmail.trim()) { toast.error(t('nameEmailRequired')); return; }
                   try {
                     setSavingCreate(true);
                     const { error } = await supabase.from('profiles').insert([
@@ -454,19 +539,22 @@ export default function StudentsPage() {
                         email: createEmail.trim(),
                         role: 'student',
                         phone: createPhone.trim() || null,
-                        language_preference: createLang as any,
+                        language_preference: createLang,
                       }
                     ]);
-                    if (error) { toast.error('Create failed'); return; }
-                    toast.success('Student created');
+                    if (error) { toast.error(t('failedToCreateStudent')); return; }
+                    toast.success(t('studentCreated'));
                     setCreateOpen(false);
-                    setCreateName(''); setCreateEmail(''); setCreatePhone(''); setCreateLang('ar');
+                    setCreateName('');
+                    setCreateEmail('');
+                    setCreatePhone('');
+                    setCreateLang(language);
                     await fetchStudents();
                   } finally { setSavingCreate(false); }
                 }}
                 className="btn-gradient font-sans"
               >
-                Create
+                {t('create')}
               </LoadingButton>
             </DialogFooter>
           </DialogContent>
@@ -475,26 +563,97 @@ export default function StudentsPage() {
         {/* Students List */}
         <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="font-display text-gradient">Students ({filteredStudents.length})</CardTitle>
+            <CardTitle className="font-display text-gradient">
+              {viewMode === 'grid' ? t('studentsGridTitle') : t('studentsTableTitle')} ({filteredStudents.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {filteredStudents.length === 0 ? (
               <EmptyState
                 icon={GraduationCap}
-                title={searchQuery ? 'No students found' : 'No students yet'}
-                description={searchQuery ? 'Try adjusting your search criteria' : 'No students have been added yet'}
+                title={searchQuery ? t('noStudentsFound') : t('noStudentsYet')}
+                description={searchQuery ? t('tryAdjustingSearchCriteria') : t('studentsEmptyDescription')}
               />
+            ) : viewMode === 'grid' ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {paginatedStudents.map((s) => (
+                  <Card key={s.id} className="border border-slate-200/70 dark:border-slate-800/70 shadow-sm hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex-row items-center gap-4">
+                      <Avatar className="h-14 w-14">
+                        <AvatarImage src={s.avatar_url} />
+                        <AvatarFallback>{(s.full_name || '?').charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg font-semibold">{s.full_name}</CardTitle>
+                          <Badge variant="secondary" className="text-xs">
+                            {s.enrolled_classes && s.enrolled_classes > 0 ? t('enrolled') : t('notEnrolled')}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-500">{s.email}</p>
+                        <p className="text-sm text-slate-500">{s.phone || '—'}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => {
+                            setSelectedStudent(s);
+                            setIsDialogOpen(true);
+                          }}
+                          aria-label={t('edit')}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => {
+                            setSelectedStudent(s);
+                            setDeleteConfirmOpen(true);
+                          }}
+                          aria-label={t('delete')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-slate-500">{t('enrolled')}</p>
+                          <p className="text-lg font-semibold">{s.enrolled_classes ?? 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">{t('avgGrade')}</p>
+                          <p className="text-lg font-semibold">{s.average_grade ?? '—'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>
+                          {t('createdAt')}: {new Date(s.created_at).toLocaleDateString(language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US')}
+                        </span>
+                        <span>
+                          {t('code')}: {s.id.slice(0, 8)}...
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Enrolled</TableHead>
-                      <TableHead>Avg Grade</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('fullName')}</TableHead>
+                      <TableHead>{t('email')}</TableHead>
+                      <TableHead>{t('phone')}</TableHead>
+                      <TableHead>{t('enrolled')}</TableHead>
+                      <TableHead>{t('avgGrade')}</TableHead>
+                      <TableHead className="text-right">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -524,10 +683,16 @@ export default function StudentsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => { setSelectedStudent(s); setIsDialogOpen(true); }}>Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedStudent(s); setDeleteConfirmOpen(true); }}>Delete</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setSelectedStudent(s); setIsDialogOpen(true); }}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                {t('edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedStudent(s); setDeleteConfirmOpen(true); }}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t('delete')}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -544,7 +709,8 @@ export default function StudentsPage() {
             <div className="border-t border-slate-200 dark:border-slate-800 p-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} students
+                  {t('showing')} {startIndex + 1} {t('to')} {Math.min(endIndex, filteredStudents.length)} {t('of')}{' '}
+                  {filteredStudents.length} {t('students')}
                 </div>
                 <Pagination>
                   <PaginationContent>
@@ -614,37 +780,39 @@ export default function StudentsPage() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Edit Student</DialogTitle>
+              <DialogTitle className="text-2xl font-display">{t('editStudent')}</DialogTitle>
               <DialogDescription className="font-sans">
-                Update student information and details
+                {t('editStudentDescription')}
               </DialogDescription>
             </DialogHeader>
             {selectedStudent && (
               <div className="space-y-4 py-4">
                 <form id="edit-student-form" className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium font-sans">Full Name</label>
+                    <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                     <Input name="full_name" defaultValue={selectedStudent.full_name} className="mt-1 font-sans" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium font-sans">Email</label>
+                    <label className="text-sm font-medium font-sans">{t('email')}</label>
                     <Input name="email" defaultValue={selectedStudent.email} className="mt-1 font-sans" />
                   </div>
                 <div className="grid grid-cols-2 gap-4 col-span-2">
                   <div>
-                    <label className="text-sm font-medium font-sans">Phone</label>
+                    <label className="text-sm font-medium font-sans">{t('phone')}</label>
                     <Input name="phone" defaultValue={selectedStudent.phone} className="mt-1 font-sans" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium font-sans">Language</label>
-                    <Select defaultValue={selectedStudent.language_preference}>
+                    <label className="text-sm font-medium font-sans">{t('language')}</label>
+                    <Select value={editLanguage} onValueChange={(value) => setEditLanguage(value as Language)}>
                       <SelectTrigger className="mt-1 font-sans">
-                        <SelectValue />
+                        <SelectValue placeholder={t('language')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="ar">العربية</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
+                        {languageOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -654,7 +822,7 @@ export default function StudentsPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                Cancel
+                {t('cancel')}
               </Button>
               <LoadingButton
                 loading={savingEdit}
@@ -673,25 +841,26 @@ export default function StudentsPage() {
                       p_full_name: full_name || null,
                       p_email: email || null,
                       p_phone: phone || null,
-                      p_language: null,
+                      p_language: editLanguage,
                       p_role: null,
                     });
-                    if (error) { toast.error('Save failed'); return; }
+                    if (error) { toast.error(t('saveFailed')); return; }
                     // Optimistic UI update
                     setStudents(prev => prev.map(s => s.id === selectedStudent.id ? {
                       ...s,
                       full_name,
                       email,
                       phone: phone || undefined,
+                      language_preference: editLanguage,
                     } : s));
-                    toast.success('Student updated');
+                    toast.success(t('studentUpdated'));
                     setIsDialogOpen(false);
                     setSelectedStudent(null);
                     // Avoid immediate refetch to prevent stale overwrite when Realtime is off
                   } finally { setSavingEdit(false); }
                 }}
               >
-                Save Changes
+                {t('saveChanges')}
               </LoadingButton>
             </DialogFooter>
           </DialogContent>
@@ -701,31 +870,31 @@ export default function StudentsPage() {
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Confirm Deletion</DialogTitle>
+              <DialogTitle className="text-2xl font-display">{t('confirmDeletion')}</DialogTitle>
               <DialogDescription className="font-sans">
-                Are you sure you want to delete this student? This action cannot be undone.
+                {t('deleteStudentConfirm')}
               </DialogDescription>
             </DialogHeader>
             {selectedStudent && (
               <div className="py-4 space-y-2">
                 <p className="font-sans">
-                  <strong>Name:</strong> {selectedStudent.full_name}
+                  <strong>{t('fullName')}:</strong> {selectedStudent.full_name}
                 </p>
                 <p className="font-sans">
-                  <strong>Email:</strong> {selectedStudent.email}
+                  <strong>{t('email')}:</strong> {selectedStudent.email}
                 </p>
               </div>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="font-sans">
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => selectedStudent && handleDelete(selectedStudent.id)}
                 className="font-sans"
               >
-                Delete
+                {t('delete')}
               </Button>
             </DialogFooter>
           </DialogContent>
