@@ -51,7 +51,7 @@ interface FormData {
 
 export default function SchedulePage() {
   const { profile, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -74,6 +74,7 @@ export default function SchedulePage() {
     zoom_url: ''
   });
   const [loadingData, setLoadingData] = useState(false);
+  const dateLocale = useMemo(() => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'), [language]);
 
   // Fetch classes and teachers
   useEffect(() => {
@@ -335,7 +336,7 @@ export default function SchedulePage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="px-3 py-1.5 text-sm font-sans bg-slate-100 dark:bg-slate-800 rounded-md">
-                  {formatRange(weekStart)}
+                  {formatRange(weekStart, dateLocale)}
                 </div>
                 <Button 
                   variant="outline" 
@@ -381,6 +382,7 @@ export default function SchedulePage() {
                 onDelete={onDelete} 
                 canEdit={profile?.role !== 'student'}
                 t={t}
+                dateLocale={dateLocale}
               />
             )}
           </CardContent>
@@ -575,9 +577,10 @@ function addDays(d: Date, days: number): Date {
   return x;
 }
 
-function formatRange(start: Date): string {
+function formatRange(start: Date, locale: string): string {
   const end = addDays(start, 6);
-  return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  return `${start.toLocaleDateString(locale, options)} - ${end.toLocaleDateString(locale, options)}`;
 }
 
 function getWeekDays(start: Date): Date[] {
@@ -738,9 +741,10 @@ interface WeekTableProps {
   onDelete: (id: string) => void;
   canEdit: boolean;
   t: (key: TranslationKey) => string;
+  dateLocale: string;
 }
 
-function WeekTable({ days, events, onEdit, onDelete, canEdit, t }: WeekTableProps) {
+function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: WeekTableProps) {
   const dayEvents = useCallback((d: Date) => {
     return events.filter((e) => new Date(e.start_at).toDateString() === d.toDateString());
   }, [events]);
@@ -784,7 +788,7 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t }: WeekTableProp
               ${isTodayDate ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}
             `}>
               <span className="text-xs uppercase tracking-wider">
-                {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                {d.toLocaleDateString(dateLocale, { weekday: 'short' })}
               </span>
               <span className={`
                 px-2 py-0.5 rounded-md text-xs font-bold
@@ -797,7 +801,7 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t }: WeekTableProp
               </span>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-sans">
-              {d.toLocaleDateString(undefined, { month: 'short' })}
+              {d.toLocaleDateString(dateLocale, { month: 'short' })}
             </div>
             <div className="space-y-2 min-h-[100px]">
               {eventsForDay.length === 0 && (
@@ -821,7 +825,7 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t }: WeekTableProp
                   <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mt-1.5">
                     <Clock className="h-3 w-3 flex-shrink-0" />
                     <span className="truncate">
-                      {new Date(e.start_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} - {new Date(e.end_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} - {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   {(e.class_name || e.room || e.teacher_name) && (

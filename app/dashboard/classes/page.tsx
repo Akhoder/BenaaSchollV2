@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
@@ -104,6 +105,10 @@ export default function ClassesPage() {
   const { profile, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
   const router = useRouter();
+  const dateLocale = useMemo(
+    () => (language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US'),
+    [language]
+  );
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,7 +188,7 @@ export default function ClassesPage() {
       
       if (createError && createError.code === 'PGRST116') {
         // الجدول غير موجود، عرض رسالة للمستخدم
-        toast.error(language === 'ar' ? 'جدول الفصول غير موجود. يرجى تشغيل الترحيل أولاً.' : 'Classes table not found. Please run the migration first.');
+        toast.error(t('classesTableNotFound' as TranslationKey));
         setClasses([]);
         return;
       }
@@ -196,7 +201,7 @@ export default function ClassesPage() {
 
       if (error) {
         console.error('Error fetching classes:', error);
-        toast.error(language === 'ar' ? 'فشل تحميل الفصول' : 'Failed to fetch classes');
+        toast.error(t('failedToFetchClasses'));
         return;
       }
 
@@ -222,15 +227,15 @@ export default function ClassesPage() {
       // Map counts to classes
       const classesWithCounts = (data || []).map(cls => ({
         ...cls,
-        teacher_name: cls.teacher?.full_name || (language === 'ar' ? 'غير معين' : 'Unassigned'),
-        supervisor_name: cls.supervisor?.full_name || (language === 'ar' ? 'غير معين' : 'Unassigned'),
+        teacher_name: cls.teacher?.full_name || t('unassigned'),
+        supervisor_name: cls.supervisor?.full_name || t('unassigned'),
         student_count: enrollmentCounts[cls.id] || 0,
       }));
       
       setClasses(classesWithCounts);
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error(language === 'ar' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
+      toast.error(t('unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -283,9 +288,9 @@ export default function ClassesPage() {
         
         if (error) {
           console.error('Error updating class:', error);
-          toast.error(language === 'ar' ? 'فشل تحديث الفصل' : 'Failed to update class');
+          toast.error(t('failedToUpdateClass'));
         } else {
-          toast.success(language === 'ar' ? 'تم تحديث الفصل بنجاح' : 'Class updated successfully');
+          toast.success(t('classUpdatedSuccessfully'));
           setIsDialogOpen(false);
           setSelectedClass(null);
           resetForm();
@@ -310,9 +315,9 @@ export default function ClassesPage() {
 
         if (error) {
           console.error('Error creating class:', error);
-          toast.error(language === 'ar' ? 'فشل إنشاء الفصل' : 'Failed to create class');
+          toast.error(t('failedToCreateClass'));
         } else {
-          toast.success(language === 'ar' ? 'تم إنشاء الفصل بنجاح' : 'Class created successfully');
+          toast.success(t('classCreatedSuccessfully'));
           setIsDialogOpen(false);
           resetForm();
           fetchClasses();
@@ -320,7 +325,7 @@ export default function ClassesPage() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error(language === 'ar' ? 'حدث خطأ' : 'An error occurred');
+      toast.error(t('error'));
     } finally {
       setIsCreating(false);
     }
@@ -334,13 +339,13 @@ export default function ClassesPage() {
         .eq('id', classId);
 
       if (error) {
-        toast.error(language === 'ar' ? 'فشل حذف الفصل' : 'Failed to delete class');
+        toast.error(t('failedToDeleteClass'));
       } else {
-        toast.success(language === 'ar' ? 'تم حذف الفصل بنجاح' : 'Class deleted successfully');
+        toast.success(t('classDeletedSuccessfully'));
         fetchClasses();
       }
     } catch (err) {
-      toast.error(language === 'ar' ? 'حدث خطأ' : 'An error occurred');
+      toast.error(t('error'));
     }
     setDeleteConfirmOpen(false);
     setSelectedClass(null);
@@ -417,7 +422,7 @@ export default function ClassesPage() {
               {t('classManagement')}
             </h1>
             <p className="text-blue-100 mt-1 text-lg font-medium font-sans">
-              {language === 'ar' ? 'إدارة فصول المدرسة والتسجيلات' : 'Manage school classes and enrollments'}
+              {t('manageClassesAndEnrollments' as TranslationKey)}
             </p>
           </div>
 
@@ -437,17 +442,17 @@ export default function ClassesPage() {
 
               <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 text-left mb-6">
                 <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                  {language === 'ar' ? 'خطوات الإصلاح:' : 'Steps to Fix:'}
+                  {t('stepsToFix' as TranslationKey)}
                 </h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                  <li>{language === 'ar' ? 'افتح لوحة تحكم Supabase' : 'Open your Supabase Dashboard'}</li>
-                  <li>{language === 'ar' ? 'انتقل إلى محرر SQL' : 'Go to SQL Editor'}</li>
+                  <li>{t('openSupabaseDashboard' as TranslationKey)}</li>
+                  <li>{t('goToSqlEditor' as TranslationKey)}</li>
                   <li>
-                    {language === 'ar' ? 'انسخ كود الترحيل من:' : 'Copy the migration code from:'} 
+                    {t('copyMigrationCodeFrom' as TranslationKey)} 
                     <code className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">supabase/migrations/20251028030000_disable_rls_temporary.sql</code>
                   </li>
-                  <li>{language === 'ar' ? 'الصق وقم بتشغيل كود SQL' : 'Paste and run the SQL code'}</li>
-                  <li>{language === 'ar' ? 'حدّث هذه الصفحة' : 'Refresh this page'}</li>
+                  <li>{t('pasteAndRunSql' as TranslationKey)}</li>
+                  <li>{t('refreshThisPage' as TranslationKey)}</li>
                 </ol>
               </div>
 
@@ -456,7 +461,7 @@ export default function ClassesPage() {
                   onClick={() => window.location.reload()} 
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  {language === 'ar' ? 'تحديث الصفحة' : 'Refresh Page'}
+                  {t('refreshPage' as TranslationKey)}
                 </Button>
                 <Button 
                   variant="outline"
@@ -489,11 +494,11 @@ export default function ClassesPage() {
                     ].join('\n');
                     if (typeof window !== 'undefined' && navigator.clipboard) {
                       navigator.clipboard.writeText(migrationCode).catch(() => {
-                        toast.error(language === 'ar' ? 'فشل النسخ إلى الحافظة' : 'Failed to copy to clipboard');
+                        toast.error(t('failedToCopyToClipboard'));
                       });
-                      toast.success(language === 'ar' ? 'تم نسخ كود الترحيل إلى الحافظة!' : 'Migration code copied to clipboard!');
+                      toast.success(t('migrationCodeCopied'));
                     } else {
-                      toast.error(language === 'ar' ? 'الحافظة غير متاحة' : 'Clipboard not available');
+                      toast.error(t('clipboardNotAvailable'));
                     }
                   }}
                 >
@@ -575,7 +580,7 @@ export default function ClassesPage() {
           <Card className="card-interactive">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                {language === 'ar' ? 'مكتملة' : 'Completed'}
+                {t('completed')}
               </CardTitle>
               <div className="p-2 bg-amber-500 rounded-lg">
                 <BookOpen className="h-4 w-4 text-white" />
@@ -675,7 +680,7 @@ export default function ClassesPage() {
                             <div>
                               <div className="font-semibold font-sans">{cls.class_name}</div>
                               <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                                {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
+                                {`${t('level' as TranslationKey)} ${cls.level}`}
                               </div>
                             </div>
                           </div>
@@ -687,7 +692,7 @@ export default function ClassesPage() {
                         </TableCell>
                         <TableCell>
                           <Badge className="bg-blue-600 text-white font-semibold">
-                            {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
+                            {`${t('level' as TranslationKey)} ${cls.level}`}
                           </Badge>
                         </TableCell>
                         
@@ -701,11 +706,11 @@ export default function ClassesPage() {
                           <div className="text-sm font-sans">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 text-slate-400" />
-                              {new Date(cls.start_date).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                              {new Date(cls.start_date).toLocaleDateString(dateLocale)}
                             </div>
                             {cls.end_date && (
                               <div className="text-xs text-slate-500">
-                                {language === 'ar' ? 'إلى' : 'to'} {new Date(cls.end_date).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                                {t('to')} {new Date(cls.end_date).toLocaleDateString(dateLocale)}
                               </div>
                             )}
                           </div>
@@ -732,7 +737,7 @@ export default function ClassesPage() {
                                 .update({ published: val })
                                 .eq('id', cls.id);
                               if (error) {
-                                toast.error(language === 'ar' ? 'فشل التحديث' : 'Failed to update');
+                                toast.error(t('failedToUpdate'));
                               } else {
                                 setClasses(prev => prev.map(c => c.id === cls.id ? { ...c, published: val } : c));
                               }
@@ -947,7 +952,7 @@ export default function ClassesPage() {
                   <SelectContent>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((level) => (
                       <SelectItem key={level} value={level.toString()}>
-                        {language === 'ar' ? `المستوى ${level}` : `Level ${level}`}
+                        {`${t('level' as TranslationKey)} ${level}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -969,7 +974,7 @@ export default function ClassesPage() {
                   <div className="mt-2">
                     <OptimizedImage
                       src={formData.image_url}
-                      alt={language === 'ar' ? 'معاينة الفصل' : 'Class preview'}
+                      alt={t('classPreview' as TranslationKey)}
                       width={80}
                       height={80}
                       className="w-20 h-20 rounded-lg border"

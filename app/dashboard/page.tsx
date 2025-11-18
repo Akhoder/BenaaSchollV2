@@ -19,9 +19,10 @@
  * - ✅ تحميل بيانات محسن باستخدام cache
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatCard } from '@/components/StatCard';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
@@ -57,6 +58,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+
+type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
 // Force dynamic rendering - this page requires authentication context
 // Client component - no static generation needed
@@ -113,6 +116,778 @@ interface ClassProgress {
   [classId: string]: number;
 }
 
+interface TeacherDashboardSectionProps {
+  t: TranslateFn;
+  stats: {
+    classCount: number;
+    studentCount: number;
+    scheduleCount: number;
+  };
+  todayEvents: ScheduleEvent[];
+  teacherClasses: any[];
+  loadingSchedule: boolean;
+  loadingTeacherData: boolean;
+  dateLocale: string;
+}
+
+interface StudentDashboardSectionProps {
+  t: TranslateFn;
+  stats: {
+    enrolledClasses: number;
+    averageGrade: number | null;
+    attendanceRate: number | null;
+    todayEventsCount: number;
+  };
+  todayEvents: ScheduleEvent[];
+  upcomingEvents: ScheduleEvent[];
+  upcomingAssignments: Assignment[];
+  notifications: any[];
+  publishedClasses: any[];
+  myClassEnrollments: Record<string, boolean>;
+  subjectsByClass: Record<string, any[]>;
+  classProgress: ClassProgress;
+  enrollingIds: Record<string, boolean>;
+  loadingSchedule: boolean;
+  loadingStudentData: boolean;
+  loadingAssignments: boolean;
+  dateLocale: string;
+  onEnrollInClass: (classId: string) => Promise<void>;
+}
+
+const TeacherDashboardSection = memo(function TeacherDashboardSection({
+  t,
+  stats,
+  todayEvents,
+  teacherClasses,
+  loadingSchedule,
+  loadingTeacherData,
+  dateLocale,
+}: TeacherDashboardSectionProps) {
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          title={t('myClasses')}
+          value={stats.classCount}
+          icon={School}
+          description={t('classesYouTeach')}
+          gradient="from-blue-500 to-cyan-500"
+        />
+        <StatCard
+          title={t('myStudents')}
+          value={stats.studentCount}
+          icon={Users}
+          description={t('totalStudents')}
+          gradient="from-purple-500 to-pink-500"
+        />
+        <StatCard
+          title={t('schedule')}
+          value={stats.scheduleCount}
+          icon={Calendar}
+          description={t('classesToday')}
+          gradient="from-amber-500 to-orange-500"
+        />
+      </div>
+
+      {loadingSchedule ? (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="font-display text-gradient">{t('todaysSchedule')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScheduleSkeleton />
+          </CardContent>
+        </Card>
+      ) : todayEvents.length > 0 && (
+        <Card className="card-elegant">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                {t('todaysSchedule')}
+              </CardTitle>
+              <Link href="/dashboard/schedule" prefetch={true}>
+                <Button variant="ghost" size="sm" className="text-sm">
+                  {t('viewFull')}
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {todayEvents.map((e) => (
+                <div
+                  key={e.id}
+                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} -
+                          {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
+                      <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(e.start_at).toLocaleDateString(dateLocale)}
+                        </span>
+                        {e.room && <span>📍 {e.room}</span>}
+                        {e.mode === 'online' && (
+                          <span className="flex items-center gap-1">
+                            <Video className="h-3 w-3" />
+                            {t('online')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {e.zoom_url && (
+                      <Button
+                        size="sm"
+                        className="btn-gradient transition-all duration-300 hover:scale-105"
+                        onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
+                      >
+                        <Video className="h-3 w-3 mr-1" />
+                        {t('joinMeeting')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {loadingTeacherData ? (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <School className="h-5 w-5 text-blue-600" />
+              {t('myClasses')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TeacherClassesSkeleton />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <School className="h-5 w-5 text-blue-600" />
+              {t('myClasses')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {teacherClasses.length === 0 ? (
+              <div className="text-center py-12 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                  {t('noClasses')}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                  {t('noClassesHaveBeenAssignedToYouYet')}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {teacherClasses.map((cls: any) => (
+                  <Link key={cls.id} href={`/dashboard/classes/${cls.id}`} prefetch={true}>
+                    <Card className="card-hover overflow-hidden cursor-pointer">
+                      <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
+                        <div className="flex items-start gap-4">
+                          <div className="relative flex-shrink-0">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300" />
+                            {cls.image_url ? (
+                              <img
+                                src={cls.image_url}
+                                alt={cls.class_name}
+                                className="w-16 h-16 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
+                                <School className="h-8 w-8 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 pt-1">
+                            <CardTitle className="text-lg font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {cls.class_name}
+                            </CardTitle>
+                            <div className="space-y-1">
+                              {cls.level && (
+                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-xs">
+                                  {`${t('level')} ${cls.level}`}
+                                </Badge>
+                              )}
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 text-xs">
+                                  {cls.student_count} {t('students')}
+                                </Badge>
+                                {cls.subjects && cls.subjects.length > 0 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {cls.subjects.length} {cls.subjects.length === 1 ? t('subject') : t('subjects')}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions for Teachers */}
+      <Card className="card-elegant">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <Zap className="h-5 w-5 text-amber-600" />
+            {t('quickActions')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link href="/dashboard/attendance" prefetch={true}>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20">
+                <Users className="h-4 w-4 mr-2 text-blue-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('recordAttendance')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('attendance')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/subjects" prefetch={true}>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-purple-50 dark:hover:bg-purple-950/20">
+                <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('subjects')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageSubjects')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/quizzes" prefetch={true}>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+                <FileText className="h-4 w-4 mr-2 text-emerald-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('quizzes')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageQuizzes')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/schedule" prefetch={true}>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                <Calendar className="h-4 w-4 mr-2 text-amber-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('schedule')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageSchedule')}</div>
+                </div>
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+});
+
+const ScheduleSkeleton = () => (
+  <div className="space-y-3">
+    {[0, 1, 2].map((idx) => (
+      <div
+        key={`schedule-skel-${idx}`}
+        className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+      >
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-3 w-48 mb-1" />
+        <Skeleton className="h-3 w-40" />
+      </div>
+    ))}
+  </div>
+);
+
+const TeacherClassesSkeleton = () => (
+  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    {[0, 1, 2].map((idx) => (
+      <Card key={`class-skel-${idx}`} className="card-hover overflow-hidden">
+        <CardHeader>
+          <div className="flex items-start gap-4">
+            <Skeleton className="w-16 h-16 rounded-2xl" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    ))}
+  </div>
+);
+
+const StudentDashboardSection = memo(function StudentDashboardSection({
+  t,
+  stats,
+  todayEvents,
+  upcomingEvents,
+  upcomingAssignments,
+  notifications,
+  publishedClasses,
+  myClassEnrollments,
+  subjectsByClass,
+  classProgress,
+  enrollingIds,
+  loadingSchedule,
+  loadingStudentData,
+  loadingAssignments,
+  dateLocale,
+  onEnrollInClass,
+}: StudentDashboardSectionProps) {
+  return (
+    <>
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title={t('myClasses')}
+          value={stats.enrolledClasses}
+          icon={School}
+          description={t('enrolledClasses')}
+          gradient="from-blue-500 to-cyan-500"
+        />
+        <StatCard
+          title={t('averageGrade')}
+          value={stats.averageGrade !== null ? `${stats.averageGrade}%` : '—'}
+          icon={Award}
+          description={t('currentAverage')}
+          gradient="from-emerald-500 to-teal-500"
+        />
+        <StatCard
+          title={t('attendance')}
+          value={stats.attendanceRate !== null ? `${stats.attendanceRate}%` : '—'}
+          icon={CheckCircle2}
+          description={t('attendanceRate')}
+          gradient="from-amber-500 to-orange-500"
+        />
+        <StatCard
+          title={t('todayEvents')}
+          value={stats.todayEventsCount}
+          icon={Clock}
+          description={t('eventsToday')}
+          gradient="from-purple-500 to-pink-500"
+        />
+      </div>
+
+      {/* Today's Schedule and Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Today's Schedule Card */}
+        <Card className="card-hover glass-strong md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 font-display">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                {t('todaysSchedule')}
+              </CardTitle>
+              <Link href="/dashboard/schedule" prefetch={true}>
+                <Button variant="ghost" size="sm" className="text-sm">
+                  {t('viewFull')}
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingSchedule ? (
+              <ScheduleSkeleton />
+            ) : todayEvents.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <Calendar className="h-16 w-16 mx-auto opacity-50 animate-float" />
+                </div>
+                <p className="text-sm font-semibold font-display mb-1">
+                  {t('noEventsScheduledForToday')}
+                </p>
+                <p className="text-xs font-sans opacity-75">
+                  {t('youHaveAFreeDayToday')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayEvents.map((e) => (
+                  <div
+                    key={e.id}
+                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} -
+                            {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
+                        <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+                          {e.room && <span>📍 {e.room}</span>}
+                          {e.mode === 'online' && (
+                            <span className="flex items-center gap-1">
+                              <Video className="h-3 w-3" />
+                              {t('online')}
+                            </span>
+                          )}
+                          {e.mode === 'hybrid' && (
+                            <span className="flex items-center gap-1">
+                              <Video className="h-3 w-3" />
+                              {t('hybrid')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {e.zoom_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
+                        >
+                          <Video className="h-3 w-3 mr-1" />
+                          {t('joinMeeting')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions Card */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Zap className="h-5 w-5 text-amber-600" />
+              {t('quickActions')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link href="/dashboard/my-assignments" prefetch={true} className="w-full">
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                <FileText className="h-4 w-4 mr-2 text-amber-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('myAssignments')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewAssignments')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/my-classes" prefetch={true} className="w-full">
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20">
+                <School className="h-4 w-4 mr-2 text-blue-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('myClasses')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('enrolledClasses')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/grades" prefetch={true} className="w-full">
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+                <Award className="h-4 w-4 mr-2 text-emerald-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('grades')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewGrades')}</div>
+                </div>
+              </Button>
+            </Link>
+            <Link href="/dashboard/my-certificates" prefetch={true} className="w-full">
+              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-purple-50 dark:hover:bg-purple-950/20">
+                <GraduationCap className="h-4 w-4 mr-2 text-purple-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-sm">{t('myCertificates')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewCertificates')}</div>
+                </div>
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Upcoming Assignments */}
+      {loadingAssignments ? (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-primary">
+              <FileText className="h-5 w-5 text-amber-600" />
+              {t('upcomingAssignments')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[0, 1, 2].map((idx) => (
+                <Skeleton key={idx} className="h-20 w-full rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : upcomingAssignments.length > 0 && (
+        <Card className="card-elegant">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 font-display text-primary">
+                <FileText className="h-5 w-5 text-amber-600" />
+                {t('upcomingAssignments')}
+              </CardTitle>
+              <Link href="/dashboard/my-assignments" prefetch={true}>
+                <Button variant="ghost" size="sm" className="text-sm">
+                  {t('viewAll')}
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {upcomingAssignments.map((assignment) => {
+                const dueDate = new Date(assignment.due_date);
+                const daysLeft = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const isOverdue = daysLeft < 0;
+                const isUrgent = daysLeft <= 2 && !isOverdue;
+
+                return (
+                  <div
+                    key={assignment.id}
+                    className={`p-4 rounded-lg border ${
+                      isOverdue
+                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20'
+                        : isUrgent
+                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
+                    } hover:shadow-sm transition-shadow`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                            {assignment.title}
+                          </h4>
+                          {assignment.submission && assignment.submission.status === 'submitted' && (
+                            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                              {t('submitted')}
+                            </Badge>
+                          )}
+                          {isOverdue && !assignment.submission && (
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              {t('overdue')}
+                            </Badge>
+                          )}
+                          {isUrgent && !assignment.submission && (
+                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {t('urgent')}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mt-2">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {dueDate.toLocaleDateString(dateLocale)}
+                          </span>
+                          <span>{assignment.subject_name}</span>
+                          <span>• {assignment.class_name}</span>
+                        </div>
+                      </div>
+                      <Link href={`/dashboard/assignments/${assignment.id}/submit`} prefetch={true}>
+                        <Button size="sm" className="btn-gradient transition-all duration-300 hover:scale-105">
+                          {assignment.submission ? t('view') : t('submit')}
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Enrolled Classes */}
+      {loadingStudentData ? (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <School className="h-5 w-5 text-blue-600" />
+              {t('myEnrolledClasses')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TeacherClassesSkeleton />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <School className="h-5 w-5 text-blue-600" />
+              {t('myEnrolledClasses')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(myClassEnrollments).length === 0 ? (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <School className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                  {t('noEnrolledClasses')}
+                </h3>
+                <p className="text-sm font-sans mb-6">
+                  {t('browseAvailableClassesDescription')}
+                </p>
+                <Link href="/dashboard/classes" prefetch={true}>
+                  <Button className="btn-gradient animate-pulse-glow">
+                    {t('browseAvailableClasses')}
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {publishedClasses
+                  .filter((c: any) => myClassEnrollments[c.id])
+                  .map((c: any) => (
+                    <Link key={c.id} href={`/dashboard/my-classes/${c.id}`} prefetch={true}>
+                      <Card className="card-hover overflow-hidden cursor-pointer">
+                        <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
+                          <div className="flex items-start gap-4">
+                            <div className="relative flex-shrink-0">
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300" />
+                              {c.image_url ? (
+                                <img
+                                  src={c.image_url}
+                                  alt={c.class_name || c.name}
+                                  className="w-20 h-20 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
+                                  <GraduationCap className="h-10 w-10 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 pt-1">
+                              <CardTitle className="text-xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {c.class_name || c.name}
+                              </CardTitle>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                                    {`${t('level')} ${c.level ?? '—'}`}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
+                                    {(subjectsByClass[c.id] || []).length} {(subjectsByClass[c.id] || []).length === 1 ? t('subject') : t('subjects')}
+                                  </Badge>
+                                  {classProgress[c.id] !== undefined && (
+                                    <div className="flex items-center gap-2">
+                                      <Progress className="h-2 w-16" value={classProgress[c.id]} />
+                                      <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                        {classProgress[c.id]}%
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Available Classes */}
+      {!loadingStudentData && (
+        <Card className="card-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+              <BookOpen className="h-5 w-5 text-emerald-600" />
+              {t('availableClassesForEnrollment')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 0 ? (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                  {t('noAvailableClasses')}
+                </h3>
+                <p className="text-sm font-sans">
+                  {t('noClassesAvailableForEnrollment')}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {publishedClasses
+                  .filter((c: any) => !myClassEnrollments[c.id])
+                  .map((c: any) => (
+                    <Card key={c.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-display">{c.class_name || c.name}</CardTitle>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {`${t('level')} ${c.level ?? '—'}`}
+                            </p>
+                          </div>
+                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {c.goals && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">
+                            {c.goals}
+                          </p>
+                        )}
+                        <Button
+                          className="btn-gradient w-full transition-all duration-300 hover:scale-105"
+                          disabled={!!enrollingIds[c.id]}
+                          onClick={() => onEnrollInClass(c.id)}
+                        >
+                          {enrollingIds[c.id] ? t('enrolling') : t('enrollInClass')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+});
+
 // ============================================
 // MAIN COMPONENT - المكون الرئيسي
 // ============================================
@@ -121,6 +896,11 @@ export default function DashboardPage() {
   const { user, profile, loading } = useAuth();
   const { t, language } = useLanguage();
   const router = useRouter();
+  const dateLocale = useMemo(() => (language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US'), [language]);
+  const relativeTimeFormatter = useMemo(
+    () => new Intl.RelativeTimeFormat(dateLocale, { numeric: 'auto' }),
+    [dateLocale]
+  );
   
   // ============================================
   // STATE MANAGEMENT - إدارة الحالة
@@ -176,7 +956,7 @@ export default function DashboardPage() {
     if (profile) {
       fetchStats().catch(err => {
         console.error('Error fetching stats:', err);
-        toast.error(language === 'ar' ? 'فشل تحميل الإحصائيات' : 'Failed to load statistics');
+        toast.error(t('failedToLoadStatistics' as TranslationKey));
       });
       
       // ✅ PERFORMANCE: Load student data in parallel instead of sequential
@@ -191,16 +971,6 @@ export default function DashboardPage() {
         });
       }
       
-      // ✅ PERFORMANCE: Load teacher data in parallel
-      if (profile.role === 'teacher') {
-        Promise.all([
-          loadTeacherData(),
-          loadTeacherSchedule()
-        ]).catch(err => {
-          console.error('Error loading teacher data:', err);
-        });
-      }
-
       // ✅ Note: Recent Activity is now handled by EnhancedActivityTimeline component
     }
   }, [profile?.id, profile?.role]);
@@ -219,14 +989,14 @@ export default function DashboardPage() {
         items.push({ 
           type: 'danger', 
           title: a.title, 
-          when: due.toLocaleDateString(), 
+          when: due.toLocaleDateString(dateLocale), 
           label: 'overdue' 
         });
       } else if (!a.submission && daysLeft <= 2) {
         items.push({ 
           type: 'warning', 
           title: a.title, 
-          when: due.toLocaleDateString(), 
+          when: due.toLocaleDateString(dateLocale), 
           label: 'dueSoon' 
         });
       }
@@ -281,7 +1051,7 @@ export default function DashboardPage() {
         
         if (error) {
           console.error('Error fetching stats:', error);
-          toast.error(language === 'ar' ? 'فشل تحميل الإحصائيات' : 'Failed to load statistics');
+          toast.error(t('failedToLoadStatistics' as TranslationKey));
           return;
         }
         
@@ -337,7 +1107,7 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Error fetching stats:', err);
-      toast.error(language === 'ar' ? 'حدث خطأ أثناء تحميل الإحصائيات' : 'An error occurred while loading statistics');
+      toast.error(t('anErrorOccurredWhileLoadingStatistics' as TranslationKey));
     } finally {
       setLoadingStats(false);
     }
@@ -385,7 +1155,7 @@ export default function DashboardPage() {
         
         if (subjectsError) {
           console.error('Error fetching subjects:', subjectsError);
-          toast.error(language === 'ar' ? 'فشل تحميل المواد' : 'Failed to load subjects');
+          toast.error(t('failedToLoadSubjects' as TranslationKey));
         } else if (subjects) {
           subjects.forEach((s: any) => {
             subs[s.class_id] = subs[s.class_id] || [];
@@ -397,7 +1167,7 @@ export default function DashboardPage() {
       setSubjectsByClass(subs);
     } catch (e) {
       console.error('Error loading student data:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل بيانات الطالب' : 'Failed to load student data');
+      toast.error(t('failedToLoadStudentData' as TranslationKey));
     } finally {
       setLoadingStudentData(false);
     }
@@ -425,7 +1195,7 @@ export default function DashboardPage() {
       
       if (error) {
         console.error('Error fetching schedule:', error);
-        toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+        toast.error(t('failedToLoadSchedule' as TranslationKey));
         return;
       }
       
@@ -445,7 +1215,7 @@ export default function DashboardPage() {
       setUpcomingEvents(upcoming || []);
     } catch (e) {
       console.error('Error loading schedule:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+      toast.error(t('failedToLoadSchedule' as TranslationKey));
     } finally {
       setLoadingSchedule(false);
     }
@@ -562,23 +1332,40 @@ export default function DashboardPage() {
       }
     } catch (e) {
       console.error('Error loading student stats:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل إحصائيات الطالب' : 'Failed to load student statistics');
+      toast.error(t('failedToLoadStudentStatistics' as TranslationKey));
     } finally {
       setLoadingStats(false);
     }
   };
 
+  // Handle class enrollment
+  const handleEnrollInClass = useCallback(async (classId: string) => {
+    try {
+      setEnrollingIds(prev => ({ ...prev, [classId]: true }));
+      const { error } = await enrollInClass(classId);
+      if (error) {
+        console.error(error);
+        toast.error(t('enrollmentFailed'));
+        return;
+      }
+      setMyClassEnrollments(prev => ({ ...prev, [classId]: true }));
+      toast.success(t('enrolledSuccessfully'));
+      await loadStudentData();
+    } finally {
+      setEnrollingIds(prev => ({ ...prev, [classId]: false }));
+    }
+  }, [t, loadStudentData]);
+
   /**
    * جلب بيانات المعلم (الفصول والطلاب)
    * يجلب الفصول التي يدرسها المعلم من class_subjects
    */
-  const loadTeacherData = async () => {
+  const loadTeacherData = useCallback(async () => {
     if (!profile || profile.role !== 'teacher') return;
     
     try {
       setLoadingTeacherData(true);
       
-      // جلب الفصول التي يدرسها المعلم من class_subjects
       const { data: classSubjects, error: csError } = await supabase
         .from('class_subjects')
         .select('class_id, subject_name')
@@ -586,7 +1373,7 @@ export default function DashboardPage() {
       
       if (csError) {
         console.error('Error fetching class subjects:', csError);
-        toast.error(language === 'ar' ? 'فشل تحميل المواد' : 'Failed to load subjects');
+        toast.error(t('failedToLoadSubjects'));
         return;
       }
       
@@ -599,54 +1386,57 @@ export default function DashboardPage() {
         return;
       }
       
-      // جلب تفاصيل الفصول
-      const { data: classesData, error: classesError } = await supabase
+      const [classesRes, enrollmentsRes] = await Promise.all([
+        supabase
         .from('classes')
         .select('id, class_name, level, goals, image_url')
-        .in('id', classIds);
+          .in('id', classIds),
+        supabase
+          .from('student_enrollments')
+          .select('class_id')
+          .in('class_id', classIds)
+          .eq('status', 'active'),
+      ]);
       
-      if (classesError) {
-        console.error('Error fetching classes:', classesError);
-        toast.error(language === 'ar' ? 'فشل تحميل الفصول' : 'Failed to load classes');
+      if (classesRes.error) {
+        console.error('Error fetching classes:', classesRes.error);
+        toast.error(t('failedToLoadClasses'));
         return;
       }
       
-      // إضافة عدد الطلاب لكل فصل
-      const { data: enrollments } = await supabase
-        .from('student_enrollments')
-        .select('class_id')
-        .in('class_id', classIds)
-        .eq('status', 'active');
+      if (enrollmentsRes.error) {
+        console.error('Error fetching enrollments:', enrollmentsRes.error);
+        toast.error(t('failedToLoadTeacherData'));
+        return;
+      }
       
-      const enrollmentCounts = (enrollments || []).reduce((acc: Record<string, number>, row: any) => {
+      const enrollmentCounts = (enrollmentsRes.data || []).reduce((acc: Record<string, number>, row: any) => {
         acc[row.class_id] = (acc[row.class_id] || 0) + 1;
         return acc;
       }, {});
       
-      const classesWithCounts = (classesData || []).map((cls: any) => ({
+      const classesWithCounts = (classesRes.data || []).map((cls: any) => ({
         ...cls,
         student_count: enrollmentCounts[cls.id] || 0,
-        subjects: (classSubjects || []).filter((cs: any) => cs.class_id === cls.id).map((cs: any) => cs.subject_name)
+        subjects: (classSubjects || []).filter((cs: any) => cs.class_id === cls.id).map((cs: any) => cs.subject_name),
       }));
       
       setTeacherClasses(classesWithCounts);
-      
-      // حساب إجمالي الطلاب
       const totalStudents = Object.values(enrollmentCounts).reduce((sum: number, count: any) => sum + count, 0);
       setTeacherStudentCount(totalStudents);
     } catch (e) {
       console.error('Error loading teacher data:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل بيانات المعلم' : 'Failed to load teacher data');
+      toast.error(t('failedToLoadTeacherData'));
     } finally {
       setLoadingTeacherData(false);
     }
-  };
+  }, [profile?.id, profile?.role, t]);
 
   /**
    * جلب جدول المعلم (الأحداث اليومية والقادمة)
    * يستخدم RPC function للحصول على الأحداث
    */
-  const loadTeacherSchedule = async () => {
+  const loadTeacherSchedule = useCallback(async () => {
     if (!profile || profile.role !== 'teacher') return;
     
     try {
@@ -664,31 +1454,70 @@ export default function DashboardPage() {
       
       if (error) {
         console.error('Error fetching schedule:', error);
-        toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+        toast.error(t('failedToLoadSchedule'));
         return;
       }
       
-      // تصفية الأحداث اليومية
-      const todayItems = (data || []).filter((e: any) => {
+      const events = data || [];
+      setTodayEvents(
+        events.filter((e: any) => {
         const d = new Date(e.start_at);
         return d.toDateString() === today.toDateString();
-      });
-      
-      // تصفية الأحداث القادمة
-      const upcoming = (data || []).filter((e: any) => {
+        })
+      );
+      setUpcomingEvents(
+        events
+          .filter((e: any) => {
         const d = new Date(e.start_at);
         return d > today && d <= endOfWeek;
-      }).slice(0, 5);
-      
-      setTodayEvents(todayItems || []);
-      setUpcomingEvents(upcoming || []);
+          })
+          .slice(0, 5)
+      );
     } catch (e) {
       console.error('Error loading schedule:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل الجدول' : 'Failed to load schedule');
+      toast.error(t('failedToLoadSchedule'));
     } finally {
       setLoadingSchedule(false);
     }
-  };
+  }, [profile?.id, profile?.role, t]);
+
+  // Load teacher data when profile is available
+  useEffect(() => {
+    if (profile?.role === 'teacher') {
+      Promise.all([
+        loadTeacherData(),
+        loadTeacherSchedule()
+      ]).catch(err => {
+        console.error('Error loading teacher data:', err);
+      });
+    }
+  }, [profile?.id, profile?.role, loadTeacherData, loadTeacherSchedule]);
+
+  useEffect(() => {
+    if (!profile || profile.role !== 'teacher') return;
+
+    const channel = supabase
+      .channel(`teacher-dashboard-${profile.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_subjects', filter: `teacher_id=eq.${profile.id}` },
+        () => {
+          loadTeacherData().catch(err => console.error('Realtime teacher data error:', err));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'schedule_events', filter: `teacher_id=eq.${profile.id}` },
+        () => {
+          loadTeacherSchedule().catch(err => console.error('Realtime teacher schedule error:', err));
+        }
+      );
+
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, profile?.role, loadTeacherData, loadTeacherSchedule]);
 
   /**
    * جلب الواجبات القادمة للطالب
@@ -819,7 +1648,7 @@ export default function DashboardPage() {
       setClassProgress(progress);
     } catch (e) {
       console.error('Error loading upcoming assignments:', e);
-      toast.error(language === 'ar' ? 'فشل تحميل الواجبات القادمة' : 'Failed to load upcoming assignments');
+      toast.error(t('failedToLoadUpcomingAssignments' as TranslationKey));
     } finally {
       setLoadingAssignments(false);
     }
@@ -832,29 +1661,23 @@ export default function DashboardPage() {
   /**
    * تنسيق الوقت النسبي (منذ متى)
    */
-  const formatTimeAgo = (date: Date): string => {
-      const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+  const formatTimeAgo = useCallback((date: Date): string => {
+    const now = Date.now();
+    const diffMs = now - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
     if (diffMins < 1) {
-      return language === 'ar' ? 'الآن' : 'Just now';
-    } else if (diffMins < 60) {
-      return language === 'ar' 
-        ? `منذ ${diffMins} ${diffMins === 1 ? 'دقيقة' : 'دقائق'}` 
-        : `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
-    } else if (diffHours < 24) {
-      return language === 'ar' 
-        ? `منذ ${diffHours} ${diffHours === 1 ? 'ساعة' : 'ساعات'}` 
-        : `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
-    } else {
-      return language === 'ar' 
-        ? `منذ ${diffDays} ${diffDays === 1 ? 'يوم' : 'أيام'}` 
-        : `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+      return t('justNow' as TranslationKey);
     }
-  };
+    if (diffMins < 60) {
+      return relativeTimeFormatter.format(-diffMins, 'minute');
+    }
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) {
+      return relativeTimeFormatter.format(-diffHours, 'hour');
+    }
+    const diffDays = Math.floor(diffHours / 24);
+    return relativeTimeFormatter.format(-diffDays, 'day');
+  }, [relativeTimeFormatter, t]);
 
   // ============================================
   // RENDER - عرض المكون
@@ -943,7 +1766,7 @@ export default function DashboardPage() {
                           <div className="absolute inset-0 w-2 h-2 bg-success rounded-full animate-ping opacity-50"></div>
                         </div>
                         <span className="text-xs font-medium text-foreground">
-                          {language === 'ar' ? 'متصل' : 'Online'}
+                          {t('online')}
                         </span>
                       </div>
                     </div>
@@ -953,7 +1776,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-medium text-foreground">
-                          {new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
+                          {new Date().toLocaleDateString(dateLocale, { 
                             month: 'short', 
                             day: 'numeric' 
                           })}
@@ -985,7 +1808,7 @@ export default function DashboardPage() {
                         <Users className="w-3.5 h-3.5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">{language === 'ar' ? 'المستخدمين' : 'Users'}</p>
+                        <p className="text-xs text-muted-foreground">{t('users')}</p>
                         <p className="text-sm font-bold text-foreground">{stats.totalStudents + stats.totalTeachers}</p>
                       </div>
                     </div>
@@ -994,7 +1817,7 @@ export default function DashboardPage() {
                         <School className="w-3.5 h-3.5 text-accent" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">{language === 'ar' ? 'الفصول' : 'Classes'}</p>
+                        <p className="text-xs text-muted-foreground">{t('classes')}</p>
                         <p className="text-sm font-bold text-foreground">{stats.totalClasses}</p>
                       </div>
                     </div>
@@ -1002,7 +1825,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
                     <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>
                     <span className="text-xs font-semibold text-success">
-                      {language === 'ar' ? 'جميع الأنظمة تعمل' : 'All systems operational'}
+                      {t('allSystemsOperational' as TranslationKey)}
                     </span>
                   </div>
                 </div>
@@ -1032,10 +1855,10 @@ export default function DashboardPage() {
                     <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl">
                       <TrendingUp className="w-5 h-5 text-primary" />
                     </div>
-                    <span>{language === 'ar' ? 'الإحصائيات الرئيسية' : 'Main Statistics'}</span>
+                    <span>{t('mainStatistics' as TranslationKey)}</span>
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1 ml-12">
-                    {language === 'ar' ? 'نظرة شاملة على النظام' : 'Overview of your system'}
+                    {t('overviewOfSystem' as TranslationKey)}
                   </p>
                 </div>
               </div>
@@ -1051,7 +1874,7 @@ export default function DashboardPage() {
                       title={t('totalStudents')}
                       value={stats.totalStudents}
                       icon={Users}
-                      description={language === 'ar' ? 'إجمالي الطلاب' : 'Total students'}
+                      description={t('totalStudents')}
                       color="primary"
                       trend={stats.trends?.students}
                     />
@@ -1059,7 +1882,7 @@ export default function DashboardPage() {
                       title={t('totalTeachers')}
                       value={stats.totalTeachers}
                       icon={Users}
-                      description={language === 'ar' ? 'أعضاء هيئة التدريس' : 'Faculty members'}
+                      description={t('facultyMembers' as TranslationKey)}
                       color="accent"
                       trend={stats.trends?.teachers}
                     />
@@ -1067,7 +1890,7 @@ export default function DashboardPage() {
                       title={t('totalClasses')}
                       value={stats.totalClasses}
                       icon={School}
-                      description={language === 'ar' ? 'فصول نشطة' : 'Active classes'}
+                      description={t('activeClasses')}
                       color="secondary"
                       trend={stats.trends?.classes}
                     />
@@ -1075,7 +1898,7 @@ export default function DashboardPage() {
                       title={t('subjects')}
                       value={stats.totalSubjects}
                       icon={BookOpen}
-                      description={language === 'ar' ? 'المواد الأكاديمية' : 'Academic subjects'}
+                      description={t('academicSubjects' as TranslationKey)}
                       color="success"
                       trend={stats.trends?.subjects}
                     />
@@ -1086,30 +1909,30 @@ export default function DashboardPage() {
                     <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                       {stats.attendanceRate !== undefined && (
                         <StatCard
-                          title={language === 'ar' ? 'معدل الحضور' : 'Attendance Rate'}
+                          title={t('attendanceRate' as TranslationKey)}
                           value={`${stats.attendanceRate}%`}
                           icon={CheckCircle2}
-                          description={language === 'ar' ? 'آخر 30 يوم' : 'Last 30 days'}
+                          description={t('last30Days' as TranslationKey)}
                           color="success"
                           gradient="from-emerald-500 to-teal-500"
                         />
                       )}
                       {stats.completionRate !== undefined && (
                         <StatCard
-                          title={language === 'ar' ? 'معدل الإتمام' : 'Completion Rate'}
+                          title={t('completionRate' as TranslationKey)}
                           value={`${stats.completionRate}%`}
                           icon={Award}
-                          description={language === 'ar' ? 'الدروس المكتملة' : 'Lessons completed'}
+                          description={t('lessonsCompleted' as TranslationKey)}
                           color="info"
                           gradient="from-blue-500 to-cyan-500"
                         />
                       )}
                       {stats.activeUsers !== undefined && (
                         <StatCard
-                          title={language === 'ar' ? 'المستخدمون النشطون' : 'Active Users'}
+                          title={t('activeUsers' as TranslationKey)}
                           value={stats.activeUsers}
                           icon={Zap}
-                          description={language === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'}
+                          description={t('last7Days' as TranslationKey)}
                           color="warning"
                           gradient="from-amber-500 to-orange-500"
                         />
@@ -1143,10 +1966,10 @@ export default function DashboardPage() {
                     <div className="p-2 bg-gradient-to-br from-accent/20 to-secondary/20 rounded-xl">
                       <Clock className="w-5 h-5 text-accent" />
                     </div>
-                    <span>{language === 'ar' ? 'النشاط والإجراءات' : 'Activity & Actions'}</span>
+                    <span>{t('activityAndActions' as TranslationKey)}</span>
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1 ml-12">
-                    {language === 'ar' ? 'آخر الأنشطة والإجراءات السريعة' : 'Recent activity and quick actions'}
+                    {t('recentActivityAndQuickActions' as TranslationKey)}
                   </p>
                 </div>
               </div>
@@ -1174,13 +1997,13 @@ export default function DashboardPage() {
                       href="/dashboard/students"
                       prefetch={true}
                       className="w-full btn-primary flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
-                      aria-label={language === 'ar' ? 'إضافة طالب جديد' : 'Add new student'}
+                      aria-label={t('addStudent')}
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                           <Users className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold">{language === 'ar' ? 'إضافة طالب جديد' : 'Add New Student'}</span>
+                        <span className="font-semibold">{t('addStudent')}</span>
                       </div>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Link>
@@ -1188,13 +2011,13 @@ export default function DashboardPage() {
                       href="/dashboard/classes"
                       prefetch={true}
                       className="w-full btn-glass flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg"
-                      aria-label={language === 'ar' ? 'إنشاء فصل جديد' : 'Create new class'}
+                      aria-label={t('createClass')}
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                           <School className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold">{language === 'ar' ? 'إنشاء فصل جديد' : 'Create New Class'}</span>
+                        <span className="font-semibold">{t('createClass')}</span>
                       </div>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Link>
@@ -1202,13 +2025,13 @@ export default function DashboardPage() {
                       href="/dashboard/teachers"
                       prefetch={true}
                       className="w-full btn-outline flex items-center justify-between group p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:border-primary/50"
-                      aria-label={language === 'ar' ? 'إضافة معلم جديد' : 'Add new teacher'}
+                      aria-label={t('addTeacher' as TranslationKey)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <GraduationCap className="w-5 h-5 text-primary" />
                         </div>
-                        <span className="font-semibold">{language === 'ar' ? 'إضافة معلم جديد' : 'Add New Teacher'}</span>
+                        <span className="font-semibold">{t('addTeacher' as TranslationKey)}</span>
                       </div>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Link>
@@ -1240,10 +2063,10 @@ export default function DashboardPage() {
                     <div className="p-2 bg-gradient-to-br from-info/20 to-success/20 rounded-xl">
                       <BarChart3 className="w-5 h-5 text-info" />
                     </div>
-                    <span>{language === 'ar' ? 'التحليلات والرؤى' : 'Analytics & Insights'}</span>
+                    <span>{t('analyticsAndInsights' as TranslationKey)}</span>
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1 ml-12">
-                    {language === 'ar' ? 'الرسوم البيانية والرؤى السريعة' : 'Charts and quick insights'}
+                    {t('chartsAndQuickInsights' as TranslationKey)}
                   </p>
                 </div>
               </div>
@@ -1266,35 +2089,62 @@ export default function DashboardPage() {
 
         {/* Student Dashboard - لوحة الطالب */}
         {profile?.role === 'student' && (
+          <StudentDashboardSection
+            t={t}
+            stats={{
+              enrolledClasses: stats.totalClasses,
+              averageGrade,
+              attendanceRate,
+              todayEventsCount: todayEvents.length,
+            }}
+            todayEvents={todayEvents}
+            upcomingEvents={upcomingEvents}
+            upcomingAssignments={upcomingAssignments}
+            notifications={notifications}
+            publishedClasses={publishedClasses}
+            myClassEnrollments={myClassEnrollments}
+            subjectsByClass={subjectsByClass}
+            classProgress={classProgress}
+            enrollingIds={enrollingIds}
+            loadingSchedule={loadingSchedule}
+            loadingStudentData={loadingStudentData}
+            loadingAssignments={loadingAssignments}
+            dateLocale={dateLocale}
+            onEnrollInClass={handleEnrollInClass}
+          />
+        )}
+
+        {/* Old Student Dashboard - keeping for reference */}
+        {false && profile?.role === 'student' && (
           <>
             {/* Statistics Cards - بطاقات الإحصائيات */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatCard
-                title={language === 'ar' ? 'فصولي' : 'My Classes'}
+                title={t('myClasses')}
                 value={stats.totalClasses}
                 icon={School}
-                description={language === 'ar' ? 'فصول مسجلة' : 'Enrolled classes'}
+                description={t('enrolledClasses' as TranslationKey)}
                 gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
-                title={language === 'ar' ? 'المعدل' : 'Average Grade'}
+                title={t('averageGrade')}
                 value={averageGrade !== null ? `${averageGrade}%` : '—'}
                 icon={Award}
-                description={language === 'ar' ? 'الدرجة المتوسطة' : 'Current average'}
+                description={t('currentAverage' as TranslationKey)}
                 gradient="from-emerald-500 to-teal-500"
               />
               <StatCard
-                title={language === 'ar' ? 'الحضور' : 'Attendance'}
+                title={t('attendance')}
                 value={attendanceRate !== null ? `${attendanceRate}%` : '—'}
                 icon={CheckCircle2}
-                description={language === 'ar' ? 'نسبة الحضور' : 'Attendance rate'}
+                description={t('attendanceRate' as TranslationKey)}
                 gradient="from-amber-500 to-orange-500"
               />
               <StatCard
-                title={language === 'ar' ? 'اليوم' : 'Today'}
+                title={t('todayEvents' as TranslationKey)}
                 value={todayEvents.length}
                 icon={Clock}
-                description={language === 'ar' ? 'أحداث اليوم' : 'Events today'}
+                description={t('eventsToday' as TranslationKey)}
                 gradient="from-purple-500 to-pink-500"
               />
             </div>
@@ -1307,7 +2157,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 font-display">
                       <Calendar className="h-5 w-5 text-blue-600" />
-                      {language === 'ar' ? 'جدول اليوم' : "Today's Schedule"}
+                      {t('todaysSchedule' as TranslationKey)}
                     </CardTitle>
                     <Link 
                       href="/dashboard/schedule"
@@ -1318,7 +2168,7 @@ export default function DashboardPage() {
                         size="sm" 
                         className="text-sm"
                       >
-                        {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
+                        {t('viewFull' as TranslationKey)} 
                         <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </Link>
@@ -1340,10 +2190,10 @@ export default function DashboardPage() {
                         <Calendar className="h-16 w-16 mx-auto opacity-50 animate-float" />
                       </div>
                       <p className="text-sm font-semibold font-display mb-1">
-                        {language === 'ar' ? 'لا توجد أحداث اليوم' : 'No events scheduled for today'}
+                        {t('noEventsScheduledForToday' as TranslationKey)}
                       </p>
                       <p className="text-xs font-sans opacity-75">
-                        {language === 'ar' ? 'لا توجد أحداث مجدولة لهذا اليوم' : 'You have a free day today!'}
+                        {t('youHaveAFreeDayToday' as TranslationKey)}
                       </p>
                     </div>
                   ) : (
@@ -1368,13 +2218,13 @@ export default function DashboardPage() {
                                 {e.mode === 'online' && (
                                   <span className="flex items-center gap-1">
                                     <Video className="h-3 w-3" /> 
-                                    {language === 'ar' ? 'أونلاين' : 'Online'}
+                                    {t('online')}
                                   </span>
                                 )}
                                 {e.mode === 'hybrid' && (
                                   <span className="flex items-center gap-1">
                                     <Video className="h-3 w-3" /> 
-                                    {language === 'ar' ? 'هجين' : 'Hybrid'}
+                                    {t('hybrid')}
                                   </span>
                                 )}
                               </div>
@@ -1386,7 +2236,7 @@ export default function DashboardPage() {
                                 onClick={() => window.open(e.zoom_url, '_blank')}
                               >
                                 <Video className="h-3 w-3 mr-1" /> 
-                                {language === 'ar' ? 'انضم' : 'Join'}
+                                {t('joinMeeting')}
                               </Button>
                             )}
                           </div>
@@ -1402,7 +2252,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display">
                     <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                    {language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}
+                    {t('quickActions')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -1412,7 +2262,7 @@ export default function DashboardPage() {
                       className="w-full justify-start" 
                     >
                       <Calendar className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'الجدول الدراسي' : 'Schedule'}
+                      {t('schedule')}
                     </Button>
                   </Link>
                   <Link href="/dashboard/my-classes" prefetch={true} className="w-full">
@@ -1421,7 +2271,7 @@ export default function DashboardPage() {
                       className="w-full justify-start" 
                     >
                       <School className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'الفصول' : 'Classes'}
+                      {t('classes')}
                     </Button>
                   </Link>
                   <Link href="/dashboard/grades" prefetch={true} className="w-full">
@@ -1430,7 +2280,7 @@ export default function DashboardPage() {
                       className="w-full justify-start" 
                     >
                       <Award className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'الدرجات' : 'Grades'}
+                      {t('grades')}
                     </Button>
                   </Link>
                 </CardContent>
@@ -1441,7 +2291,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display">
                     <Bell className="h-5 w-5 text-amber-600" />
-                    {language === 'ar' ? 'الإشعارات' : 'Notifications'}
+                    {t('notifications' as TranslationKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1453,7 +2303,7 @@ export default function DashboardPage() {
                     </div>
                   ) : notifications.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      {language === 'ar' ? 'لا توجد إشعارات' : 'No notifications'}
+                      {t('noNotifications' as TranslationKey)}
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -1466,17 +2316,17 @@ export default function DashboardPage() {
                             <p className="text-sm font-medium">
                               {n.label === 'overdue' && (
                                 <span className="text-red-600 dark:text-red-400">
-                                  {language === 'ar' ? 'متأخر: ' : 'Overdue: '}
+                                  {t('overdueLabel' as TranslationKey)}:{' '}
                                 </span>
                               )}
                               {n.label === 'dueSoon' && (
                                 <span className="text-amber-600 dark:text-amber-400">
-                                  {language === 'ar' ? 'قريب: ' : 'Due soon: '}
+                                  {t('dueSoonLabel' as TranslationKey)}:{' '}
                                 </span>
                               )}
                               {n.label === 'startingSoon' && (
                                 <span className="text-blue-600 dark:text-blue-400">
-                                  {language === 'ar' ? 'قريباً يبدأ: ' : 'Starting soon: '}
+                                  {t('startingSoonLabel' as TranslationKey)}:{' '}
                                 </span>
                               )}
                               {n.title}
@@ -1507,7 +2357,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 font-display text-primary">
                       <FileText className="h-5 w-5 text-amber-600" />
-                      {language === 'ar' ? 'الواجبات القادمة' : 'Upcoming Assignments'}
+                      {t('upcomingAssignments' as TranslationKey)}
                     </CardTitle>
                     <Link href="/dashboard/my-assignments" prefetch={true}>
                       <Button 
@@ -1515,7 +2365,7 @@ export default function DashboardPage() {
                         size="sm" 
                         className="text-sm"
                       >
-                        {language === 'ar' ? 'عرض الكل' : 'View All'} 
+                        {t('viewAll')} 
                         <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
                     </Link>
@@ -1548,26 +2398,26 @@ export default function DashboardPage() {
                                 </h4>
                                 {assignment.submission && assignment.submission.status === 'submitted' && (
                                   <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                    {language === 'ar' ? 'تم الإرسال' : 'Submitted'}
+                                    {t('submitted' as TranslationKey)}
                                   </Badge>
                                 )}
                                 {isOverdue && !assignment.submission && (
                                   <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
                                     <AlertCircle className="h-3 w-3 mr-1" /> 
-                                    {language === 'ar' ? 'متأخر' : 'Overdue'}
+                                    {t('overdue' as TranslationKey)}
                                   </Badge>
                                 )}
                                 {isUrgent && !assignment.submission && (
                                   <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                                     <Clock className="h-3 w-3 mr-1" /> 
-                                    {language === 'ar' ? 'عاجل' : 'Urgent'}
+                                    {t('urgent' as TranslationKey)}
                                   </Badge>
                                 )}
                               </div>
                               <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mt-2">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  {dueDate.toLocaleDateString()}
+                                  {dueDate.toLocaleDateString(dateLocale)}
                                 </span>
                                 <span>{assignment.subject_name}</span>
                                 <span>• {assignment.class_name}</span>
@@ -1579,8 +2429,8 @@ export default function DashboardPage() {
                                 className="btn-gradient transition-all duration-300 hover:scale-105"
                               >
                                 {assignment.submission 
-                                  ? (language === 'ar' ? 'عرض' : 'View') 
-                                  : (language === 'ar' ? 'إرسال' : 'Submit')
+                                  ? t('view' as TranslationKey) 
+                                  : t('submit')
                                 }
                               </Button>
                             </Link>
@@ -1608,7 +2458,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display text-gradient">
                     <School className="h-5 w-5 text-blue-600" />
-                    {language === 'ar' ? 'فصولي المسجلة' : 'My Enrolled Classes'}
+                    {t('myEnrolledClasses' as TranslationKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1618,16 +2468,16 @@ export default function DashboardPage() {
                         <School className="h-20 w-20 mx-auto opacity-50 animate-float" />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                        {language === 'ar' ? 'لم تسجل في أي فصل بعد' : 'No Enrolled Classes'}
+                        {t('noEnrolledClasses' as TranslationKey)}
                       </h3>
                       <p className="text-sm font-sans mb-6">
-                        {language === 'ar' ? 'استعرض الفصول المتاحة وابدأ التعلم!' : 'Browse available classes and start learning!'}
+                        {t('browseAvailableClassesDescription' as TranslationKey)}
                       </p>
                       <Link href="/dashboard/classes" prefetch={true}>
                         <Button 
                           className="btn-gradient animate-pulse-glow"
                         >
-                          {language === 'ar' ? 'استعراض الفصول المتاحة' : 'Browse Available Classes'}
+                          {t('browseAvailableClasses' as TranslationKey)}
                         </Button>
                       </Link>
                     </div>
@@ -1666,14 +2516,13 @@ export default function DashboardPage() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                                       <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                                        {language === 'ar' ? `المستوى ${c.level || '—'}` : `Level ${c.level || '—'}`}
+                                        {`${t('level' as TranslationKey)} ${c.level ?? '—'}`}
                                       </Badge>
                                     </div>
                                     <div className="flex items-center justify-between mt-2">
                                       <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
-                                        {(subjectsByClass[c.id] || []).length} {((subjectsByClass[c.id] || []).length === 1 
-                                          ? (language === 'ar' ? 'مادة' : 'Subject') 
-                                          : (language === 'ar' ? 'مواد' : 'Subjects'))}
+                                        {(subjectsByClass[c.id] || []).length}{' '}
+                                        {(subjectsByClass[c.id] || []).length === 1 ? t('subject' as TranslationKey) : t('subjects')}
                                       </Badge>
                                       {classProgress[c.id] !== undefined && (
                                         <div className="flex items-center gap-2">
@@ -1712,7 +2561,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display text-gradient">
                     <BookOpen className="h-5 w-5 text-emerald-600" />
-                    {language === 'ar' ? 'الفصول المتاحة للتسجيل' : 'Available Classes'}
+                    {t('availableClassesForEnrollment' as TranslationKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1722,10 +2571,10 @@ export default function DashboardPage() {
                         <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float" />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                        {language === 'ar' ? 'لا توجد فصول متاحة' : 'No Available Classes'}
+                        {t('noAvailableClasses' as TranslationKey)}
                       </h3>
                       <p className="text-sm font-sans">
-                        {language === 'ar' ? 'لا توجد فصول متاحة للتسجيل حاليًا' : 'No classes available for enrollment at the moment'}
+                        {t('noClassesAvailableForEnrollment' as TranslationKey)}
                       </p>
                     </div>
                   ) : (
@@ -1744,7 +2593,7 @@ export default function DashboardPage() {
                                     {c.class_name || c.name}
                                   </CardTitle>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    {language === 'ar' ? `المستوى ${c.level || '—'}` : `Level ${c.level || '—'}`}
+                                    {`${t('level' as TranslationKey)} ${c.level ?? '—'}`}
                                   </p>
                                 </div>
                                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
@@ -1767,11 +2616,11 @@ export default function DashboardPage() {
                                     const { error } = await enrollInClass(c.id);
                                     if (error) {
                                       console.error(error);
-                                      toast.error(language === 'ar' ? 'فشل التسجيل' : 'Enrollment failed');
+      toast.error(t('enrollmentFailed' as TranslationKey));
                                       return;
                                     }
                                     setMyClassEnrollments(prev => ({ ...prev, [c.id]: true }));
-                                    toast.success(language === 'ar' ? 'تم التسجيل بنجاح' : 'Enrolled successfully');
+                                    toast.success(t('enrolledSuccessfully' as TranslationKey));
                                     await loadStudentData();
                                   } finally {
                                     setEnrollingIds(prev => ({ ...prev, [c.id]: false }));
@@ -1779,8 +2628,8 @@ export default function DashboardPage() {
                                 }}
                               >
                                 {enrollingIds[c.id] 
-                                  ? (language === 'ar' ? 'جاري التسجيل...' : 'Enrolling...') 
-                                  : (language === 'ar' ? 'التسجيل في الفصل' : 'Enroll in Class')
+                                  ? t('enrolling' as TranslationKey) 
+                                  : t('enrollInClass' as TranslationKey)
                                 }
                               </Button>
                             </CardContent>
@@ -1804,7 +2653,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display">
                     <Clock className="h-5 w-5 text-amber-600" />
-                    {language === 'ar' ? 'الأحداث القادمة' : 'Upcoming Events'}
+                    {t('upcomingEvents')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1822,7 +2671,7 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(e.start_at).toLocaleDateString()}
+                                {new Date(e.start_at).toLocaleDateString(dateLocale)}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
@@ -1838,7 +2687,7 @@ export default function DashboardPage() {
                               onClick={() => window.open(e.zoom_url, '_blank')}
                             >
                               <Video className="h-3 w-3 mr-1" /> 
-                              {language === 'ar' ? 'انضم' : 'Join'}
+                              {t('joinMeeting')}
                             </Button>
                           )}
                         </div>
@@ -1853,215 +2702,19 @@ export default function DashboardPage() {
 
         {/* Teacher Dashboard - لوحة المعلم */}
         {profile?.role === 'teacher' && (
-          <>
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <StatCard
-                title={t('myClasses')}
-                value={teacherClassCount}
-                icon={School}
-                description={language === 'ar' ? 'الفصول التي تدرسها' : 'Classes you teach'}
-                gradient="from-blue-500 to-cyan-500"
-              />
-              <StatCard
-                title={t('myStudents')}
-                value={teacherStudentCount}
-                icon={Users}
-                description={language === 'ar' ? 'إجمالي الطلاب' : 'Total students'}
-                gradient="from-purple-500 to-pink-500"
-              />
-              <StatCard
-                title={t('schedule')}
-                value={todayEvents.length}
-                icon={Calendar}
-                description={language === 'ar' ? 'فصول اليوم' : 'Classes today'}
-                gradient="from-amber-500 to-orange-500"
-              />
-            </div>
-
-            {/* Today's Schedule */}
-            {loadingSchedule ? (
-              <Card className="card-elegant">
-                <CardHeader>
-                  <CardTitle className="font-display text-gradient">
-                    {language === 'ar' ? 'جدول اليوم' : 'Today\'s Schedule'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 animate-fade-in">
-                    <div className="relative inline-block mb-4">
-                      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
-                      <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                      {language === 'ar' ? 'جاري تحميل الجدول...' : 'Loading schedule...'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : todayEvents.length > 0 && (
-              <Card className="card-elegant">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 font-display text-gradient">
-                      <Calendar className="h-5 w-5 text-blue-600" />
-                      {language === 'ar' ? 'جدول اليوم' : 'Today\'s Schedule'}
-                    </CardTitle>
-                    <Link 
-                      href="/dashboard/schedule"
-                      prefetch={true}
-                    >
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-sm"
-                      >
-                        {language === 'ar' ? 'عرض الكامل' : 'View Full'} 
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {todayEvents.map((e: ScheduleEvent) => (
-                      <div 
-                        key={e.id} 
-                        className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Clock className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                {new Date(e.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                                {new Date(e.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
-                            <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
-                              {e.room && <span>📍 {e.room}</span>}
-                              {e.mode === 'online' && (
-                                <span className="flex items-center gap-1">
-                                  <Video className="h-3 w-3" /> 
-                                  {language === 'ar' ? 'أونلاين' : 'Online'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {e.zoom_url && (
-                            <Button 
-                              size="sm" 
-                              className="btn-gradient transition-all duration-300 hover:scale-105"
-                              onClick={() => window.open(e.zoom_url, '_blank')}
-                            >
-                              <Video className="h-3 w-3 mr-1" /> 
-                              {language === 'ar' ? 'انضم' : 'Join'}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* My Classes */}
-            {loadingTeacherData ? (
-              <Card className="card-elegant">
-                <CardHeader>
-                  <CardTitle className="font-display text-gradient">{t('myClasses')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 animate-fade-in">
-                    <div className="relative inline-block mb-4">
-                      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto animate-pulse-glow" />
-                      <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                      {language === 'ar' ? 'جاري تحميل الفصول...' : 'Loading classes...'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="card-elegant">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
-                    <School className="h-5 w-5 text-blue-600" />
-                    {t('myClasses')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {teacherClasses.length === 0 ? (
-                    <div className="text-center py-12 animate-fade-in">
-                      <div className="relative inline-block mb-4">
-                        <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                        {language === 'ar' ? 'لا توجد فصول' : 'No Classes'}
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                        {language === 'ar' ? 'لم يتم تعيين أي فصول لك بعد' : 'No classes have been assigned to you yet'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {teacherClasses.map((cls: any) => (
-                        <Link key={cls.id} href={`/dashboard/classes/${cls.id}`} prefetch={true}>
-                          <Card 
-                            className="card-hover overflow-hidden cursor-pointer"
-                          >
-                          <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
-                            <div className="flex items-start gap-4">
-                              <div className="relative flex-shrink-0">
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-                                {cls.image_url ? (
-                                  <img 
-                                    src={cls.image_url} 
-                                    alt={cls.class_name} 
-                                    className="w-16 h-16 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900" 
-                                  />
-                                ) : (
-                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
-                                    <School className="h-8 w-8 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0 pt-1">
-                                <CardTitle className="text-lg font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                  {cls.class_name}
-                                </CardTitle>
-                                <div className="space-y-1">
-                                  {cls.level && (
-                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-xs">
-                                      {language === 'ar' ? `المستوى ${cls.level}` : `Level ${cls.level}`}
-                                    </Badge>
-                                  )}
-                                  <div className="flex items-center justify-between mt-2">
-                                    <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 text-xs">
-                                      {cls.student_count} {language === 'ar' ? 'طالب' : 'students'}
-                                    </Badge>
-                                    {cls.subjects && cls.subjects.length > 0 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {cls.subjects.length} {language === 'ar' ? 'مادة' : 'subjects'}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardHeader>
-                        </Card>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </>
+          <TeacherDashboardSection
+            t={t}
+            stats={{
+              classCount: teacherClassCount,
+              studentCount: teacherStudentCount,
+              scheduleCount: todayEvents.length,
+            }}
+            todayEvents={todayEvents}
+            teacherClasses={teacherClasses}
+            loadingSchedule={loadingSchedule}
+            loadingTeacherData={loadingTeacherData}
+            dateLocale={dateLocale}
+          />
         )}
 
         {/* Supervisor Dashboard - لوحة المشرف */}
@@ -2069,24 +2722,24 @@ export default function DashboardPage() {
           <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <StatCard
-                title={language === 'ar' ? 'الفصول المسؤول عنها' : 'Assigned Classes'}
+                title={t('assignedClasses' as TranslationKey)}
                 value={stats.totalClasses}
                 icon={School}
-                description={language === 'ar' ? 'الفصول تحت الإشراف' : 'Classes under supervision'}
+                description={t('classesUnderSupervision' as TranslationKey)}
                 gradient="from-blue-500 to-cyan-500"
               />
               <StatCard
-                title={language === 'ar' ? 'إجمالي الطلاب' : 'Total Students'}
+                title={t('totalStudents')}
                 value={stats.totalStudents}
                 icon={Users}
-                description={language === 'ar' ? 'الطلاب في الفصول المعينة' : 'Students in assigned classes'}
+                description={t('studentsInAssignedClasses' as TranslationKey)}
                 gradient="from-purple-500 to-pink-500"
               />
               <StatCard
-                title={language === 'ar' ? 'التقارير' : 'Reports'}
+                title={t('reports')}
                 value="0"
                 icon={BookOpen}
-                description={language === 'ar' ? 'التقارير المعلقة' : 'Pending reports'}
+                description={t('pendingReports' as TranslationKey)}
                 gradient="from-amber-500 to-orange-500"
               />
             </div>
@@ -2095,20 +2748,19 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                  {language === 'ar' ? 'الفصول المشرفة عليها' : 'Supervised Classes'}
+                  {t('supervisedClasses' as TranslationKey)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {stats.totalClasses === 0 ? (
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {language === 'ar' ? 'لم يتم تعيين أي فصول للإشراف بعد' : 'No classes assigned for supervision yet'}
+                    {t('noClassesAssignedForSupervisionYet' as TranslationKey)}
                   </p>
                 ) : (
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {language === 'ar' 
-                      ? `لديك ${stats.totalClasses} ${stats.totalClasses === 1 ? 'فصل' : 'فصول'} تحت الإشراف` 
-                      : `You are supervising ${stats.totalClasses} ${stats.totalClasses === 1 ? 'class' : 'classes'}`
-                    }
+                    {`${t('supervisingClassesPrefix' as TranslationKey)} ${stats.totalClasses} ${
+                      stats.totalClasses === 1 ? t('class') : t('classes')
+                    }`}
                   </p>
                 )}
               </CardContent>

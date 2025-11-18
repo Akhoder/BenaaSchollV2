@@ -47,7 +47,7 @@ interface TeacherRow { id: string; full_name: string; }
 
 export default function SubjectsPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const router = useRouter();
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);

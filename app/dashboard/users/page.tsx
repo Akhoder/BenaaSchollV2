@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getUsersOptimized } from '@/lib/optimizedQueries';
 import { getErrorMessage } from '@/lib/errorHandler';
+import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,7 +79,7 @@ interface UserProfile {
 
 export default function UsersPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +99,7 @@ export default function UsersPage() {
   const [savingPw, setSavingPw] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const dateLocale = useMemo(() => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'), [language]);
 
   // Fetch users
   const fetchUsers = useCallback(async () => {
@@ -537,7 +539,7 @@ export default function UsersPage() {
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                             <Calendar className="h-4 w-4" />
-                            {new Date(user.created_at).toLocaleDateString()}
+                            {new Date(user.created_at).toLocaleDateString(dateLocale)}
                           </div>
                         </TableCell>
                         <TableCell>

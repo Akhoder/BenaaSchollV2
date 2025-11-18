@@ -33,7 +33,7 @@ interface Notification {
 
 export default function MessagesPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +41,10 @@ export default function MessagesPage() {
   const [classes, setClasses] = useState<any[]>([]);
   const [form, setForm] = useState({ title: '', body: '', link_url: '', class_id: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const dateLocale = useMemo(
+    () => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'),
+    [language]
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -293,7 +297,7 @@ export default function MessagesPage() {
                         )}
                         <div className="flex items-center gap-3 mt-3 text-xs text-slate-500 dark:text-slate-400">
                           <Clock className="h-3 w-3" />
-                          <span>{new Date(n.created_at).toLocaleString()}</span>
+                          <span>{new Date(n.created_at).toLocaleString(dateLocale)}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">

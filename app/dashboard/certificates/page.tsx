@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import * as api from '@/lib/supabase';
 import type { Certificate, CertificateStatus } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 export default function CertificatesPage() {
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [students, setStudents] = useState<Record<string, { full_name?: string; email?: string }>>({});
@@ -28,6 +29,7 @@ export default function CertificatesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | CertificateStatus>('all');
+  const dateLocale = useMemo(() => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'), [language]);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -64,7 +66,7 @@ export default function CertificatesPage() {
       const { data: certs, error } = await query;
       if (error) {
         console.error(error);
-        toast.error('Error loading certificates');
+        toast.error(t('errorLoadingCertificates'));
         return;
       }
       
@@ -104,7 +106,7 @@ export default function CertificatesPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error('Error loading certificates');
+      toast.error(t('errorLoadingCertificates'));
     } finally {
       setLoading(false);
     }
@@ -128,15 +130,33 @@ export default function CertificatesPage() {
   };
 
   const getGradeBadge = (grade: string, score: number) => {
-    const gradeConfig: Record<string, { className: string }> = {
-      'ممتاز': { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' },
-      'جيد جداً': { className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-      'جيد': { className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-      'مقبول': { className: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
-      'راسب': { className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-    };
-    const cfg = gradeConfig[grade] || { className: 'bg-slate-100 text-slate-700' };
-    return <Badge className={cfg.className}>{grade} ({score.toFixed(1)})</Badge>;
+      type GradeKey = 'gradeExcellent' | 'gradeVeryGood' | 'gradeGood' | 'gradeAcceptable' | 'gradeFail' | 'gradeOther';
+      const gradeKey: GradeKey = (() => {
+        switch (grade) {
+          case 'ممتاز':
+            return 'gradeExcellent';
+          case 'جيد جداً':
+            return 'gradeVeryGood';
+          case 'جيد':
+            return 'gradeGood';
+          case 'مقبول':
+            return 'gradeAcceptable';
+          case 'راسب':
+            return 'gradeFail';
+          default:
+            return 'gradeOther';
+        }
+      })();
+      const gradeConfig: Record<GradeKey, { className: string }> = {
+        gradeExcellent: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' },
+        gradeVeryGood: { className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+        gradeGood: { className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
+        gradeAcceptable: { className: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
+        gradeFail: { className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+        gradeOther: { className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+      };
+      const cfg = gradeConfig[gradeKey] || gradeConfig.gradeOther;
+      return <Badge className={cfg.className}>{t(gradeKey as TranslationKey)} ({score.toFixed(1)})</Badge>;
   };
 
   const filteredCertificates = certificates.filter(cert => {
@@ -169,10 +189,10 @@ export default function CertificatesPage() {
         <div className="flex items-center justify-between pt-1">
           <div>
             <h1 className="text-3xl font-display text-gradient">
-              {(t('certificates') as any) || 'Certificates'}
+              {t('certificates')}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {(t('manageAllCertificates') as any) || 'Manage all certificates across all subjects'}
+              {t('manageAllCertificates')}
             </p>
           </div>
         </div>
@@ -197,7 +217,7 @@ export default function CertificatesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">{t('all')}</SelectItem>
                   <SelectItem value="draft">{(t('draft') as any) || 'Draft'}</SelectItem>
                   <SelectItem value="issued">{(t('issued') as any) || 'Issued'}</SelectItem>
                   <SelectItem value="published">{(t('published') as any) || 'Published'}</SelectItem>
@@ -211,7 +231,7 @@ export default function CertificatesPage() {
         <Card className="card-elegant">
           <CardHeader>
             <CardTitle className="font-display text-gradient">
-              {(t('certificatesList') as any) || 'Certificates List'}
+              {t('certificatesList')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -221,23 +241,23 @@ export default function CertificatesPage() {
                   <Award className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
                 </div>
                 <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                  {(t('noCertificates') as any) || 'No certificates yet'}
+                  {t('noCertificates')}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                  {(t('certificatesWillAppear') as any) || 'Certificates will appear here when students complete all lessons and quizzes'}
+                  {t('certificatesWillAppear')}
                 </p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{(t('student') as any) || 'Student'}</TableHead>
-                    <TableHead>{(t('subject') as any) || 'Subject'}</TableHead>
-                    <TableHead>{(t('certificateNumber') as any) || 'Certificate #'}</TableHead>
-                    <TableHead>{(t('grade') as any) || 'Grade'}</TableHead>
-                    <TableHead>{(t('status') as any) || 'Status'}</TableHead>
-                    <TableHead>{(t('completionDate') as any) || 'Completion Date'}</TableHead>
-                    <TableHead>{(t('actions') as any) || 'Actions'}</TableHead>
+                    <TableHead>{t('student')}</TableHead>
+                    <TableHead>{t('subject')}</TableHead>
+                    <TableHead>{t('certificateNumber')}</TableHead>
+                    <TableHead>{t('grade')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    <TableHead>{t('completionDate')}</TableHead>
+                    <TableHead>{t('actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -265,7 +285,7 @@ export default function CertificatesPage() {
                           {getStatusBadge(cert.status, cert.auto_issued)}
                         </TableCell>
                         <TableCell>
-                          {new Date(cert.completion_date).toLocaleDateString()}
+                    {new Date(cert.completion_date).toLocaleDateString(dateLocale)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

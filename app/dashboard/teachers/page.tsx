@@ -85,6 +85,18 @@ export default function TeachersPage() {
   const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [activityFilter, setActivityFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('nameAsc');
+  const languageOptions = useMemo(
+    () => [
+      { value: 'en', label: t('languageEnglish') },
+      { value: 'ar', label: t('languageArabic') },
+      { value: 'fr', label: t('languageFrench') },
+    ],
+    [t]
+  );
+  const getLanguageLabel = useCallback(
+    (lang?: string) => languageOptions.find((opt) => opt.value === (lang ?? 'en'))?.label ?? t('languageEnglish'),
+    [languageOptions, t]
+  );
 
   // Auth check
   useEffect(() => {
@@ -483,16 +495,6 @@ export default function TeachersPage() {
 
   if (!profile || profile.role !== 'admin') return null;
 
-  const getLanguageLabel = (lang?: string) => {
-    if (!lang) return 'en';
-    const labels: Record<string, string> = {
-      en: 'English',
-      ar: 'العربية',
-      fr: 'Français'
-    };
-    return labels[lang] || lang;
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -565,7 +567,7 @@ export default function TeachersPage() {
                     .map(([lang, count]) => (
                       <div key={lang} className="flex items-center justify-between">
                         <span className="text-sm font-medium">
-                          {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
+                          {getLanguageLabel(lang)}
                         </span>
                         <span className="text-lg font-bold text-purple-600">{count}</span>
                       </div>
@@ -582,7 +584,7 @@ export default function TeachersPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display text-foreground">{t('search')} & {t('filter')}</CardTitle>
+              <CardTitle className="font-display text-foreground">{t('searchAndFilter')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -603,9 +605,11 @@ export default function TeachersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('allLanguages')}</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">العربية</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
+                    {languageOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,11 +17,15 @@ import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass } from '@/lib/
 
 export default function GradesPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [grades, setGrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, average: 0, graded: 0 });
+  const dateLocale = useMemo(
+    () => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'),
+    [language]
+  );
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -100,7 +104,7 @@ export default function GradesPage() {
       });
     } catch (e) {
       console.error(e);
-      toast.error('Error loading grades');
+      toast.error(t('errorLoadingGrades'));
     } finally {
       setLoading(false);
     }
@@ -128,8 +132,8 @@ export default function GradesPage() {
         {/* Enhanced Header */}
         <PageHeader 
           icon={FileText}
-          title="My Grades"
-          description="View your grades and feedback"
+          title={t('myGrades')}
+          description={t('viewGradesAndFeedback')}
           gradient="from-emerald-600 via-teal-600 to-emerald-700"
         />
 
@@ -138,7 +142,7 @@ export default function GradesPage() {
           <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Total Graded
+                {t('totalGraded')}
               </CardTitle>
               <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
                 <FileText className="h-4 w-4 text-white" />
@@ -146,13 +150,13 @@ export default function GradesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-blue-600">{stats.total}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Assignments graded</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('assignmentsGraded')}</p>
             </CardContent>
           </Card>
           <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Average Grade
+                {t('averageGrade')}
               </CardTitle>
               <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
                 <TrendingUp className="h-4 w-4 text-white" />
@@ -160,19 +164,19 @@ export default function GradesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-emerald-600">{stats.average}%</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Overall average</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('overallAverage')}</p>
             </CardContent>
           </Card>
           <Card className="card-hover glass-strong">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                Status
+                {t('status')}
               </CardTitle>
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">Active</Badge>
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">{t('active')}</Badge>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-emerald-600">{stats.graded}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Graded assignments</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('gradedAssignments')}</p>
             </CardContent>
           </Card>
         </div>
@@ -184,8 +188,8 @@ export default function GradesPage() {
               <div className="relative inline-block mb-4">
                 <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Grades Yet</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-sans">You don't have any graded assignments yet. Submit your work to see grades here!</p>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noGradesYet')}</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-sans">{t('noGradesDescription')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -193,7 +197,7 @@ export default function GradesPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-gradient">
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
-                Grade Details
+                {t('gradeDetails')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -223,17 +227,17 @@ export default function GradesPage() {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Score:</span>
+                          <span className="text-muted-foreground">{t('scoreLabel')}</span>
                           <span className="font-semibold">{grade.score} / {grade.total_points}</span>
                         </div>
                         {grade.feedback && (
                           <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                            <p className="text-xs font-medium text-blue-700 mb-1">Feedback:</p>
+                            <p className="text-xs font-medium text-blue-700 mb-1">{t('feedback')}</p>
                             <p className="text-sm whitespace-pre-wrap">{grade.feedback}</p>
                           </div>
                         )}
                         <div className="text-xs text-muted-foreground">
-                          Graded: {new Date(grade.graded_at).toLocaleDateString()}
+                          {t('gradedOn')} {new Date(grade.graded_at).toLocaleDateString(dateLocale)}
                         </div>
                       </CardContent>
                     </Card>

@@ -108,6 +108,10 @@ export default function StudentsPage() {
     requiredRole: ['admin', 'teacher', 'supervisor'],
   });
   const { t, language } = useLanguage();
+  const dateLocale = useMemo(
+    () => (language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US'),
+    [language]
+  );
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -633,7 +637,7 @@ export default function StudentsPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <span>
-                          {t('createdAt')}: {new Date(s.created_at).toLocaleDateString(language === 'ar' ? 'ar' : language === 'fr' ? 'fr-FR' : 'en-US')}
+                          {t('createdAt')}: {new Date(s.created_at).toLocaleDateString(dateLocale)}
                         </span>
                         <span>
                           {t('code')}: {s.id.slice(0, 8)}...
