@@ -564,7 +564,7 @@ export default function StudentsPage() {
         <Card className="card-elegant">
           <CardHeader>
             <CardTitle className="font-display text-gradient">
-              {viewMode === 'grid' ? t('studentsGridTitle') : t('studentsTableTitle')} ({filteredStudents.length})
+              {t('students')} ({filteredStudents.length})
             </CardTitle>
           </CardHeader>
           <CardContent>

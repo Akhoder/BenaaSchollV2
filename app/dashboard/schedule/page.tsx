@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TranslationKey } from '@/lib/translations';
 import { LoadingInline } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,8 +101,9 @@ export default function SchedulePage() {
     setLoadingData(true);
     const start = new Date(weekStart);
     const end = addDays(start, 7);
-    supabase.rpc('get_user_events', { p_start: start.toISOString(), p_end: end.toISOString() })
-      .then(({ data, error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_user_events', { p_start: start.toISOString(), p_end: end.toISOString() });
         if (error) {
           console.error(error);
           toast.error(t('failedToLoadSchedule'));
@@ -118,8 +120,13 @@ export default function SchedulePage() {
         }));
         const expanded = expandRecurringEvents(enriched, start, end);
         setEvents(expanded);
-      })
-      .finally(() => setLoadingData(false));
+      } catch (err) {
+        console.error('Error loading events:', err);
+        toast.error(t('failedToLoadSchedule'));
+      } finally {
+        setLoadingData(false);
+      }
+    })();
   }, [profile, weekStart, classes, teachers, t]);
 
   const resetForm = useCallback(() => {
@@ -404,7 +411,7 @@ export default function SchedulePage() {
               <div>
                 <Label className="text-sm font-sans flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  {t('room')}
+                  {t('room' as TranslationKey)}
                 </Label>
                 <Input 
                   value={form.room} 
@@ -452,7 +459,7 @@ export default function SchedulePage() {
               <div>
                 <Label className="text-sm font-sans flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  {t('start')} *
+                  {t('start' as TranslationKey)} *
                 </Label>
                 <Input 
                   type="datetime-local" 
@@ -464,7 +471,7 @@ export default function SchedulePage() {
               <div>
                 <Label className="text-sm font-sans flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  {t('end')} *
+                  {t('end' as TranslationKey)} *
                 </Label>
                 <Input 
                   type="datetime-local" 
@@ -486,10 +493,10 @@ export default function SchedulePage() {
                 <Label className="text-sm font-sans">{t('recurrence')}</Label>
                 <Select value={form.recurrence_rule} onValueChange={(v) => setForm({ ...form, recurrence_rule: v })}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder={t('none')} />
+                    <SelectValue placeholder={t('none' as TranslationKey)} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NONE">{t('none')}</SelectItem>
+                    <SelectItem value="NONE">{t('none' as TranslationKey)}</SelectItem>
                     <SelectItem value="RRULE:FREQ=DAILY">{t('daily')}</SelectItem>
                     <SelectItem value="RRULE:FREQ=WEEKLY">{t('weekly')}</SelectItem>
                     <SelectItem value="RRULE:FREQ=MONTHLY">{t('monthly')}</SelectItem>
@@ -508,7 +515,7 @@ export default function SchedulePage() {
               <div>
                 <Label className="text-sm font-sans flex items-center gap-2">
                   <Video className="h-4 w-4" />
-                  {t('mode')}
+                  {t('mode' as TranslationKey)}
                 </Label>
                 <Select value={form.mode} onValueChange={(v) => setForm({ ...form, mode: v as any })}>
                   <SelectTrigger className="mt-1">
@@ -676,7 +683,7 @@ interface FiltersProps {
   teachers: any[];
   filters: { class_id: string; teacher_id: string };
   onChange: (filters: { class_id: string; teacher_id: string }) => void;
-  t: (key: string) => string;
+  t: (key: TranslationKey) => string;
 }
 
 function Filters({ classes, teachers, filters, onChange, t }: FiltersProps) {
@@ -730,7 +737,7 @@ interface WeekTableProps {
   onEdit: (e: ScheduleEvent) => void;
   onDelete: (id: string) => void;
   canEdit: boolean;
-  t: (key: string) => string;
+  t: (key: TranslationKey) => string;
 }
 
 function WeekTable({ days, events, onEdit, onDelete, canEdit, t }: WeekTableProps) {

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingInline } from '@/components/LoadingSpinner';
@@ -278,7 +279,7 @@ export default function MessagesPage() {
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {!n.read_at && (
                             <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                              {t('new')}
+                              {t('new' as TranslationKey)}
                             </Badge>
                           )}
                           <h4 className="font-semibold font-sans text-base line-clamp-1">
@@ -380,7 +381,7 @@ export default function MessagesPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-sans">{t('body')}</Label>
+                  <Label className="text-sm font-sans">{t('body' as TranslationKey)}</Label>
                   <Textarea 
                     value={form.body} 
                     onChange={(e) => setForm({ ...form, body: e.target.value })} 
@@ -391,7 +392,7 @@ export default function MessagesPage() {
                 <div>
                   <Label className="text-sm font-sans flex items-center gap-2">
                     <LinkIcon className="h-4 w-4" />
-                    {t('link')}
+                    {t('link' as TranslationKey)}
                   </Label>
                   <Input 
                     value={form.link_url} 
@@ -439,7 +440,7 @@ export default function MessagesPage() {
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      {t('send')}
+                      {t('send' as TranslationKey)}
                     </>
                   )}
                 </Button>

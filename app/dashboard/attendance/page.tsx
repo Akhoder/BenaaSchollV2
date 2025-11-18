@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getErrorMessage } from '@/lib/errorHandler';
+import { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingInline } from '@/components/LoadingSpinner';
@@ -25,15 +26,15 @@ interface AttendanceStatus {
 
 interface StatusOption {
   value: string;
-  labelKey: string;
+  labelKey: TranslationKey;
   color: string;
 }
 
 const STATUS_OPTIONS: StatusOption[] = [
-  { value: 'present', labelKey: 'present', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-  { value: 'absent', labelKey: 'absent', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
-  { value: 'late', labelKey: 'late', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-  { value: 'excused', labelKey: 'excused', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  { value: 'present', labelKey: 'present' as TranslationKey, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  { value: 'absent', labelKey: 'absent' as TranslationKey, color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  { value: 'late', labelKey: 'late' as TranslationKey, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  { value: 'excused', labelKey: 'excused' as TranslationKey, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
 ];
 
 export default function AttendancePage() {

@@ -1140,7 +1140,7 @@ export default function SubjectLessonsPage() {
                   <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl"></div>
                   <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float relative z-10" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noData')}</h3>
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noLessons')}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans mb-6">{t('addLessonToGetStarted')}</p>
                 <Button 
                   className="bg-primary hover:bg-primary/90 text-white"
