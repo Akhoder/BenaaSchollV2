@@ -36,7 +36,7 @@ import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
   CheckCircle2, ArrowRight, Video, GraduationCap, FileText, 
-  AlertCircle, Bell, Zap, Loader2, BarChart3, Sparkles
+  AlertCircle, Bell, Zap, Loader2, BarChart3, Sparkles, Plus
 } from 'lucide-react';
 import { 
   supabase, 
@@ -163,9 +163,28 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
   loadingTeacherData,
   dateLocale,
 }: TeacherDashboardSectionProps) {
+  // Calculate performance metrics
+  const totalStudents = stats.studentCount;
+  const totalClasses = stats.classCount;
+  const todayClasses = stats.scheduleCount;
+  
+  // Calculate average students per class
+  const avgStudentsPerClass = totalClasses > 0 ? Math.round(totalStudents / totalClasses) : 0;
+  
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Welcome Section */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white mb-2">
+          {t('welcomeBack')} 👋
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          {t('hereIsYourOverview')}
+        </p>
+      </div>
+
+      {/* Enhanced Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard
           title={t('myClasses')}
           value={stats.classCount}
@@ -187,27 +206,134 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
           description={t('classesToday')}
           gradient="from-amber-500 to-orange-500"
         />
+        <StatCard
+          title={t('averagePerClass')}
+          value={avgStudentsPerClass}
+          icon={BarChart3}
+          description={t('studentsPerClass')}
+          gradient="from-emerald-500 to-teal-500"
+        />
       </div>
 
+      {/* Performance Metrics Section */}
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <Card className="card-elegant border-l-4 border-l-blue-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-display text-slate-900 dark:text-white">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              {t('performanceMetrics')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {t('classCoverage')}
+                  </span>
+                  <span className="text-sm font-bold text-blue-600">
+                    {totalClasses > 0 ? '100%' : '0%'}
+                  </span>
+                </div>
+                <Progress 
+                  value={totalClasses > 0 ? 100 : 0} 
+                  className="h-2"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {t('studentEngagement')}
+                  </span>
+                  <span className="text-sm font-bold text-purple-600">
+                    {totalStudents > 0 ? 'Active' : 'No Data'}
+                  </span>
+                </div>
+                <Progress 
+                  value={totalStudents > 0 ? 75 : 0} 
+                  className="h-2"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-elegant border-l-4 border-l-emerald-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-display text-slate-900 dark:text-white">
+              <Sparkles className="h-5 w-5 text-emerald-600" />
+              {t('quickInsights')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                <div className="flex items-center gap-2">
+                  <School className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {t('activeClasses')}
+                  </span>
+                </div>
+                <Badge className="bg-blue-500 text-white">
+                  {totalClasses}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {t('totalStudents')}
+                  </span>
+                </div>
+                <Badge className="bg-purple-500 text-white">
+                  {totalStudents}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {t('classesToday')}
+                  </span>
+                </div>
+                <Badge className="bg-amber-500 text-white">
+                  {todayClasses}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Schedule - Enhanced */}
       {loadingSchedule ? (
-        <Card className="card-elegant">
+            <Card className="card-elegant mb-6">
           <CardHeader>
-            <CardTitle className="font-display text-gradient">{t('todaysSchedule')}</CardTitle>
+            <CardTitle className="font-display text-slate-900 dark:text-white">{t('todaysSchedule')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ScheduleSkeleton />
           </CardContent>
         </Card>
-      ) : todayEvents.length > 0 && (
-        <Card className="card-elegant">
+      ) : (
+            <Card className="card-elegant mb-6 border-l-4 border-l-amber-500">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display text-gradient">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                {t('todaysSchedule')}
-              </CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Calendar className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                    {t('todaysSchedule')}
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {todayEvents.length} {todayEvents.length === 1 ? t('class') : t('classes')} {t('scheduled')}
+                  </p>
+                </div>
+              </div>
               <Link href="/dashboard/schedule" prefetch={true}>
-                <Button variant="ghost" size="sm" className="text-sm">
+                <Button variant="ghost" size="sm" className="text-sm hover:bg-amber-50 dark:hover:bg-amber-950/20">
                   {t('viewFull')}
                   <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -215,58 +341,109 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {todayEvents.map((e) => (
-                <div
-                  key={e.id}
-                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                          {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} -
-                          {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
-                      <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(e.start_at).toLocaleDateString(dateLocale)}
-                        </span>
-                        {e.room && <span>📍 {e.room}</span>}
-                        {e.mode === 'online' && (
-                          <span className="flex items-center gap-1">
-                            <Video className="h-3 w-3" />
-                            {t('online')}
-                          </span>
+            {todayEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {t('noClassesScheduledToday')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayEvents.map((e) => {
+                  const startTime = new Date(e.start_at);
+                  const endTime = new Date(e.end_at);
+                  const isUpcoming = startTime > new Date();
+                  const isOngoing = startTime <= new Date() && endTime > new Date();
+                  
+                  return (
+                    <div
+                      key={e.id}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                        isOngoing
+                          ? 'border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 shadow-md'
+                          : isUpcoming
+                          ? 'border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`p-2 rounded-lg ${
+                              isOngoing 
+                                ? 'bg-amber-100 dark:bg-amber-900/50' 
+                                : 'bg-blue-100 dark:bg-blue-900/30'
+                            }`}>
+                              <Clock className={`h-4 w-4 ${
+                                isOngoing ? 'text-amber-600' : 'text-blue-600'
+                              }`} />
+                            </div>
+                            <div>
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {startTime.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} - 
+                                {endTime.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isOngoing && (
+                                <Badge className="ml-2 bg-amber-500 text-white text-xs">
+                                  {t('ongoing')}
+                                </Badge>
+                              )}
+                              {isUpcoming && (
+                                <Badge className="ml-2 bg-blue-500 text-white text-xs">
+                                  {t('upcoming')}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <h4 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-2">{e.title}</h4>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {startTime.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </span>
+                            {e.room && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
+                                📍 {e.room}
+                              </span>
+                            )}
+                            {e.mode === 'online' && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <Video className="h-3 w-3" />
+                                {t('online')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {e.zoom_url && (
+                          <Button
+                            size="sm"
+                            className={`transition-all duration-300 hover:scale-105 ${
+                              isOngoing 
+                                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                                : 'btn-gradient'
+                            }`}
+                            onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Video className="h-3 w-3 mr-1" />
+                            {t('joinMeeting')}
+                          </Button>
                         )}
                       </div>
                     </div>
-                    {e.zoom_url && (
-                      <Button
-                        size="sm"
-                        className="btn-gradient transition-all duration-300 hover:scale-105"
-                        onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
-                      >
-                        <Video className="h-3 w-3 mr-1" />
-                        {t('joinMeeting')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
+      {/* My Classes - Enhanced */}
       {loadingTeacherData ? (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
               <School className="h-5 w-5 text-blue-600" />
               {t('myClasses')}
             </CardTitle>
@@ -276,18 +453,30 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
           </CardContent>
         </Card>
       ) : (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6 border-l-4 border-l-blue-500">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
-              <School className="h-5 w-5 text-blue-600" />
-              {t('myClasses')}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <School className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                    {t('myClasses')}
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {teacherClasses.length} {teacherClasses.length === 1 ? t('class') : t('classes')} {t('assigned')}
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {teacherClasses.length === 0 ? (
               <div className="text-center py-12 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                  <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                  <School className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float relative" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
                   {t('noClasses')}
@@ -300,8 +489,8 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {teacherClasses.map((cls: any) => (
                   <Link key={cls.id} href={`/dashboard/classes/${cls.id}`} prefetch={true}>
-                    <Card className="card-hover overflow-hidden cursor-pointer">
-                      <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
+                    <Card className="card-hover overflow-hidden cursor-pointer group border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300">
+                      <CardHeader className="pb-4 hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
                         <div className="flex items-start gap-4">
                           <div className="relative flex-shrink-0">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300" />
@@ -309,38 +498,67 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
                               <img
                                 src={cls.image_url}
                                 alt={cls.class_name}
-                                className="w-16 h-16 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900"
+                                className="w-20 h-20 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900 group-hover:scale-105 transition-transform duration-300"
                               />
                             ) : (
-                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
-                                <School className="h-8 w-8 text-white" />
+                              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300 shadow-lg">
+                                <School className="h-10 w-10 text-white" />
                               </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0 pt-1">
-                            <CardTitle className="text-lg font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <CardTitle className="text-xl font-display font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                               {cls.class_name}
                             </CardTitle>
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               {cls.level && (
-                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-xs">
+                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-xs font-medium">
                                   {`${t('level')} ${cls.level}`}
                                 </Badge>
                               )}
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 text-xs">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 text-xs font-semibold px-2 py-1">
+                                  <Users className="h-3 w-3 mr-1" />
                                   {cls.student_count} {t('students')}
                                 </Badge>
                                 {cls.subjects && cls.subjects.length > 0 && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs font-medium">
+                                    <BookOpen className="h-3 w-3 mr-1" />
                                     {cls.subjects.length} {cls.subjects.length === 1 ? t('subject') : t('subjects')}
                                   </Badge>
                                 )}
                               </div>
+                              {cls.subjects && cls.subjects.length > 0 && (
+                                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                                    {t('subjects')}:
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {cls.subjects.slice(0, 3).map((subject: string, idx: number) => (
+                                      <span key={idx} className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                        {subject}
+                                      </span>
+                                    ))}
+                                    {cls.subjects.length > 3 && (
+                                      <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                        +{cls.subjects.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
                       </CardHeader>
+                      <div className="px-6 pb-4">
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3" />
+                            {t('viewDetails')}
+                          </span>
+                        </div>
+                      </div>
                     </Card>
                   </Link>
                 ))}
@@ -350,51 +568,96 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
         </Card>
       )}
 
-      {/* Quick Actions for Teachers */}
-      <Card className="card-elegant">
+      {/* Quick Actions for Teachers - Enhanced */}
+      <Card className="card-elegant border-l-4 border-l-purple-500">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display text-gradient">
-            <Zap className="h-5 w-5 text-amber-600" />
-            {t('quickActions')}
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+              <Zap className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                {t('quickActions')}
+              </CardTitle>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {t('accessCommonTasks')}
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link href="/dashboard/attendance" prefetch={true}>
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20">
-                <Users className="h-4 w-4 mr-2 text-blue-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('recordAttendance')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('attendance')}</div>
+              <div className="group relative p-4 rounded-xl border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {t('recordAttendance')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('attendance')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-4 w-4 text-slate-400 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/subjects" prefetch={true}>
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-purple-50 dark:hover:bg-purple-950/20">
-                <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('subjects')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageSubjects')}</div>
+              <div className="group relative p-4 rounded-xl border-2 border-transparent hover:border-purple-300 dark:hover:border-purple-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <BookOpen className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      {t('subjects')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('manageSubjects')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-4 w-4 text-slate-400 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/quizzes" prefetch={true}>
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
-                <FileText className="h-4 w-4 mr-2 text-emerald-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('quizzes')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageQuizzes')}</div>
+              <div className="group relative p-4 rounded-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <FileText className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      {t('quizzes')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('manageQuizzes')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-4 w-4 text-slate-400 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/schedule" prefetch={true}>
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-amber-50 dark:hover:bg-amber-950/20">
-                <Calendar className="h-4 w-4 mr-2 text-amber-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('schedule')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('manageSchedule')}</div>
+              <div className="group relative p-4 rounded-xl border-2 border-transparent hover:border-amber-300 dark:hover:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      {t('schedule')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('manageSchedule')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-4 w-4 text-slate-400 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
           </div>
         </CardContent>
@@ -458,10 +721,37 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
   dateLocale,
   onEnrollInClass,
 }: StudentDashboardSectionProps) {
+  // Calculate performance metrics
+  const overdueCount = upcomingAssignments.filter(a => {
+    const dueDate = new Date(a.due_date);
+    const daysLeft = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return daysLeft < 0 && !a.submission;
+  }).length;
+  
+  const urgentCount = upcomingAssignments.filter(a => {
+    const dueDate = new Date(a.due_date);
+    const daysLeft = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return daysLeft <= 2 && daysLeft >= 0 && !a.submission;
+  }).length;
+  
+  const completedAssignments = upcomingAssignments.filter(a => a.submission).length;
+  const totalAssignments = upcomingAssignments.length;
+  const completionRate = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
+
   return (
     <>
+      {/* Welcome Section */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white mb-2">
+          {t('welcomeBack')} 👋
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          {t('hereIsYourOverview')}
+        </p>
+      </div>
+
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard
           title={t('myClasses')}
           value={stats.enrolledClasses}
@@ -492,18 +782,143 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
         />
       </div>
 
+      {/* Performance Metrics Section */}
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <Card className="card-elegant border-l-4 border-l-emerald-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-display text-slate-900 dark:text-white">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+              {t('performanceMetrics')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.averageGrade !== null && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {t('averageGrade')}
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600">
+                      {stats.averageGrade}%
+                    </span>
+                  </div>
+                  <Progress value={stats.averageGrade} className="h-2" />
+                </div>
+              )}
+              {stats.attendanceRate !== null && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {t('attendanceRate')}
+                    </span>
+                    <span className="text-sm font-bold text-amber-600">
+                      {stats.attendanceRate}%
+                    </span>
+                  </div>
+                  <Progress value={stats.attendanceRate} className="h-2" />
+                </div>
+              )}
+              {totalAssignments > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {t('assignmentCompletion') || 'Assignment Completion'}
+                    </span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {completionRate}%
+                    </span>
+                  </div>
+                  <Progress value={completionRate} className="h-2" />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-elegant border-l-4 border-l-purple-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-display text-slate-900 dark:text-white">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              {t('quickInsights')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                <div className="flex items-center gap-2">
+                  <School className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {t('enrolledClasses')}
+                  </span>
+                </div>
+                <Badge className="bg-blue-500 text-white">
+                  {stats.enrolledClasses}
+                </Badge>
+              </div>
+              {overdueCount > 0 && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {t('overdueAssignments') || 'Overdue Assignments'}
+                    </span>
+                  </div>
+                  <Badge className="bg-red-500 text-white">
+                    {overdueCount}
+                  </Badge>
+                </div>
+              )}
+              {urgentCount > 0 && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {t('urgentAssignments') || 'Urgent Assignments'}
+                    </span>
+                  </div>
+                  <Badge className="bg-amber-500 text-white">
+                    {urgentCount}
+                  </Badge>
+                </div>
+              )}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {t('todayEvents')}
+                  </span>
+                </div>
+                <Badge className="bg-purple-500 text-white">
+                  {stats.todayEventsCount}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Today's Schedule and Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Today's Schedule Card */}
-        <Card className="card-hover glass-strong md:col-span-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        {/* Today's Schedule Card - Enhanced */}
+        <Card className="card-elegant md:col-span-2 border-l-4 border-l-blue-500">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                {t('todaysSchedule')}
-              </CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                    {t('todaysSchedule')}
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {todayEvents.length} {todayEvents.length === 1 ? t('class') : t('classes')} {t('scheduled')}
+                  </p>
+                </div>
+              </div>
               <Link href="/dashboard/schedule" prefetch={true}>
-                <Button variant="ghost" size="sm" className="text-sm">
+                <Button variant="ghost" size="sm" className="text-sm hover:bg-blue-50 dark:hover:bg-blue-950/20">
                   {t('viewFull')}
                   <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -516,7 +931,8 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
             ) : todayEvents.length === 0 ? (
               <div className="text-center py-8 text-slate-500 dark:text-slate-400 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <Calendar className="h-16 w-16 mx-auto opacity-50 animate-float" />
+                  <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                  <Calendar className="h-16 w-16 mx-auto opacity-50 animate-float relative" />
                 </div>
                 <p className="text-sm font-semibold font-display mb-1">
                   {t('noEventsScheduledForToday')}
@@ -527,109 +943,195 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
               </div>
             ) : (
               <div className="space-y-3">
-                {todayEvents.map((e) => (
-                  <div
-                    key={e.id}
-                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} -
-                            {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                {todayEvents.map((e) => {
+                  const startTime = new Date(e.start_at);
+                  const endTime = new Date(e.end_at);
+                  const isUpcoming = startTime > new Date();
+                  const isOngoing = startTime <= new Date() && endTime > new Date();
+                  
+                  return (
+                    <div
+                      key={e.id}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                        isOngoing
+                          ? 'border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 shadow-md'
+                          : isUpcoming
+                          ? 'border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:shadow-md'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`p-2 rounded-lg ${
+                              isOngoing 
+                                ? 'bg-amber-100 dark:bg-amber-900/50' 
+                                : 'bg-blue-100 dark:bg-blue-900/30'
+                            }`}>
+                              <Clock className={`h-4 w-4 ${
+                                isOngoing ? 'text-amber-600' : 'text-blue-600'
+                              }`} />
+                            </div>
+                            <div>
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {startTime.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} - 
+                                {endTime.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isOngoing && (
+                                <Badge className="ml-2 bg-amber-500 text-white text-xs">
+                                  {t('ongoing')}
+                                </Badge>
+                              )}
+                              {isUpcoming && (
+                                <Badge className="ml-2 bg-blue-500 text-white text-xs">
+                                  {t('upcoming')}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <h4 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-2">{e.title}</h4>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                            {e.room && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
+                                📍 {e.room}
+                              </span>
+                            )}
+                            {e.mode === 'online' && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                <Video className="h-3 w-3" />
+                                {t('online')}
+                              </span>
+                            )}
+                            {e.mode === 'hybrid' && (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                <Video className="h-3 w-3" />
+                                {t('hybrid')}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{e.title}</h4>
-                        <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
-                          {e.room && <span>📍 {e.room}</span>}
-                          {e.mode === 'online' && (
-                            <span className="flex items-center gap-1">
-                              <Video className="h-3 w-3" />
-                              {t('online')}
-                            </span>
-                          )}
-                          {e.mode === 'hybrid' && (
-                            <span className="flex items-center gap-1">
-                              <Video className="h-3 w-3" />
-                              {t('hybrid')}
-                            </span>
-                          )}
-                        </div>
+                        {e.zoom_url && (
+                          <Button
+                            size="sm"
+                            className={`transition-all duration-300 hover:scale-105 ${
+                              isOngoing 
+                                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                                : 'btn-gradient'
+                            }`}
+                            onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Video className="h-3 w-3 mr-1" />
+                            {t('joinMeeting')}
+                          </Button>
+                        )}
                       </div>
-                      {e.zoom_url && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(e.zoom_url, '_blank', 'noopener,noreferrer')}
-                        >
-                          <Video className="h-3 w-3 mr-1" />
-                          {t('joinMeeting')}
-                        </Button>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions Card */}
-        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+        {/* Quick Actions Card - Enhanced */}
+        <Card className="card-elegant border-l-4 border-l-amber-500">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Zap className="h-5 w-5 text-amber-600" />
-              {t('quickActions')}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <Zap className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                  {t('quickActions')}
+                </CardTitle>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {t('accessCommonTasks')}
+                </p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             <Link href="/dashboard/my-assignments" prefetch={true} className="w-full">
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-amber-50 dark:hover:bg-amber-950/20">
-                <FileText className="h-4 w-4 mr-2 text-amber-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('myAssignments')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewAssignments')}</div>
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-amber-300 dark:hover:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <FileText className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      {t('myAssignments')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('viewAssignments')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/my-classes" prefetch={true} className="w-full">
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20">
-                <School className="h-4 w-4 mr-2 text-blue-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('myClasses')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('enrolledClasses')}</div>
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <School className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {t('myClasses')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('enrolledClasses')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/grades" prefetch={true} className="w-full">
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
-                <Award className="h-4 w-4 mr-2 text-emerald-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('grades')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewGrades')}</div>
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <Award className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      {t('grades')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('viewGrades')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
             <Link href="/dashboard/my-certificates" prefetch={true} className="w-full">
-              <Button variant="outline" className="w-full justify-start h-auto py-3 hover:bg-purple-50 dark:hover:bg-purple-950/20">
-                <GraduationCap className="h-4 w-4 mr-2 text-purple-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{t('myCertificates')}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t('viewCertificates')}</div>
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-purple-300 dark:hover:border-purple-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50 group-hover:scale-110 transition-transform duration-300">
+                    <GraduationCap className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      {t('myCertificates')}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('viewCertificates')}
+                    </p>
+                  </div>
                 </div>
-              </Button>
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* Upcoming Assignments */}
+      {/* Upcoming Assignments - Enhanced */}
       {loadingAssignments ? (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-primary">
+            <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
               <FileText className="h-5 w-5 text-amber-600" />
               {t('upcomingAssignments')}
             </CardTitle>
@@ -643,15 +1145,25 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
           </CardContent>
         </Card>
       ) : upcomingAssignments.length > 0 && (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6 border-l-4 border-l-amber-500">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display text-primary">
-                <FileText className="h-5 w-5 text-amber-600" />
-                {t('upcomingAssignments')}
-              </CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                    {t('upcomingAssignments')}
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {upcomingAssignments.length} {upcomingAssignments.length === 1 ? t('assignment') : t('assignments')}
+                    {overdueCount > 0 && ` • ${overdueCount} ${t('overdue')}`}
+                  </p>
+                </div>
+              </div>
               <Link href="/dashboard/my-assignments" prefetch={true}>
-                <Button variant="ghost" size="sm" className="text-sm">
+                <Button variant="ghost" size="sm" className="text-sm hover:bg-amber-50 dark:hover:bg-amber-950/20">
                   {t('viewAll')}
                   <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -669,49 +1181,65 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                 return (
                   <div
                     key={assignment.id}
-                    className={`p-4 rounded-lg border ${
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 ${
                       isOverdue
-                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20'
+                        ? 'border-red-300 dark:border-red-700 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 shadow-md'
                         : isUrgent
-                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20'
+                          ? 'border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30'
+                          : assignment.submission
+                          ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20'
                           : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
-                    } hover:shadow-sm transition-shadow`}
+                    } hover:shadow-lg transition-shadow`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
                             {assignment.title}
                           </h4>
                           {assignment.submission && assignment.submission.status === 'submitted' && (
-                            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            <Badge className="bg-emerald-500 text-white">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
                               {t('submitted')}
                             </Badge>
                           )}
                           {isOverdue && !assignment.submission && (
-                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                            <Badge className="bg-red-500 text-white">
                               <AlertCircle className="h-3 w-3 mr-1" />
                               {t('overdue')}
                             </Badge>
                           )}
                           {isUrgent && !assignment.submission && (
-                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                            <Badge className="bg-amber-500 text-white">
                               <Clock className="h-3 w-3 mr-1" />
-                              {t('urgent')}
+                              {t('urgent')} • {daysLeft} {daysLeft === 1 ? t('day') : t('days')} {t('left') || 'left'}
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mt-2">
-                          <span className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mt-2">
+                          <span className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">
                             <Calendar className="h-3 w-3" />
-                            {dueDate.toLocaleDateString(dateLocale)}
+                            {dueDate.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
                           </span>
-                          <span>{assignment.subject_name}</span>
-                          <span>• {assignment.class_name}</span>
+                          <span className="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                            {assignment.subject_name}
+                          </span>
+                          <span className="px-2 py-1 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                            {assignment.class_name}
+                          </span>
                         </div>
                       </div>
                       <Link href={`/dashboard/assignments/${assignment.id}/submit`} prefetch={true}>
-                        <Button size="sm" className="btn-gradient transition-all duration-300 hover:scale-105">
+                        <Button 
+                          size="sm" 
+                          className={`transition-all duration-300 hover:scale-105 ${
+                            isOverdue 
+                              ? 'bg-red-500 hover:bg-red-600 text-white' 
+                              : assignment.submission
+                              ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                              : 'btn-gradient'
+                          }`}
+                        >
                           {assignment.submission ? t('view') : t('submit')}
                         </Button>
                       </Link>
@@ -724,11 +1252,11 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
         </Card>
       )}
 
-      {/* My Enrolled Classes */}
+      {/* My Enrolled Classes - Enhanced */}
       {loadingStudentData ? (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
               <School className="h-5 w-5 text-blue-600" />
               {t('myEnrolledClasses')}
             </CardTitle>
@@ -738,18 +1266,28 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
           </CardContent>
         </Card>
       ) : (
-        <Card className="card-elegant">
+        <Card className="card-elegant mb-6 border-l-4 border-l-blue-500">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
-              <School className="h-5 w-5 text-blue-600" />
-              {t('myEnrolledClasses')}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <School className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                  {t('myEnrolledClasses')}
+                </CardTitle>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {Object.keys(myClassEnrollments).length} {Object.keys(myClassEnrollments).length === 1 ? t('class') : t('classes')} {t('enrolled') || 'enrolled'}
+                </p>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {Object.keys(myClassEnrollments).length === 0 ? (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <School className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                  <div className="absolute inset-0 bg-blue-200/20 rounded-full blur-xl"></div>
+                  <School className="h-20 w-20 mx-auto opacity-50 animate-float relative" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
                   {t('noEnrolledClasses')}
@@ -769,8 +1307,8 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   .filter((c: any) => myClassEnrollments[c.id])
                   .map((c: any) => (
                     <Link key={c.id} href={`/dashboard/my-classes/${c.id}`} prefetch={true}>
-                      <Card className="card-hover overflow-hidden cursor-pointer">
-                        <CardHeader className="hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
+                      <Card className="card-hover overflow-hidden cursor-pointer group border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300">
+                        <CardHeader className="pb-4 hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
                           <div className="flex items-start gap-4">
                             <div className="relative flex-shrink-0">
                               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300" />
@@ -778,26 +1316,27 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                                 <img
                                   src={c.image_url}
                                   alt={c.class_name || c.name}
-                                  className="w-20 h-20 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900"
+                                  className="w-20 h-20 rounded-2xl object-cover relative border-2 border-blue-100 dark:border-blue-900 group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300 shadow-lg">
                                   <GraduationCap className="h-10 w-10 text-white" />
                                 </div>
                               )}
                             </div>
                             <div className="flex-1 min-w-0 pt-1">
-                              <CardTitle className="text-xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              <CardTitle className="text-xl font-display font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                                 {c.class_name || c.name}
                               </CardTitle>
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 font-medium">
                                     {`${t('level')} ${c.level ?? '—'}`}
                                   </Badge>
                                 </div>
                                 <div className="flex items-center justify-between mt-2">
-                                  <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
+                                  <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 font-semibold">
+                                    <BookOpen className="h-3 w-3 mr-1" />
                                     {(subjectsByClass[c.id] || []).length} {(subjectsByClass[c.id] || []).length === 1 ? t('subject') : t('subjects')}
                                   </Badge>
                                   {classProgress[c.id] !== undefined && (
@@ -809,10 +1348,37 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                                     </div>
                                   )}
                                 </div>
+                                {(subjectsByClass[c.id] || []).length > 0 && (
+                                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                                      {t('subjects')}:
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {(subjectsByClass[c.id] || []).slice(0, 3).map((subject: any, idx: number) => (
+                                        <span key={idx} className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                          {subject.subject_name}
+                                        </span>
+                                      ))}
+                                      {(subjectsByClass[c.id] || []).length > 3 && (
+                                        <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                          +{(subjectsByClass[c.id] || []).length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
                         </CardHeader>
+                        <div className="px-6 pb-4">
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <ArrowRight className="h-3 w-3" />
+                              {t('viewDetails')}
+                            </span>
+                          </div>
+                        </div>
                       </Card>
                     </Link>
                   ))}
@@ -822,43 +1388,99 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
         </Card>
       )}
 
-      {/* Available Classes */}
-      {!loadingStudentData && (
-        <Card className="card-elegant">
+      {/* Available Classes - Enhanced */}
+      {loadingStudentData ? (
+        <Card className="card-elegant mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
               <BookOpen className="h-5 w-5 text-emerald-600" />
               {t('availableClassesForEnrollment')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 0 ? (
+            <div className="space-y-3">
+              {[0, 1, 2].map((idx) => (
+                <Skeleton key={idx} className="h-32 w-full rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="card-elegant mb-6 border-l-4 border-l-emerald-500">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                <BookOpen className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <CardTitle className="flex items-center gap-2 font-display text-lg text-slate-900 dark:text-white">
+                  {t('availableClassesForEnrollment')}
+                </CardTitle>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {publishedClasses.length > 0 
+                    ? `${publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length} ${publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 1 ? t('class') : t('classes')} ${t('available')}`
+                    : t('loadingClasses') || 'Loading classes...'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {publishedClasses.length === 0 ? (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float" />
+                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
+                  <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float relative" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                  {t('noAvailableClasses')}
+                  {t('noPublishedClasses') || 'No Published Classes'}
                 </h3>
-                <p className="text-sm font-sans">
-                  {t('noClassesAvailableForEnrollment')}
+                <p className="text-sm font-sans mb-4">
+                  {t('noPublishedClassesDescription') || 'There are no published classes available at the moment. Please check back later or contact your administrator.'}
                 </p>
+                <Link href="/dashboard/classes" prefetch={true}>
+                  <Button variant="outline" className="hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {t('browseAllClasses')}
+                  </Button>
+                </Link>
+              </div>
+            ) : publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 0 ? (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 animate-fade-in">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
+                  <CheckCircle2 className="h-20 w-20 mx-auto opacity-50 animate-float relative text-emerald-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+                  {t('allClassesEnrolled') || 'All Classes Enrolled'}
+                </h3>
+                <p className="text-sm font-sans mb-4">
+                  {t('allClassesEnrolledDescription') || 'You are enrolled in all available classes. Great job!'}
+                </p>
+                <Link href="/dashboard/classes" prefetch={true}>
+                  <Button variant="outline" className="hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {t('browseAllClasses')}
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {publishedClasses
                   .filter((c: any) => !myClassEnrollments[c.id])
                   .map((c: any) => (
-                    <Card key={c.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+                    <Card key={c.id} className="border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-lg group">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <CardTitle className="text-lg font-display">{c.class_name || c.name}</CardTitle>
+                            <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                              {c.class_name || c.name}
+                            </CardTitle>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                               {`${t('level')} ${c.level ?? '—'}`}
                             </p>
                           </div>
-                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                             <BookOpen className="h-6 w-6 text-white" />
                           </div>
                         </div>
@@ -874,7 +1496,17 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                           disabled={!!enrollingIds[c.id]}
                           onClick={() => onEnrollInClass(c.id)}
                         >
-                          {enrollingIds[c.id] ? t('enrolling') : t('enrollInClass')}
+                          {enrollingIds[c.id] ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t('enrolling')}
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-2" />
+                              {t('enrollInClass')}
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
@@ -1132,16 +1764,32 @@ export default function DashboardPage() {
         fetchMyClassEnrollments(),
       ]);
       
-      if (!pub.error && pub.data) {
+      // معالجة الفصول المنشورة
+      if (pub.error) {
+        console.error('Error fetching published classes:', pub.error);
+        toast.error(t('failedToLoadClasses' as TranslationKey));
+        setPublishedClasses([]);
+      } else if (pub.data) {
+        console.log('Published classes fetched:', pub.data.length);
         setPublishedClasses(pub.data as any[]);
+      } else {
+        console.warn('No published classes data returned');
+        setPublishedClasses([]);
       }
       
       // إنشاء خريطة للتسجيلات
       const enrolled: Record<string, boolean> = {};
-      (mine.data || []).forEach((e: any) => { 
-        enrolled[e.class_id] = true; 
-      });
+      if (mine.data && !mine.error) {
+        (mine.data || []).forEach((e: any) => { 
+          enrolled[e.class_id] = true; 
+        });
+        console.log('Enrolled classes:', Object.keys(enrolled).length);
+      }
       setMyClassEnrollments(enrolled);
+      
+      // حساب الفصول المتاحة للتسجيل
+      const availableClasses = pub.data?.filter((c: any) => !enrolled[c.id]) || [];
+      console.log('Available classes for enrollment:', availableClasses.length);
 
       // جلب المواد لكل فصل مسجل فيه
       const enrolledClassIds = Object.keys(enrolled);
@@ -2456,7 +3104,7 @@ export default function DashboardPage() {
             ) : (
               <Card className="card-elegant">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                  <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
                     <School className="h-5 w-5 text-blue-600" />
                     {t('myEnrolledClasses' as TranslationKey)}
                   </CardTitle>
@@ -2559,7 +3207,7 @@ export default function DashboardPage() {
             ) : (
               <Card className="card-elegant">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display text-gradient">
+                  <CardTitle className="flex items-center gap-2 font-display text-slate-900 dark:text-white">
                     <BookOpen className="h-5 w-5 text-emerald-600" />
                     {t('availableClassesForEnrollment' as TranslationKey)}
                   </CardTitle>

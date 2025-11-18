@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Bell, ExternalLink, Send, MessageSquare, CheckCircle, Clock, Users, School, Link as LinkIcon, Plus, Loader2 } from 'lucide-react';
+import { Bell, ExternalLink, Send, MessageSquare, CheckCircle, Clock, Users, School, Link as LinkIcon, Plus, Loader2, ArrowRight, Eye } from 'lucide-react';
 import { fetchMyNotifications, markNotificationRead, createNotification, supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -312,44 +312,93 @@ export default function MessagesPage() {
                             {t('markAsRead')}
                           </Button>
                         )}
-                        {n.link_url && n.link_url.trim() && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (n.link_url && n.link_url.trim()) {
-                                try {
-                                  let url = n.link_url.trim();
-                                  
-                                  // Check if it's an internal link (starts with /)
-                                  if (url.startsWith('/')) {
-                                    // Internal link - use router
-                                    router.push(url);
-                                  } else {
-                                    // External link - add protocol if missing and open in new tab
-                                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                                      url = `https://${url}`;
+                        {n.link_url && n.link_url.trim() && (() => {
+                          let url = n.link_url.trim();
+                          
+                          // Check if it's a full URL with the same origin (internal link with full URL)
+                          try {
+                            const currentOrigin = window.location.origin;
+                            const urlObj = new URL(url, currentOrigin);
+                            
+                            // If it's the same origin, extract the pathname and use it as internal link
+                            if (urlObj.origin === currentOrigin) {
+                              url = urlObj.pathname + urlObj.search + urlObj.hash;
+                            }
+                          } catch (e) {
+                            // If URL parsing fails, treat as relative path
+                          }
+                          
+                          const isInternal = url.startsWith('/') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('tel:'));
+                          
+                          if (isInternal) {
+                            // Internal link - use router.push for proper navigation
+                            // Ensure it starts with / for proper routing
+                            const internalPath = url.startsWith('/') ? url : `/${url}`;
+                            
+                            return (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 text-xs"
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  try {
+                                    // Mark as read when opening internal link
+                                    if (!n.read_at) {
+                                      await onRead(n.id);
                                     }
-                                    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                                    // Navigate to the exact path
+                                    router.push(internalPath);
+                                  } catch (error) {
+                                    console.error('Error opening link:', error);
+                                    toast.error(t('errorOpeningLink'));
+                                  }
+                                }}
+                              >
+                                <ArrowRight className="h-3 w-3 mr-1" />
+                                {t('view')}
+                              </Button>
+                            );
+                          } else {
+                            // External link - open in new tab
+                            return (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  try {
+                                    let finalUrl = url;
+                                    // Add protocol if missing
+                                    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://') && !finalUrl.startsWith('mailto:') && !finalUrl.startsWith('tel:')) {
+                                      finalUrl = `https://${finalUrl}`;
+                                    }
+                                    const newWindow = window.open(finalUrl, '_blank', 'noopener,noreferrer');
                                     if (!newWindow) {
                                       toast.error(t('popupBlocked'));
+                                    } else {
+                                      // Mark as read when opening external link
+                                      if (!n.read_at) {
+                                        await onRead(n.id);
+                                      }
                                     }
+                                  } catch (error) {
+                                    console.error('Error opening link:', error);
+                                    toast.error(t('errorOpeningLink'));
                                   }
-                                } catch (error) {
-                                  console.error('Error opening link:', error);
-                                  toast.error(t('errorOpeningLink'));
-                                }
-                              }
-                            }}
-                            className="h-8 text-xs"
-                            type="button"
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            {t('open')}
-                          </Button>
-                        )}
+                                }}
+                                className="h-8 text-xs"
+                                type="button"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                {t('view')}
+                              </Button>
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
                   </div>
