@@ -235,6 +235,7 @@ export async function fetchMyEnrolledClassesWithDetails() {
   }
   
   const classIds = enrollments.map(e => e.class_id);
+  const enrolledMap = new Map(enrollments.map((e) => [e.class_id, e.enrolled_at]));
   
   // Get classes details
   const { data: classes, error: cErr } = await supabase
@@ -244,7 +245,12 @@ export async function fetchMyEnrolledClassesWithDetails() {
   
   if (cErr) return { data: [], error: cErr };
   
-  return { data: classes || [], error: null };
+  const enriched = (classes || []).map((cls: any) => ({
+    ...cls,
+    enrolled_at: enrolledMap.get(cls.id) || null,
+  }));
+  
+  return { data: enriched, error: null };
 }
 
 export async function fetchSubjectsForClass(classId: string) {
@@ -765,6 +771,10 @@ export async function getMyConversations() {
   );
   
   return { data: myConversations, error: null };
+}
+
+export async function ensureSubjectConversation(subjectId: string) {
+  return await supabase.rpc('ensure_subject_conversation', { p_subject_id: subjectId });
 }
 
 // Get conversation messages with sender info

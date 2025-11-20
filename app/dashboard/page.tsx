@@ -1157,8 +1157,8 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                     {t('upcomingAssignments')}
                   </CardTitle>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {upcomingAssignments.length} {upcomingAssignments.length === 1 ? t('assignment') : t('assignments')}
-                    {overdueCount > 0 && ` • ${overdueCount} ${t('overdue')}`}
+                    {upcomingAssignments.length} {upcomingAssignments.length === 1 ? t('assignment' as TranslationKey) : t('assignments' as TranslationKey)}
+                    {overdueCount > 0 && ` • ${overdueCount} ${t('overdue' as TranslationKey)}`}
                   </p>
                 </div>
               </div>
