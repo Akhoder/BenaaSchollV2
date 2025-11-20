@@ -23,7 +23,8 @@ import {
   Award,
   ChevronDown,
   ChevronRight,
-  Bot
+  Bot,
+  BarChart3
 } from 'lucide-react';
 import { IntelligentSearch } from '@/components/IntelligentSearch';
 import Link from 'next/link';
@@ -90,6 +91,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('quizzes'), href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher'] },
+        { name: t('analytics') || 'Analytics', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },

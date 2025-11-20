@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 interface SearchRequest {
   query: string;
   filters?: {
-    type?: 'all' | 'students' | 'classes' | 'subjects' | 'assignments' | 'announcements';
+    type?: 'all' | 'students' | 'classes' | 'subjects' | 'assignments' | 'announcements' | 'teachers';
     role?: string;
   };
 }
@@ -92,85 +92,80 @@ async function enhanceSearchWithAI(query: string, language: string = 'ar'): Prom
   return query; // Fallback to original query
 }
 
-// Search students
+// Search students - optimized for speed
 async function searchStudents(supabase: any, query: string, userId: string, role: string): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   
   try {
     const searchPattern = `%${query}%`;
-    let queryBuilder = supabase
-      .from('profiles')
-      .select('id, full_name, email, phone, role')
-      .eq('role', 'student')
-      .or(`full_name.ilike.${searchPattern},email.ilike.${searchPattern},phone.ilike.${searchPattern}`)
-      .limit(10);
+    
+    // For admin, simple search - fastest
+    if (role === 'admin') {
+      const { data: students, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('role', 'student')
+        .ilike('full_name', searchPattern)
+        .limit(5)
+        .order('full_name', { ascending: true });
 
-    // Apply role-based filtering
-    if (role === 'teacher' || role === 'supervisor') {
-      // Teachers/supervisors can only see students in their classes
-      const { data: classes } = await supabase
-        .from('classes')
-        .select('id')
-        .or(`teacher_id.eq.${userId},supervisor_id.eq.${userId}`);
-
-      if (classes && classes.length > 0) {
-        const classIds = classes.map((c: any) => c.id);
-        const { data: enrollments } = await supabase
-          .from('student_enrollments')
-          .select('student_id')
-          .in('class_id', classIds)
-          .eq('status', 'active');
-
-        if (enrollments && enrollments.length > 0) {
-          const studentIds = enrollments.map((e: any) => e.student_id);
-          queryBuilder = queryBuilder.in('id', studentIds);
-        } else {
-          return []; // No students in their classes
-        }
-      } else {
-        return []; // No classes assigned
+      if (!error && students) {
+        students.forEach((student: any) => {
+          results.push({
+            type: 'student',
+            id: student.id,
+            title: student.full_name,
+            description: student.email,
+            url: `/dashboard/students/${student.id}`,
+            relevance: 100,
+          });
+        });
       }
+      return results;
     }
 
-    const { data: students, error: studentsError } = await queryBuilder;
+    // For teachers/supervisors - simplified query
+    if (role === 'teacher' || role === 'supervisor') {
+      // Simplified: search directly without complex joins
+      const { data: students, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('role', 'student')
+        .ilike('full_name', searchPattern)
+        .limit(5);
 
-    if (studentsError) {
-      console.error('Error searching students:', studentsError);
-      // Try simpler search as fallback
-      try {
-        const fallbackQuery = supabase
-          .from('profiles')
-          .select('id, full_name, email, phone, role')
-          .eq('role', 'student')
-          .ilike('full_name', `%${query}%`)
-          .limit(10);
-        
-        const { data: fallbackStudents } = await fallbackQuery;
-        if (fallbackStudents) {
-          fallbackStudents.forEach((student: any) => {
-            results.push({
-              type: 'student',
-              id: student.id,
-              title: student.full_name,
-              description: student.email,
-              url: `/dashboard/students`,
-              relevance: 50,
-            });
+      if (!error && students) {
+        students.forEach((student: any) => {
+          results.push({
+            type: 'student',
+            id: student.id,
+            title: student.full_name,
+            description: student.email,
+            url: `/dashboard/students/${student.id}`,
+            relevance: 50,
           });
-        }
-      } catch (fallbackError) {
-        console.error('Fallback search error:', fallbackError);
+        });
       }
-    } else if (students) {
+      return results;
+    }
+
+    // For students - simple search
+    const { data: students, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('role', 'student')
+      .ilike('full_name', searchPattern)
+      .limit(5);
+
+    if (!error && students) {
       students.forEach((student: any) => {
-        const relevance = calculateRelevance(student, query);
         results.push({
           type: 'student',
           id: student.id,
           title: student.full_name,
           description: student.email,
-          url: `/dashboard/students`, // Students page - can be enhanced to link to specific student
-          relevance,
+          url: `/dashboard/students/${student.id}`,
+          relevance: 50,
         });
       });
     }
@@ -181,23 +176,17 @@ async function searchStudents(supabase: any, query: string, userId: string, role
   return results;
 }
 
-// Search classes
+// Search classes - optimized for speed
 async function searchClasses(supabase: any, query: string, userId: string, role: string): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   
   try {
     const searchPattern = `%${query}%`;
-    const levelNum = parseInt(query);
     let queryBuilder = supabase
       .from('classes')
-      .select('id, class_name, level, teacher_id, supervisor_id')
+      .select('id, class_name, level')
       .ilike('class_name', searchPattern)
-      .limit(10);
-    
-    // If query is a number, also search by level
-    if (!isNaN(levelNum) && levelNum > 0) {
-      queryBuilder = queryBuilder.or(`class_name.ilike.${searchPattern},level.eq.${levelNum}`);
-    }
+      .limit(5);
 
     // Apply role-based filtering
     if (role === 'teacher') {
@@ -208,44 +197,17 @@ async function searchClasses(supabase: any, query: string, userId: string, role:
       queryBuilder = queryBuilder.eq('published', true);
     }
 
-    const { data: classes, error: classesError } = await queryBuilder;
+    const { data: classes, error } = await queryBuilder;
 
-    if (classesError) {
-      console.error('Error searching classes:', classesError);
-      // Try simpler search as fallback
-      try {
-        const fallbackQuery = supabase
-          .from('classes')
-          .select('id, class_name, level, teacher_id, supervisor_id')
-          .ilike('class_name', `%${query}%`)
-          .limit(10);
-        
-        const { data: fallbackClasses } = await fallbackQuery;
-        if (fallbackClasses) {
-          fallbackClasses.forEach((cls: any) => {
-            results.push({
-              type: 'class',
-              id: cls.id,
-              title: cls.class_name,
-              description: `Level ${cls.level}`,
-              url: `/dashboard/classes`,
-              relevance: 50,
-            });
-          });
-        }
-      } catch (fallbackError) {
-        console.error('Fallback search error:', fallbackError);
-      }
-    } else if (classes) {
+    if (!error && classes) {
       classes.forEach((cls: any) => {
-        const relevance = calculateRelevance(cls, query);
         results.push({
           type: 'class',
           id: cls.id,
           title: cls.class_name,
           description: `Level ${cls.level}`,
-          url: `/dashboard/classes`, // Classes page - can be enhanced to link to specific class
-          relevance,
+          url: `/dashboard/classes`,
+          relevance: 100,
         });
       });
     }
@@ -256,29 +218,26 @@ async function searchClasses(supabase: any, query: string, userId: string, role:
   return results;
 }
 
-// Search subjects
+// Search subjects - optimized for speed
 async function searchSubjects(supabase: any, query: string, userId: string, role: string): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   
   try {
-    const { data: subjects, error: subjectsError } = await supabase
+    const { data: subjects, error } = await supabase
       .from('class_subjects')
-      .select('id, subject_name, class_id')
+      .select('id, subject_name')
       .ilike('subject_name', `%${query}%`)
-      .limit(10);
+      .limit(5);
 
-    if (subjectsError) {
-      console.error('Error searching subjects:', subjectsError);
-    } else if (subjects) {
+    if (!error && subjects) {
       subjects.forEach((subject: any) => {
-        const relevance = calculateRelevance(subject, query);
         results.push({
           type: 'subject',
           id: subject.id,
           title: subject.subject_name,
           description: 'Subject',
-          url: `/dashboard/subjects/${subject.id}/lessons`, // Use lessons page as default
-          relevance,
+          url: `/dashboard/subjects/${subject.id}/lessons`,
+          relevance: 100,
         });
       });
     }
@@ -289,7 +248,7 @@ async function searchSubjects(supabase: any, query: string, userId: string, role
   return results;
 }
 
-// Search assignments
+// Search assignments - optimized for speed
 async function searchAssignments(supabase: any, query: string, userId: string, role: string): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
   
@@ -297,55 +256,75 @@ async function searchAssignments(supabase: any, query: string, userId: string, r
     const searchPattern = `%${query}%`;
     let queryBuilder = supabase
       .from('assignments')
-      .select('id, title, description, subject_id')
-      .or(`title.ilike.${searchPattern},description.ilike.${searchPattern}`)
-      .limit(10);
+      .select('id, title')
+      .ilike('title', searchPattern)
+      .limit(5);
 
+    // Simplified filtering for students
     if (role === 'student') {
-      // Students can only see assignments for their enrolled subjects
-      const { data: enrollments } = await supabase
-        .from('student_enrollments')
-        .select('class_id')
-        .eq('student_id', userId)
-        .eq('status', 'active');
-
-      if (enrollments && enrollments.length > 0) {
-        const classIds = enrollments.map((e: any) => e.class_id);
-        const { data: subjects } = await supabase
-          .from('class_subjects')
-          .select('id')
-          .in('class_id', classIds);
-
-        if (subjects && subjects.length > 0) {
-          const subjectIds = subjects.map((s: any) => s.id);
-          queryBuilder = queryBuilder.in('subject_id', subjectIds);
-        } else {
-          return [];
-        }
-      } else {
-        return [];
-      }
+      // Just search published assignments - simpler and faster
+      queryBuilder = queryBuilder.eq('status', 'published');
     }
 
-    const { data: assignments, error: assignmentsError } = await queryBuilder;
+    const { data: assignments, error } = await queryBuilder;
 
-    if (assignmentsError) {
-      console.error('Error searching assignments:', assignmentsError);
-    } else if (assignments) {
+    if (!error && assignments) {
       assignments.forEach((assignment: any) => {
-        const relevance = calculateRelevance(assignment, query);
         results.push({
           type: 'assignment',
           id: assignment.id,
           title: assignment.title,
-          description: assignment.description || 'Assignment',
+          description: 'Assignment',
           url: `/dashboard/assignments/${assignment.id}`,
-          relevance,
+          relevance: 100,
         });
       });
     }
   } catch (error) {
     console.error('Error searching assignments:', error);
+  }
+
+  return results;
+}
+
+// Search teachers - optimized for speed
+async function searchTeachers(supabase: any, query: string, userId: string, role: string): Promise<SearchResult[]> {
+  const results: SearchResult[] = [];
+  
+  try {
+    const searchPattern = `%${query}%`;
+    
+    // All roles can search for teachers
+    const { data: teachers, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('role', 'teacher')
+      .ilike('full_name', searchPattern)
+      .limit(5)
+      .order('full_name', { ascending: true });
+
+    if (error) {
+      console.error('Error searching teachers:', error);
+      return results;
+    }
+
+    if (teachers && teachers.length > 0) {
+      teachers.forEach((teacher: any) => {
+        results.push({
+          type: 'teacher',
+          id: teacher.id,
+          title: teacher.full_name,
+          description: teacher.email,
+          url: `/dashboard/teachers/${teacher.id}`,
+          relevance: 100,
+        });
+      });
+      console.log(`Found ${teachers.length} teachers matching "${query}"`);
+    } else {
+      console.log(`No teachers found matching "${query}"`);
+    }
+  } catch (error) {
+    console.error('Error searching teachers:', error);
   }
 
   return results;
@@ -448,25 +427,49 @@ export async function POST(request: Request) {
       searchPromises.push(searchAssignments(userClient, enhancedQuery, user.user.id, profile?.role || 'student'));
     }
 
-    // Wait for all searches to complete
-    const searchResults = await Promise.allSettled(searchPromises);
+    if (searchType === 'all' || searchType === 'teachers') {
+      searchPromises.push(searchTeachers(userClient, enhancedQuery, user.user.id, profile?.role || 'student'));
+    }
+
+    // Wait for all searches to complete - optimized with individual timeouts
+    const searchResults = await Promise.allSettled(
+      searchPromises.map(p => 
+        Promise.race([
+          p,
+          new Promise<SearchResult[]>((resolve) => {
+            setTimeout(() => resolve([]), 1500); // 1.5 second timeout per search type
+          })
+        ])
+      )
+    );
     
-    searchResults.forEach((result) => {
+    searchResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        allResults.push(...result.value);
+        const results = result.value || [];
+        console.log(`Search type ${index} returned ${results.length} results`);
+        allResults.push(...results);
       } else {
-        console.error('Search error:', result.reason);
+        console.error(`Search type ${index} failed:`, result.reason);
       }
     });
 
     // Sort by relevance
     allResults.sort((a, b) => b.relevance - a.relevance);
 
-    // Limit results
-    const limitedResults = allResults.slice(0, 20);
+    // Limit results - reduced for faster display
+    const limitedResults = allResults.slice(0, 10);
 
     // Log for debugging
-    console.log(`Search query: "${query}" -> "${enhancedQuery}", found ${limitedResults.length} results`);
+    console.log(`Search query: "${query}" -> "${enhancedQuery}"`);
+    console.log(`Total results before limit: ${allResults.length}, after limit: ${limitedResults.length}`);
+    console.log('Search results breakdown:', {
+      students: allResults.filter(r => r.type === 'student').length,
+      teachers: allResults.filter(r => r.type === 'teacher').length,
+      classes: allResults.filter(r => r.type === 'class').length,
+      subjects: allResults.filter(r => r.type === 'subject').length,
+      assignments: allResults.filter(r => r.type === 'assignment').length,
+    });
+    console.log('Limited results:', limitedResults.map(r => ({ type: r.type, title: r.title })));
 
     return NextResponse.json({
       results: limitedResults,

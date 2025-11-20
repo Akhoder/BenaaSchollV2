@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Loader2, Users, School, BookOpen, FileText, Mic, X } from 'lucide-react';
+import { Search, Loader2, Users, School, BookOpen, FileText, Mic, X, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
@@ -23,6 +23,7 @@ interface SearchResult {
 
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   student: Users,
+  teacher: GraduationCap,
   class: School,
   subject: BookOpen,
   assignment: FileText,
@@ -31,6 +32,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const typeLabels: Record<string, Record<string, string>> = {
   student: { en: 'Student', ar: 'طالب', fr: 'Étudiant' },
+  teacher: { en: 'Teacher', ar: 'معلم', fr: 'Enseignant' },
   class: { en: 'Class', ar: 'فصل', fr: 'Classe' },
   subject: { en: 'Subject', ar: 'مادة', fr: 'Matière' },
   assignment: { en: 'Assignment', ar: 'واجب', fr: 'Devoir' },
@@ -53,24 +55,37 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Debounce search
+  // Simple cache for search results
+  const searchCache = useRef<Map<string, { results: SearchResult[]; timestamp: number }>>(new Map());
+  const CACHE_DURATION = 30000; // 30 seconds
+
+  // Clear results when query is empty
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setOpen(false);
+      setIsLoading(false);
+    }
+  }, [query]);
+
+  // NO automatic search on every keystroke!
+  // Search only when user explicitly triggers it (Enter, Space, or blur)
+
+  const performSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim() || !user) {
+      setIsLoading(false);
       return;
     }
 
-    const timeoutId = setTimeout(() => {
-      performSearch(query);
-    }, 300);
+    // Check cache first for instant results
+    const cached = searchCache.current.get(searchQuery.toLowerCase().trim());
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setResults(cached.results);
+      setOpen(true);
+      setIsLoading(false);
+      return;
+    }
 
-    return () => clearTimeout(timeoutId);
-  }, [query]);
-
-  const performSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim() || !user) return;
-
-    setIsLoading(true);
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
@@ -90,15 +105,27 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Search failed');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Search API error:', response.status, errorData);
+        throw new Error(`Search failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Search results:', data);
-      setResults(data.results || []);
+      const results = data.results || [];
+      
+      console.log('Search response:', { query: searchQuery, resultsCount: results.length, results });
+      
+      // Cache results
+      searchCache.current.set(searchQuery.toLowerCase().trim(), {
+        results,
+        timestamp: Date.now(),
+      });
+      
+      setResults(results);
+      setOpen(results.length > 0);
       
       // If no results, log for debugging
-      if (!data.results || data.results.length === 0) {
+      if (results.length === 0) {
         console.warn('No search results found for query:', searchQuery);
       }
     } catch (error) {
@@ -187,7 +214,42 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
               }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setOpen(true)}
+              onFocus={() => {
+                if (query.trim() && results.length > 0) {
+                  setOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                // Search immediately on Enter key (user wants to search now)
+                if (e.key === 'Enter' && query.trim()) {
+                  e.preventDefault();
+                  performSearch(query.trim());
+                }
+                // Search on Space (word completion) - triggers search after space is added
+                if (e.key === ' ' && query.trim().length >= 2) {
+                  // Wait for space to be added to query, then search
+                  setTimeout(() => {
+                    const newQuery = (e.target as HTMLInputElement).value.trim();
+                    if (newQuery.length >= 2) {
+                      performSearch(newQuery);
+                    }
+                  }, 50);
+                }
+                // Close on Escape
+                if (e.key === 'Escape') {
+                  setOpen(false);
+                  setQuery('');
+                  setResults([]);
+                }
+              }}
+              onBlur={() => {
+                // Search when user clicks away (if there's a meaningful query)
+                if (query.trim().length >= 2) {
+                  setTimeout(() => {
+                    performSearch(query.trim());
+                  }, 150);
+                }
+              }}
               className="pl-10 pr-20 w-full sm:w-64 md:w-80 lg:w-96"
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
@@ -233,13 +295,13 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
         <Command>
           <CommandList>
             {isLoading ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  {language === 'ar' ? 'جاري البحث...' : 'Searching...'}
+              <div className="flex flex-col items-center justify-center p-6">
+                <Loader2 className="h-5 w-5 animate-spin text-primary mb-2" />
+                <span className="text-sm text-muted-foreground">
+                  {language === 'ar' ? 'جاري البحث...' : language === 'fr' ? 'Recherche en cours...' : 'Searching...'}
                 </span>
               </div>
-            ) : results.length === 0 && query ? (
+            ) : results.length === 0 && query && !isLoading ? (
               <CommandEmpty>
                 {language === 'ar' 
                   ? 'لا توجد نتائج'
@@ -265,13 +327,13 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
                         <CommandItem
                           key={result.id}
                           onSelect={() => handleSelect(result)}
-                          className="cursor-pointer"
+                          className="cursor-pointer hover:bg-accent transition-colors"
                         >
-                          <Icon className="mr-2 h-4 w-4" />
-                          <div className="flex flex-col">
-                            <span className="font-medium">{result.title}</span>
+                          <Icon className="mr-2 h-4 w-4 flex-shrink-0" />
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="font-medium truncate">{result.title}</span>
                             {result.description && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground truncate">
                                 {result.description}
                               </span>
                             )}
