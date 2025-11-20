@@ -1,74 +1,130 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { PageHeader } from '@/components/PageHeader';
 import { CardGridSkeleton, PageHeaderSkeleton, ListSkeleton } from '@/components/SkeletonLoaders';
 import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { 
-  School, 
   BookOpen, 
-  Loader2, 
   GraduationCap, 
   ArrowLeft,
   CheckCircle,
   CircleCheck,
   CircleDot,
   ArrowRight,
-  User
+  User,
+  FileText,
+  Calendar,
+  MessageCircle
 } from 'lucide-react';
-import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats } from '@/lib/supabase';
+import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats, ensureSubjectConversation, getConversationMessages, sendMessage, subscribeToMessages } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 
 export default function ClassViewPage() {
   const params = useParams();
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const classId = (params?.classId as string) || '';
 
   const [classData, setClassData] = useState<any>(null);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [subjectProgress, setSubjectProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterTab, setFilterTab] = useState<'all' | 'in_progress' | 'completed' | 'not_started'>('all');
+  const [lastActivity, setLastActivity] = useState<{ label: string; date: string; link: string } | null>(null);
+  const [discussionSubject, setDiscussionSubject] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-      return;
-    }
-    if (!authLoading && profile && profile.role !== 'student') {
-      router.push('/dashboard');
-      return;
-    }
-    if (profile?.role === 'student' && classId) {
-      loadData().catch(() => {});
-    }
-  }, [profile, authLoading, router, classId]);
+  type ProgressStatus = 'completed' | 'in_progress' | 'not_started';
 
-  const loadData = async () => {
+  const statusIconMap: Record<ProgressStatus, typeof CircleCheck> = {
+    completed: CircleCheck,
+    in_progress: CheckCircle,
+    not_started: CircleDot,
+  };
+
+  const statusLabelMap: Record<ProgressStatus, TranslationKey> = {
+    completed: 'statusCompleted',
+    in_progress: 'statusInProgress',
+    not_started: 'statusNotStarted',
+  };
+
+  const getCompletionColor = (progress: number) => {
+    if (progress >= 80) return 'bg-emerald-500';
+    if (progress >= 50) return 'bg-blue-500';
+    if (progress > 0) return 'bg-amber-500';
+    return 'bg-gray-300 dark:bg-gray-700';
+  };
+
+  const getProgressStatus = (progress: any): ProgressStatus => {
+    if (!progress || progress.total_lessons === 0) {
+      return 'not_started';
+    }
+    if (progress.completed_lessons === progress.total_lessons) {
+      return 'completed';
+    }
+    if (progress.completed_lessons > 0 || progress.in_progress_lessons > 0) {
+      return 'in_progress';
+    }
+    return 'not_started';
+  };
+
+  const dateLocale = useMemo(() => (language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US'), [language]);
+
+  const subjectsWithStatus = useMemo(() => {
+    return subjects.map((subject) => {
+      const progress = subjectProgress[subject.id];
+      const status = getProgressStatus(progress);
+      return { subject, progress, status };
+    });
+  }, [subjects, subjectProgress]);
+
+  const filteredSubjects = useMemo(() => {
+    if (filterTab === 'all') return subjectsWithStatus;
+    return subjectsWithStatus.filter((item) => item.status === filterTab);
+  }, [subjectsWithStatus, filterTab]);
+
+  const overviewStats = useMemo(() => {
+    const total = subjectsWithStatus.length;
+    const completed = subjectsWithStatus.filter((s) => s.status === 'completed').length;
+    const inProgress = subjectsWithStatus.filter((s) => s.status === 'in_progress').length;
+    const notStarted = subjectsWithStatus.filter((s) => s.status === 'not_started').length;
+    return { total, completed, inProgress, notStarted };
+  }, [subjectsWithStatus]);
+
+  const loadData = useCallback(async () => {
+    if (!profile || profile.role !== 'student' || !classId) return;
     try {
       setLoading(true);
+      setError(null);
       
       // Fetch classes to find the one we need
       const { data: myClasses, error: cErr } = await fetchMyEnrolledClassesWithDetails();
       if (cErr) {
         console.error(cErr);
-        toast.error('Error loading class');
+        const message = t('errorLoadingClass' as TranslationKey);
+        toast.error(message);
+        setError(message);
         return;
       }
       
       const selectedClass = (myClasses || []).find((c: any) => c.id === classId);
       if (!selectedClass) {
-        toast.error('Class not found');
+        const message = t('classNotFound' as TranslationKey);
+        toast.error(message);
         router.push('/dashboard/my-classes');
         return;
       }
@@ -76,7 +132,16 @@ export default function ClassViewPage() {
       setClassData(selectedClass);
 
       // Load subjects for this class
-      const { data: subjectsData } = await fetchSubjectsForClass(classId);
+      const { data: subjectsData, error: subjectsError } = await fetchSubjectsForClass(classId);
+      if (subjectsError) {
+        console.error(subjectsError);
+        const message = t('errorLoadingSubjects' as TranslationKey);
+        toast.error(message);
+        setError(message);
+        setSubjects([]);
+        setSubjectProgress({});
+        return;
+      }
       const subjectsList = (subjectsData || []) as any[];
       setSubjects(subjectsList);
 
@@ -88,20 +153,62 @@ export default function ClassViewPage() {
         
         const progressResults = await Promise.all(progressPromises);
         const progressMap: Record<string, any> = {};
-        progressResults.forEach(({ subjectId, progress }) => {
-          if (progress) {
-            progressMap[subjectId] = progress;
+        let latestActivity: { label: string; date: string; link: string } | null = null;
+
+        subjectsList.forEach((subject) => {
+          const progressEntry = progressResults.find((result) => result.subjectId === subject.id)?.progress;
+          if (progressEntry) {
+            progressMap[subject.id] = progressEntry;
+          }
+
+          const activityDate =
+            progressEntry?.last_activity_at ||
+            progressEntry?.last_completed_at ||
+            progressEntry?.updated_at ||
+            subject.updated_at ||
+            subject.created_at;
+
+          if (activityDate) {
+            const current = new Date(activityDate).getTime();
+            const lastTime = latestActivity ? new Date(latestActivity.date).getTime() : 0;
+            if (!latestActivity || current > lastTime) {
+              latestActivity = {
+                label: subject.subject_name,
+                date: activityDate,
+                link: `/dashboard/my-classes/${classId}/subjects/${subject.id}`,
+              };
+            }
           }
         });
         setSubjectProgress(progressMap);
+        setLastActivity(latestActivity);
+      } else {
+        setSubjectProgress({});
+        setLastActivity(null);
       }
     } catch (e) {
       console.error(e);
-      toast.error('Error loading data');
+      const message = t('unexpectedError' as TranslationKey);
+      toast.error(message);
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile, classId, router, t]);
+
+  useEffect(() => {
+    if (!authLoading && !profile) {
+      router.push('/login');
+      return;
+    }
+    if (!authLoading && profile && profile.role !== 'student') {
+      router.push('/dashboard');
+      return;
+    }
+    if (!authLoading && profile?.role === 'student' && classId) {
+      loadData().catch(() => {});
+    }
+  }, [profile, authLoading, router, classId, loadData]);
 
   if (authLoading || loading) {
     return (
@@ -119,38 +226,36 @@ export default function ClassViewPage() {
     return null;
   }
 
-  const getCompletionColor = (progress: number) => {
-    if (progress >= 80) return 'bg-emerald-500';
-    if (progress >= 50) return 'bg-blue-500';
-    if (progress > 0) return 'bg-amber-500';
-    return 'bg-gray-300 dark:bg-gray-700';
-  };
-
-  const getProgressLabel = (progress: any) => {
-    if (!progress || progress.total_lessons === 0) {
-      return { status: 'not_started', icon: CircleDot, text: 'Not Started' };
-    }
-    if (progress.completed_lessons === progress.total_lessons) {
-      return { status: 'completed', icon: CircleCheck, text: 'Completed' };
-    }
-    if (progress.completed_lessons > 0 || progress.in_progress_lessons > 0) {
-      return { status: 'in_progress', icon: CheckCircle, text: 'In Progress' };
-    }
-    return { status: 'not_started', icon: CircleDot, text: 'Not Started' };
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          onClick={() => router.push('/dashboard/my-classes')}
-          className="mb-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Classes
-        </Button>
+        {error && (
+          <ErrorDisplay
+            error={error}
+            title={t('errorLoadingClass' as TranslationKey)}
+            onRetry={loadData}
+          />
+        )}
+
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Back Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push('/dashboard/my-classes')}
+            className="w-fit"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('backToClasses' as TranslationKey)}
+          </Button>
+          {classData.enrolled_at && (
+            <div className="text-sm text-muted-foreground">
+              {t('enrolledOn' as TranslationKey)}{' '}
+              <span className="font-medium text-foreground">
+                {new Date(classData.enrolled_at).toLocaleDateString(dateLocale)}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Class Header */}
         <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 border border-white/20 bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700 text-white shadow-2xl">
@@ -184,146 +289,498 @@ export default function ClassViewPage() {
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Enrolled</span>
+                    <span className="text-sm font-medium">{t('enrolledStatus' as TranslationKey)}</span>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <Badge variant="outline" className="bg-white/20 border-white/30 text-white">
-                      Level {classData.level}
+                      {`${t('level' as TranslationKey)} ${classData.level ?? '—'}`}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                     <BookOpen className="w-4 h-4" />
-                    <span className="text-sm font-medium">{subjects.length} Subjects</span>
+                    <span className="text-sm font-medium">
+                      {subjects.length}{' '}
+                      {subjects.length === 1 ? t('subject' as TranslationKey) : t('subjects' as TranslationKey)}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
+            {lastActivity ? (
+              <div className="mt-8">
+                <div className="rounded-2xl bg-white/10 border border-white/20 p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm uppercase tracking-wide text-white/70 mb-1">
+                      {t('latestActivity' as TranslationKey)}
+                    </p>
+                    <h3 className="text-xl font-semibold">{lastActivity.label}</h3>
+                    <p className="text-sm text-white/80">
+                      {new Date(lastActivity.date).toLocaleString(dateLocale, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </p>
+                  </div>
+                  <Link href={lastActivity.link} className="w-full md:w-auto">
+                    <Button variant="secondary" className="w-full md:w-auto gap-2">
+                      <ArrowRight className="h-4 w-4" />
+                      {t('continueLearning' as TranslationKey)}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-8 text-sm text-white/70">
+                {t('noActivityYet' as TranslationKey)}
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Overview Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('classOverview' as TranslationKey)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {overviewStats.total}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('totalSubjectsLabel' as TranslationKey)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('subjectsCompleted' as TranslationKey)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {overviewStats.completed}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {Math.round((overviewStats.completed / Math.max(overviewStats.total, 1)) * 100)}%
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-emerald-100/60 dark:bg-emerald-950/40 flex items-center justify-center">
+                <CircleCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('subjectsInProgress' as TranslationKey)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {overviewStats.inProgress}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {Math.round((overviewStats.inProgress / Math.max(overviewStats.total, 1)) * 100)}%
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-blue-100/60 dark:bg-blue-950/40 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('subjectsNotStarted' as TranslationKey)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                  {overviewStats.notStarted}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {Math.round((overviewStats.notStarted / Math.max(overviewStats.total, 1)) * 100)}%
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-amber-100/60 dark:bg-amber-950/40 flex items-center justify-center">
+                <CircleDot className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filter Tabs */}
+        {subjects.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {([
+              { key: 'all', label: t('all' as TranslationKey) },
+              { key: 'in_progress', label: t('statusInProgress' as TranslationKey) },
+              { key: 'completed', label: t('statusCompleted' as TranslationKey) },
+              { key: 'not_started', label: t('statusNotStarted' as TranslationKey) },
+            ] as const).map((tab) => (
+              <Button
+                key={tab.key}
+                type="button"
+                variant={filterTab === tab.key ? 'default' : 'outline'}
+                size="sm"
+                className="rounded-full"
+                onClick={() => setFilterTab(tab.key)}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Subjects List */}
         {subjects.length === 0 ? (
           <Card className="card-elegant">
-            <CardContent className="py-12 text-center animate-fade-in">
-              <div className="relative inline-block mb-4">
-                <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Subjects</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-sans">No subjects have been added to this class yet.</p>
+            <CardContent className="py-12">
+              <EmptyState
+                title={t('noSubjectsFound' as TranslationKey)}
+                description={t('noSubjectsAddedYet' as TranslationKey)}
+                icon={BookOpen}
+                onRetry={loadData}
+                error={error}
+              />
+            </CardContent>
+          </Card>
+        ) : filteredSubjects.length === 0 ? (
+          <Card className="card-elegant">
+            <CardContent className="py-12">
+              <EmptyState
+                title={t('noClassesMatchSearch' as TranslationKey)}
+                description={t('tryAdjustingFilters' as TranslationKey)}
+                icon={BookOpen}
+                action={{
+                  label: t('clear' as TranslationKey),
+                  onClick: () => setFilterTab('all'),
+                }}
+              />
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6">
-            {subjects.map((subject) => {
-              const progress = subjectProgress[subject.id];
-              const { status, icon: StatusIcon, text: statusText } = getProgressLabel(progress);
+            {filteredSubjects.map(({ subject, progress, status }) => {
               const progressValue = progress?.overall_progress || 0;
+              const StatusIcon = statusIconMap[status];
+              const statusText = t(statusLabelMap[status]);
               
               return (
-                <Card
-                  key={subject.id}
-                  className="card-hover overflow-hidden cursor-pointer"
-                  onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subject.id}`)}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between gap-4">
-                      {/* Subject Info */}
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        {/* Subject Icon */}
-                        <div className="relative flex-shrink-0">
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative border-2 border-blue-100 dark:border-blue-900">
-                            <BookOpen className="h-8 w-8 text-white" />
+                <Card key={subject.id} className="card-hover overflow-hidden">
+                  <div className="flex flex-col h-full">
+                    <Link
+                      href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`}
+                      prefetch={true}
+                      className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-2xl"
+                      aria-label={subject.subject_name}
+                    >
+                      <CardHeader className="pb-4 h-full">
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Subject Info */}
+                          <div className="flex items-start gap-4 flex-1 min-w-0">
+                            {/* Subject Icon */}
+                            <div className="relative flex-shrink-0">
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative border-2 border-blue-100 dark:border-blue-900">
+                                <BookOpen className="h-8 w-8 text-white" />
+                              </div>
+                            </div>
+
+                            {/* Subject Details */}
+                            <div className="flex-1 min-w-0 pt-1">
+                              <CardTitle className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {subject.subject_name}
+                              </CardTitle>
+                              
+                              {/* Teacher Info */}
+                              {subject.teacher?.full_name && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                  <User className="h-4 w-4" />
+                                  <span className="truncate">{subject.teacher.full_name}</span>
+                                </div>
+                              )}
+                              
+                              {progress && progress.total_lessons > 0 ? (
+                                <div className="space-y-3">
+                                  {/* Progress Bar */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <StatusIcon className={`h-4 w-4 ${
+                                          status === 'completed' ? 'text-emerald-600' :
+                                          status === 'in_progress' ? 'text-blue-600' : 'text-gray-400'
+                                        }`} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                          {statusText}
+                                        </span>
+                                      </div>
+                                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                        {Math.round(progressValue)}%
+                                      </span>
+                                    </div>
+                                    <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                      <div
+                                        className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${getCompletionColor(progressValue)}`}
+                                        style={{ width: `${progressValue}%` }}
+                                      >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Stats */}
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {progress.completed_lessons} {t('completedLessons' as TranslationKey)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {progress.in_progress_lessons} {t('lessonsInProgress' as TranslationKey)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {progress.not_started_lessons} {t('lessonsRemaining' as TranslationKey)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                  <StatusIcon className="h-4 w-4" />
+                                  <span>{t('noLessonsYet' as TranslationKey)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Arrow */}
+                          <div className="flex-shrink-0 pt-2">
+                            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 transition-colors">
+                              <ArrowRight className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            </div>
                           </div>
                         </div>
-
-                        {/* Subject Details */}
-                        <div className="flex-1 min-w-0 pt-1">
-                          <CardTitle className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {subject.subject_name}
-                          </CardTitle>
-                          
-                          {/* Teacher Info */}
-                          {subject.teacher?.full_name && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                              <User className="h-4 w-4" />
-                              <span className="truncate">{subject.teacher.full_name}</span>
-                            </div>
-                          )}
-                          
-                          {progress && progress.total_lessons > 0 ? (
-                            <div className="space-y-3">
-                              {/* Progress Bar */}
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <StatusIcon className={`h-4 w-4 ${
-                                      status === 'completed' ? 'text-emerald-600' :
-                                      status === 'in_progress' ? 'text-blue-600' : 'text-gray-400'
-                                    }`} />
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                      {statusText}
-                                    </span>
-                                  </div>
-                                  <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                    {Math.round(progressValue)}%
-                                  </span>
-                                </div>
-                                <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                  <div
-                                    className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${getCompletionColor(progressValue)}`}
-                                    style={{ width: `${progressValue}%` }}
-                                  >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Stats */}
-                              <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {progress.completed_lessons} Completed
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {progress.in_progress_lessons} In Progress
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    {progress.not_started_lessons} Remaining
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                              <StatusIcon className="h-4 w-4" />
-                              <span>No lessons yet</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Arrow */}
-                      <div className="flex-shrink-0 pt-2">
-                        <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 transition-colors">
-                          <ArrowRight className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
+                      </CardHeader>
+                    </Link>
+                    <CardContent className="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-wrap gap-2">
+                      <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true}>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          {t('viewLesson' as TranslationKey)}
+                        </Button>
+                      </Link>
+                      <Link href={`/dashboard/my-assignments?subject=${subject.id}`} prefetch={false}>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <FileText className="h-4 w-4" />
+                          {t('openAssignments' as TranslationKey)}
+                        </Button>
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setDiscussionSubject({ id: subject.id, name: subject.subject_name })}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        {t('openDiscussion' as TranslationKey)}
+                      </Button>
+                      <Link href={`/dashboard/schedule?subject=${subject.id}`} prefetch={false}>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {t('openSchedule' as TranslationKey)}
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </div>
                 </Card>
               );
             })}
           </div>
         )}
       </div>
+      <Sheet open={!!discussionSubject} onOpenChange={(open) => !open && setDiscussionSubject(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{discussionSubject?.name}</SheetTitle>
+            <SheetDescription>{t('subjectDiscussionDescription' as TranslationKey)}</SheetDescription>
+          </SheetHeader>
+          {discussionSubject && (
+            <SubjectDiscussion
+              subjectId={discussionSubject.id}
+              subjectName={discussionSubject.name}
+              t={t}
+              dateLocale={dateLocale}
+              currentUserId={profile.id}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }
+
+interface SubjectDiscussionProps {
+  subjectId: string;
+  subjectName: string;
+  t: (key: TranslationKey) => string;
+  dateLocale: string;
+  currentUserId: string;
+}
+
+const SubjectDiscussion = ({
+  subjectId,
+  subjectName,
+  t,
+  dateLocale,
+  currentUserId,
+}: SubjectDiscussionProps) => {
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loadingDiscussion, setLoadingDiscussion] = useState(true);
+  const [messageInput, setMessageInput] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  const loadDiscussion = useCallback(async () => {
+    setLoadingDiscussion(true);
+    try {
+      const { data, error } = await ensureSubjectConversation(subjectId);
+      const conversationRow = Array.isArray(data) ? data[0] : data;
+      if (error || !conversationRow?.conversation_id) {
+        toast.error(t('errorLoadingClass' as TranslationKey));
+        setLoadingDiscussion(false);
+        return;
+      }
+      const convId = conversationRow.conversation_id as string;
+      setConversationId(convId);
+      const { data: msgs, error: msgsErr } = await getConversationMessages(convId, 50);
+      if (!msgsErr) {
+        setMessages(msgs || []);
+      }
+    } catch (err) {
+      console.error('Error loading discussion:', err);
+      toast.error(t('errorOccurred' as TranslationKey));
+    } finally {
+      setLoadingDiscussion(false);
+    }
+  }, [subjectId, t]);
+
+  useEffect(() => {
+    loadDiscussion().catch(() => {});
+  }, [loadDiscussion]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const unsubscribe = subscribeToMessages(conversationId, (message) => {
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === message.id);
+        if (exists) return prev;
+        return [...prev, message];
+      });
+    });
+    return () => {
+      unsubscribe?.();
+    };
+  }, [conversationId]);
+
+  const handleSend = useCallback(async () => {
+    if (!conversationId || !messageInput.trim()) return;
+    try {
+      setSendingMessage(true);
+      const { error } = await sendMessage(conversationId, messageInput.trim(), 'text');
+      if (error) {
+        toast.error(t('errorOccurred' as TranslationKey));
+        return;
+      }
+      setMessageInput('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      toast.error(t('errorOccurred' as TranslationKey));
+    } finally {
+      setSendingMessage(false);
+    }
+  }, [conversationId, messageInput, t]);
+
+  return (
+    <div className="mt-6 flex h-full flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{t('subjectDiscussion' as TranslationKey)}</h3>
+          <p className="text-sm text-muted-foreground">{subjectName}</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={loadDiscussion} disabled={loadingDiscussion}>
+          {t('refreshPage' as TranslationKey)}
+        </Button>
+      </div>
+      <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+        {loadingDiscussion ? (
+          <div className="space-y-2">
+            {[...Array(3)].map((_, idx) => (
+              <div key={`discussion-skeleton-${idx}`} className="h-16 animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('noMessagesYet' as TranslationKey)}</p>
+        ) : (
+          messages.map((msg) => {
+            const isOwn = msg.sender_id === currentUserId;
+            return (
+              <div
+                key={msg.id}
+                className={cn(
+                  'rounded-2xl border px-4 py-3 text-sm shadow-sm',
+                  isOwn
+                    ? 'border-primary/30 bg-primary/5 dark:bg-primary/10'
+                    : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50'
+                )}
+              >
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-medium text-sm">
+                    {msg.sender?.full_name || t('unknownUser' as TranslationKey)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(msg.created_at).toLocaleString(dateLocale, {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                </div>
+                <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line">{msg.content}</p>
+              </div>
+            );
+          })
+        )}
+      </div>
+      <SheetFooter className="mt-auto flex flex-col gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+        <Textarea
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          placeholder={t('writeMessage' as TranslationKey)}
+          rows={3}
+          className="resize-none"
+        />
+        <Button
+          className="w-full"
+          onClick={handleSend}
+          disabled={!messageInput.trim() || sendingMessage || !conversationId}
+        >
+          {sendingMessage ? t('sendingMessage' as TranslationKey) : t('sendMessageButton' as TranslationKey)}
+        </Button>
+      </SheetFooter>
+    </div>
+  );
+};
