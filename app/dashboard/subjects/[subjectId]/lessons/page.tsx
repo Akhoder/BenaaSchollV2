@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import type { AttachmentType, Lesson } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Image as ImageIcon, FileText, File as FileIcon, Loader2, Calendar, GripVertical, BookOpen, Plus, Video, PlayCircle, FileVideo, CheckCircle2, XCircle, Search, Filter, ArrowLeft } from 'lucide-react';
+import { ContentGenerator } from '@/components/ContentGenerator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { LessonStatus } from '@/lib/supabase';
 import {
@@ -442,7 +443,7 @@ export default function SubjectLessonsPage() {
   const params = useParams();
   const router = useRouter();
   const subjectId = (params?.subjectId as string) || '';
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { t } = useLanguage();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -1001,6 +1002,26 @@ export default function SubjectLessonsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Content Generator - Only for teachers and admins */}
+        {subjectInfo && (profile?.role === 'admin' || profile?.role === 'teacher') && (
+          <ContentGenerator
+            subjectId={subjectId}
+            subjectName={subjectInfo.subject_name}
+            onQuestionsGenerated={(questions) => {
+              console.log('Generated questions:', questions);
+              toast.success(t('questionsGenerated') || 'Questions generated successfully');
+            }}
+            onLessonPlanGenerated={(lessonPlan) => {
+              console.log('Generated lesson plan:', lessonPlan);
+              toast.success(t('lessonPlanGenerated') || 'Lesson plan generated successfully');
+            }}
+            onExercisesGenerated={(exercises) => {
+              console.log('Generated exercises:', exercises);
+              toast.success(t('exercisesGenerated') || 'Exercises generated successfully');
+            }}
+          />
+        )}
 
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

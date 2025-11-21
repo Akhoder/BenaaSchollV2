@@ -22,8 +22,11 @@ import {
   MessageSquare,
   Award,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Bot,
+  BarChart3
 } from 'lucide-react';
+import { IntelligentSearch } from '@/components/IntelligentSearch';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -75,6 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('myAssignments'), href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
         { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['student'] },
+        { name: t('aiAssistant') || 'AI Assistant', href: '/dashboard/ai-assistant', icon: Bot, roles: ['student'] },
       ],
       roles: ['student']
     },
@@ -87,6 +91,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('quizzes'), href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher'] },
+        { name: t('analytics') || 'Analytics', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },
@@ -343,7 +348,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             </div>
 
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center max-w-md mx-4 hidden md:flex">
+              <IntelligentSearch />
+            </div>
+
             <div className="flex items-center gap-2 sm:gap-3">
+              <div className="md:hidden">
+                <IntelligentSearch className="w-48" />
+              </div>
               <ThemeToggle />
               
               <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
