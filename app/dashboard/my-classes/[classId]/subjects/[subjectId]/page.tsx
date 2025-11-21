@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,7 @@ import { supabase } from '@/lib/supabase';
 import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { SubjectDiscussion } from '@/components/dashboard/SubjectDiscussion';
 
 export default function SubjectLessonsPage() {
   // Hooks must be called unconditionally (React rules)
@@ -76,6 +78,10 @@ export default function SubjectLessonsPage() {
   const authLoading = authContext?.loading ?? true;
   const t = languageContext?.t ?? (() => '');
   const language = languageContext?.language ?? 'en';
+  const dateLocale = useMemo(
+    () => (language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US'),
+    [language]
+  );
   
   // Safely extract params with proper type checking and null safety
   const classId = params && typeof params.classId === 'string' ? params.classId : null;
@@ -1452,6 +1458,42 @@ export default function SubjectLessonsPage() {
                     </TabsContent>
                   )}
                 </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Subject Discussion */}
+            <Card className="border-gray-200 dark:border-gray-800">
+              <CardHeader className="pb-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl font-semibold">
+                      {t('subjectDiscussion' as TranslationKey)}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {t('subjectDiscussionDescription' as TranslationKey)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/dashboard/messages?subject=${safeSubjectId}`)}
+                  >
+                    {t('viewAllDiscussions' as TranslationKey)}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {profile?.id && (
+                  <SubjectDiscussion
+                    subjectId={safeSubjectId}
+                    subjectName={subject.subject_name}
+                    t={t}
+                    dateLocale={dateLocale}
+                    currentUserId={profile.id}
+                    currentUserRole={profile.role as 'admin' | 'teacher' | 'student'}
+                    variant="card"
+                  />
+                )}
               </CardContent>
             </Card>
           </div>

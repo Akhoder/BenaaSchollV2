@@ -890,13 +890,22 @@ export default function SubjectLessonsPage() {
           title={t('lessons')}
           description={t('manageLessons')}
         >
-          <Button 
-            className="bg-primary hover:bg-primary/90 text-white" 
-            onClick={() => setShowAddDialog(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t('addLesson')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => router.push(`/dashboard/subjects/${subjectId}/view`)}
+            >
+              <Video className="h-4 w-4 mr-2" />
+              {t('viewLessons')}
+            </Button>
+            <Button 
+              className="bg-primary hover:bg-primary/90 text-white" 
+              onClick={() => setShowAddDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('addLesson')}
+            </Button>
+          </div>
         </PageHeader>
 
         {subjectInfo && (

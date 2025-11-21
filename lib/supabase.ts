@@ -783,7 +783,8 @@ export async function getConversationMessages(conversationId: string, limit = 50
     .from('messages')
     .select(`
       *,
-      sender:profiles!sender_id(id, full_name, email)
+      sender:profiles!sender_id(id, full_name, email, role),
+      deleted_by_user:profiles!deleted_by(id, full_name, role)
     `)
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
@@ -856,6 +857,91 @@ export async function sendMessage(
   }
   
   return { data, error: null };
+}
+
+// Update a message
+export async function updateMessage(messageId: string, content: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  // First check if the message belongs to the user
+  const { data: message, error: fetchError } = await supabase
+    .from('messages')
+    .select('sender_id')
+    .eq('id', messageId)
+    .single();
+  
+  if (fetchError || !message) {
+    return { data: null, error: fetchError || new Error('Message not found') } as any;
+  }
+  
+  if (message.sender_id !== uid) {
+    return { data: null, error: new Error('Not authorized to edit this message') } as any;
+  }
+  
+  const { data: updated, error } = await supabase
+    .from('messages')
+    .update({
+      content,
+      is_edited: true,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', messageId)
+    .select()
+    .single();
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  return { data: updated, error: null };
+}
+
+// Delete a message
+export async function deleteMessage(messageId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  // Get user role first
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', uid)
+    .single();
+  
+  const isAdmin = profile?.role === 'admin';
+  
+  // Get message to check ownership
+  const { data: message, error: fetchError } = await supabase
+    .from('messages')
+    .select('sender_id')
+    .eq('id', messageId)
+    .single();
+  
+  if (fetchError || !message) {
+    return { data: null, error: fetchError || new Error('Message not found') } as any;
+  }
+  
+  // Check authorization
+  if (!isAdmin && message.sender_id !== uid) {
+    return { data: null, error: new Error('Not authorized to delete this message') } as any;
+  }
+  
+  // Use RPC function to handle deletion (bypasses RLS)
+  const { data, error } = await supabase.rpc('delete_message_admin', {
+    p_message_id: messageId
+  });
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  // RPC returns array, get first item
+  const deleted = Array.isArray(data) ? data[0] : data;
+  
+  return { data: deleted, error: null };
 }
 
 // Mark messages as read

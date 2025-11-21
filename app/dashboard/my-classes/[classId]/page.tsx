@@ -12,8 +12,7 @@ import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -27,9 +26,10 @@ import {
   Calendar,
   MessageCircle
 } from 'lucide-react';
-import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats, ensureSubjectConversation, getConversationMessages, sendMessage, subscribeToMessages } from '@/lib/supabase';
+import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { SubjectDiscussion } from '@/components/dashboard/SubjectDiscussion';
 
 
 export default function ClassViewPage() {
@@ -626,6 +626,8 @@ export default function ClassViewPage() {
               t={t}
               dateLocale={dateLocale}
               currentUserId={profile.id}
+              currentUserRole={profile.role as 'admin' | 'teacher' | 'student'}
+              variant="sheet"
             />
           )}
         </SheetContent>
@@ -634,153 +636,4 @@ export default function ClassViewPage() {
   );
 }
 
-interface SubjectDiscussionProps {
-  subjectId: string;
-  subjectName: string;
-  t: (key: TranslationKey) => string;
-  dateLocale: string;
-  currentUserId: string;
-}
-
-const SubjectDiscussion = ({
-  subjectId,
-  subjectName,
-  t,
-  dateLocale,
-  currentUserId,
-}: SubjectDiscussionProps) => {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loadingDiscussion, setLoadingDiscussion] = useState(true);
-  const [messageInput, setMessageInput] = useState('');
-  const [sendingMessage, setSendingMessage] = useState(false);
-
-  const loadDiscussion = useCallback(async () => {
-    setLoadingDiscussion(true);
-    try {
-      const { data, error } = await ensureSubjectConversation(subjectId);
-      const conversationRow = Array.isArray(data) ? data[0] : data;
-      if (error || !conversationRow?.conversation_id) {
-        toast.error(t('errorLoadingClass' as TranslationKey));
-        setLoadingDiscussion(false);
-        return;
-      }
-      const convId = conversationRow.conversation_id as string;
-      setConversationId(convId);
-      const { data: msgs, error: msgsErr } = await getConversationMessages(convId, 50);
-      if (!msgsErr) {
-        setMessages(msgs || []);
-      }
-    } catch (err) {
-      console.error('Error loading discussion:', err);
-      toast.error(t('errorOccurred' as TranslationKey));
-    } finally {
-      setLoadingDiscussion(false);
-    }
-  }, [subjectId, t]);
-
-  useEffect(() => {
-    loadDiscussion().catch(() => {});
-  }, [loadDiscussion]);
-
-  useEffect(() => {
-    if (!conversationId) return;
-    const unsubscribe = subscribeToMessages(conversationId, (message) => {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === message.id);
-        if (exists) return prev;
-        return [...prev, message];
-      });
-    });
-    return () => {
-      unsubscribe?.();
-    };
-  }, [conversationId]);
-
-  const handleSend = useCallback(async () => {
-    if (!conversationId || !messageInput.trim()) return;
-    try {
-      setSendingMessage(true);
-      const { error } = await sendMessage(conversationId, messageInput.trim(), 'text');
-      if (error) {
-        toast.error(t('errorOccurred' as TranslationKey));
-        return;
-      }
-      setMessageInput('');
-    } catch (err) {
-      console.error('Error sending message:', err);
-      toast.error(t('errorOccurred' as TranslationKey));
-    } finally {
-      setSendingMessage(false);
-    }
-  }, [conversationId, messageInput, t]);
-
-  return (
-    <div className="mt-6 flex h-full flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">{t('subjectDiscussion' as TranslationKey)}</h3>
-          <p className="text-sm text-muted-foreground">{subjectName}</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={loadDiscussion} disabled={loadingDiscussion}>
-          {t('refreshPage' as TranslationKey)}
-        </Button>
-      </div>
-      <div className="flex-1 space-y-4 overflow-y-auto pr-2">
-        {loadingDiscussion ? (
-          <div className="space-y-2">
-            {[...Array(3)].map((_, idx) => (
-              <div key={`discussion-skeleton-${idx}`} className="h-16 animate-pulse rounded-2xl bg-muted" />
-            ))}
-          </div>
-        ) : messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('noMessagesYet' as TranslationKey)}</p>
-        ) : (
-          messages.map((msg) => {
-            const isOwn = msg.sender_id === currentUserId;
-            return (
-              <div
-                key={msg.id}
-                className={cn(
-                  'rounded-2xl border px-4 py-3 text-sm shadow-sm',
-                  isOwn
-                    ? 'border-primary/30 bg-primary/5 dark:bg-primary/10'
-                    : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50'
-                )}
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-medium text-sm">
-                    {msg.sender?.full_name || t('unknownUser' as TranslationKey)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(msg.created_at).toLocaleString(dateLocale, {
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                    })}
-                  </span>
-                </div>
-                <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line">{msg.content}</p>
-              </div>
-            );
-          })
-        )}
-      </div>
-      <SheetFooter className="mt-auto flex flex-col gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-        <Textarea
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          placeholder={t('writeMessage' as TranslationKey)}
-          rows={3}
-          className="resize-none"
-        />
-        <Button
-          className="w-full"
-          onClick={handleSend}
-          disabled={!messageInput.trim() || sendingMessage || !conversationId}
-        >
-          {sendingMessage ? t('sendingMessage' as TranslationKey) : t('sendMessageButton' as TranslationKey)}
-        </Button>
-      </SheetFooter>
-    </div>
-  );
-};
+      

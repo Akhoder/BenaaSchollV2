@@ -31,10 +31,8 @@ export function useServiceWorker() {
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // إشعار المستخدم بتحديث متاح
-                  if (confirm('تحديث جديد متاح. هل تريد إعادة تحميل الصفحة؟')) {
-                    window.location.reload();
-                  }
+                  console.info('تحديث جديد متاح - سيتم إعادة تحميل الصفحة تلقائياً.');
+                  window.location.reload();
                 }
               });
             }
