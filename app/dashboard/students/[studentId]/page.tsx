@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Phone, Calendar, School, BookOpen, Users, User, ArrowLeft, Globe, Award, TrendingUp, FileText, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, Phone, Calendar, School, BookOpen, Users, User, ArrowLeft, Globe, Award, TrendingUp, FileText, CheckCircle2, MapPin, Cake, UserCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,6 +25,14 @@ interface StudentProfile {
   avatar_url?: string;
   phone?: string;
   language_preference?: string;
+  gender?: 'male' | 'female';
+  // Common fields
+  address?: string;
+  date_of_birth?: string;
+  // Student fields
+  parent_name?: string;
+  parent_phone?: string;
+  emergency_contact?: string;
   created_at: string;
   updated_at: string;
 }
@@ -346,9 +355,58 @@ export default function StudentProfilePage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground mb-0.5">
-                          {language === 'ar' ? 'الهاتف' : 'Phone'}
+                          {t('phone')}
                         </p>
                         <p className="text-sm font-medium">{student.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {student.gender && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <UserCircle className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          {t('gender' as TranslationKey)}
+                        </p>
+                        <p className="text-sm font-medium">
+                          {student.gender === 'male' ? t('male' as TranslationKey) : t('female' as TranslationKey)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {student.address && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          {t('address' as TranslationKey)}
+                        </p>
+                        <p className="text-sm font-medium">{student.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {student.date_of_birth && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Cake className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          {t('dateOfBirth' as TranslationKey)}
+                        </p>
+                        <p className="text-sm font-medium">
+                          {new Date(student.date_of_birth).toLocaleDateString(
+                            language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US',
+                            { year: 'numeric', month: 'long', day: 'numeric' }
+                          )}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -359,7 +417,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground mb-0.5">
-                        {language === 'ar' ? 'اللغة المفضلة' : 'Preferred Language'}
+                        {t('language')}
                       </p>
                       <p className="text-sm font-medium">{getLanguageLabel(student.language_preference)}</p>
                     </div>
@@ -381,6 +439,65 @@ export default function StudentProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Student Information Section */}
+        {(student.parent_name || student.parent_phone || student.emergency_contact) && (
+          <Card className="border-2">
+            <CardHeader className="border-b bg-muted/50">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                {t('studentInformation' as TranslationKey)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {student.parent_name && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {t('parentName' as TranslationKey)}
+                      </p>
+                      <p className="text-sm font-medium">{student.parent_name}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {student.parent_phone && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {t('parentPhone' as TranslationKey)}
+                      </p>
+                      <p className="text-sm font-medium">{student.parent_phone}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {student.emergency_contact && (
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
+                    <div className="p-2 rounded-lg bg-red-500/10">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {t('emergencyContact' as TranslationKey)}
+                      </p>
+                      <p className="text-sm font-medium">{student.emergency_contact}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards - Enhanced Design */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

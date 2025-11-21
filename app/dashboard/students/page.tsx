@@ -10,6 +10,7 @@ import { InputMask } from '@/components/InputMask';
 import { LoadingButton } from '@/components/ProgressIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getStudentsOptimized } from '@/lib/optimizedQueries';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
@@ -19,7 +20,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { filterBySearch } from '@/lib/tableUtils';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Language } from '@/lib/translations';
+import { Language, type TranslationKey } from '@/lib/translations';
 import {
   Select,
   SelectContent,
@@ -45,6 +46,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { uploadUserAvatar } from '@/lib/supabase';
 import {
   Search,
   Plus,
@@ -64,6 +66,8 @@ import {
   LayoutGrid,
   List,
   Globe,
+  Upload,
+  X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -94,6 +98,14 @@ interface StudentProfile {
   language_preference: string;
   phone?: string;
   avatar_url?: string;
+  gender?: 'male' | 'female';
+  // Common fields
+  address?: string;
+  date_of_birth?: string;
+  // Student fields
+  parent_name?: string;
+  parent_phone?: string;
+  emergency_contact?: string;
   created_at: string;
   updated_at: string;
   enrolled_classes?: number;
@@ -126,9 +138,34 @@ export default function StudentsPage() {
   const [createEmail, setCreateEmail] = useState('');
   const [createPhone, setCreatePhone] = useState('');
   const [createLang, setCreateLang] = useState<Language>(language);
+  const [createGender, setCreateGender] = useState<'male' | 'female' | ''>('');
+  // Common fields for create
+  const [createAddress, setCreateAddress] = useState('');
+  const [createDateOfBirth, setCreateDateOfBirth] = useState('');
+  // Student fields for create
+  const [createParentName, setCreateParentName] = useState('');
+  const [createParentPhone, setCreateParentPhone] = useState('');
+  const [createEmergencyContact, setCreateEmergencyContact] = useState('');
   const [savingCreate, setSavingCreate] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editLanguage, setEditLanguage] = useState<Language>(language);
+  const [editGender, setEditGender] = useState<'male' | 'female' | ''>('');
+  // Avatar for create
+  const [createAvatarFile, setCreateAvatarFile] = useState<File | null>(null);
+  const [createAvatarPreview, setCreateAvatarPreview] = useState<string | null>(null);
+  const [uploadingCreateAvatar, setUploadingCreateAvatar] = useState(false);
+  // Avatar for edit
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
+  const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [uploadingEditAvatar, setUploadingEditAvatar] = useState(false);
+  // Common fields for edit
+  const [editAddress, setEditAddress] = useState('');
+  const [editDateOfBirth, setEditDateOfBirth] = useState('');
+  // Student fields for edit
+  const [editParentName, setEditParentName] = useState('');
+  const [editParentPhone, setEditParentPhone] = useState('');
+  const [editEmergencyContact, setEditEmergencyContact] = useState('');
   const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'notEnrolled'>('all');
   const languageOptions = useMemo(
     () => [
@@ -423,21 +460,21 @@ export default function StudentsPage() {
             const Icon = stat.icon;
             return (
               <Card key={stat.title} className="card-interactive">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                     {stat.title}
-                  </CardTitle>
+              </CardTitle>
                   <div className={`p-2 bg-gradient-to-br ${stat.accent} rounded-lg`}>
                     <Icon className="h-4 w-4 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
+              </div>
+            </CardHeader>
+            <CardContent>
                   <div className="text-3xl font-bold font-display text-slate-900 dark:text-white">
                     {stat.value}
-                  </div>
+              </div>
                   <p className="text-xs text-muted-foreground mt-1 font-sans">{stat.subtitle}</p>
-                </CardContent>
-              </Card>
+            </CardContent>
+          </Card>
             );
           })}
         </div>
@@ -490,19 +527,104 @@ export default function StudentsPage() {
               <DialogTitle className="text-2xl font-display">{t('addStudent')}</DialogTitle>
               <DialogDescription className="font-sans">{t('createStudentDescription')}</DialogDescription>
             </DialogHeader>
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Avatar Upload */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('profilePicture' as TranslationKey)}</h3>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20 ring-2 ring-blue-500/20">
+                      <AvatarImage src={createAvatarPreview || undefined} />
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-lg">
+                        {createName.charAt(0).toUpperCase() || <User className="h-6 w-6" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    {createAvatarPreview && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                        onClick={() => {
+                          setCreateAvatarFile(null);
+                          setCreateAvatarPreview(null);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          toast.error(t('invalidImageFile' as TranslationKey));
+                          return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error(t('imageTooLarge' as TranslationKey));
+                          return;
+                        }
+                        setCreateAvatarFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setCreateAvatarPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="hidden"
+                      id="create-avatar-upload"
+                    />
+                    <label htmlFor="create-avatar-upload">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full font-sans"
+                        disabled={uploadingCreateAvatar}
+                        asChild
+                      >
+                        <span className="cursor-pointer">
+                          {uploadingCreateAvatar ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {t('uploading' as TranslationKey)}
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              {createAvatarPreview ? t('changePicture' as TranslationKey) : t('uploadPicture' as TranslationKey)}
+                            </>
+                          )}
+                        </span>
+                      </Button>
+                    </label>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                      {t('imageUploadHint' as TranslationKey)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Basic Information */}
             <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('basicInformation' as TranslationKey)}</h3>
               <div>
-                <label className="text-sm font-medium font-sans">{t('fullName')}</label>
+                  <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                 <Input value={createName} onChange={(e) => setCreateName(e.target.value)} className="mt-1 font-sans" />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">{t('email')}</label>
+                  <label className="text-sm font-medium font-sans">{t('email')}</label>
                 <Input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} className="mt-1 font-sans" />
               </div>
+                <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium font-sans">
-                  {t('phone')} ({t('optional')})
-                </label>
+                    <label className="text-sm font-medium font-sans">
+                      {t('phone')} ({t('optional')})
+                    </label>
                 <InputMask
                   mask="phone"
                   value={createPhone}
@@ -512,19 +634,67 @@ export default function StudentsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">{t('language')}</label>
-                <Select value={createLang} onValueChange={(value) => setCreateLang(value as Language)}>
+                    <label className="text-sm font-medium font-sans">{t('language')}</label>
+                    <Select value={createLang} onValueChange={(value) => setCreateLang(value as Language)}>
                   <SelectTrigger className="mt-1 font-sans">
-                    <SelectValue placeholder={t('language')} />
+                        <SelectValue placeholder={t('language')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {languageOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                        {languageOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium font-sans">{t('gender' as TranslationKey)}</label>
+                    <Select value={createGender} onValueChange={(v) => setCreateGender(v as 'male' | 'female' | '')}>
+                      <SelectTrigger className="mt-1 font-sans">
+                        <SelectValue placeholder={t('selectGender' as TranslationKey)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">{t('male' as TranslationKey)}</SelectItem>
+                        <SelectItem value="female">{t('female' as TranslationKey)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium font-sans">{t('address' as TranslationKey)}</label>
+                    <Input value={createAddress} onChange={(e) => setCreateAddress(e.target.value)} className="mt-1 font-sans" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium font-sans">{t('dateOfBirth' as TranslationKey)}</label>
+                  <Input 
+                    type="date"
+                    value={createDateOfBirth} 
+                    onChange={(e) => setCreateDateOfBirth(e.target.value)} 
+                    className="mt-1 font-sans" 
+                  />
+                </div>
+              </div>
+
+              {/* Student-specific fields */}
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('studentInformation' as TranslationKey)}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium font-sans">{t('parentName' as TranslationKey)}</label>
+                    <Input value={createParentName} onChange={(e) => setCreateParentName(e.target.value)} className="mt-1 font-sans" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium font-sans">{t('parentPhone' as TranslationKey)}</label>
+                    <Input value={createParentPhone} onChange={(e) => setCreateParentPhone(e.target.value)} className="mt-1 font-sans" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium font-sans">{t('emergencyContact' as TranslationKey)}</label>
+                  <Input value={createEmergencyContact} onChange={(e) => setCreateEmergencyContact(e.target.value)} className="mt-1 font-sans" />
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -537,23 +707,81 @@ export default function StudentsPage() {
                   if (!createName.trim() || !createEmail.trim()) { toast.error(t('nameEmailRequired')); return; }
                   try {
                     setSavingCreate(true);
-                    const { error } = await supabase.from('profiles').insert([
-                      {
-                        full_name: createName.trim(),
+                    // Get auth token
+                    const { data: session } = await supabase.auth.getSession();
+                    const token = session.session?.access_token;
+                    
+                    // Upload avatar first if selected
+                    let avatarUrl: string | null = null;
+                    if (createAvatarFile) {
+                      setUploadingCreateAvatar(true);
+                      // We need to create the user first to get the user ID
+                      // So we'll upload the avatar after user creation
+                    }
+                    
+                    // Call API to create user
+                    const res = await fetch('/api/admin/create-user', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : '',
+                      },
+                      body: JSON.stringify({
                         email: createEmail.trim(),
+                        password: undefined, // Auto-generate password
+                        full_name: createName.trim(),
                         role: 'student',
-                        phone: createPhone.trim() || null,
                         language_preference: createLang,
+                        phone: createPhone.trim() || null,
+                        gender: createGender || null,
+                        address: createAddress.trim() || null,
+                        date_of_birth: createDateOfBirth || null,
+                        parent_name: createParentName.trim() || null,
+                        parent_phone: createParentPhone.trim() || null,
+                        emergency_contact: createEmergencyContact.trim() || null,
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      const errorData = await res.json().catch(() => ({}));
+                      toast.error(errorData.error || t('failedToCreateStudent'));
+                      return;
+                    }
+
+                    const data = await res.json();
+                    
+                    // Upload avatar if file was selected
+                    if (createAvatarFile && data.user?.id) {
+                      setUploadingCreateAvatar(true);
+                      const { data: uploadData, error: uploadError } = await uploadUserAvatar(createAvatarFile, data.user.id);
+                      if (!uploadError && uploadData?.publicUrl) {
+                        // Update profile with avatar URL
+                        await supabase
+                          .from('profiles')
+                          .update({ avatar_url: uploadData.publicUrl })
+                          .eq('id', data.user.id);
                       }
-                    ]);
-                    if (error) { toast.error(t('failedToCreateStudent')); return; }
+                      setUploadingCreateAvatar(false);
+                    }
+                    
                     toast.success(t('studentCreated'));
                     setCreateOpen(false);
                     setCreateName('');
                     setCreateEmail('');
                     setCreatePhone('');
                     setCreateLang(language);
+                    setCreateGender('');
+                    setCreateAddress('');
+                    setCreateDateOfBirth('');
+                    setCreateParentName('');
+                    setCreateParentPhone('');
+                    setCreateEmergencyContact('');
+                    setCreateAvatarFile(null);
+                    setCreateAvatarPreview(null);
                     await fetchStudents();
+                  } catch (err) {
+                    console.error('Error creating student:', err);
+                    toast.error(t('failedToCreateStudent'));
                   } finally { setSavingCreate(false); }
                 }}
                 className="btn-gradient font-sans"
@@ -602,9 +830,59 @@ export default function StudentsPage() {
                           variant="secondary"
                           size="icon"
                           className="h-9 w-9"
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedStudent(s);
                             setIsDialogOpen(true);
+                            
+                            // Fetch fresh data from database to ensure all fields are loaded
+                            try {
+                              const { data: freshData, error } = await supabase
+                                .from('profiles')
+                                .select('*')
+                                .eq('id', s.id)
+                                .single();
+                              
+                              if (!error && freshData) {
+                                setEditLanguage(isSupportedLanguage(freshData.language_preference) ? freshData.language_preference : language);
+                                setEditGender(freshData.gender || '');
+                                setEditAddress(freshData.address || '');
+                                setEditDateOfBirth(freshData.date_of_birth || '');
+                                setEditParentName(freshData.parent_name || '');
+                                setEditParentPhone(freshData.parent_phone || '');
+                                setEditEmergencyContact(freshData.emergency_contact || '');
+                                setEditAvatarUrl(freshData.avatar_url || '');
+                                setEditAvatarPreview(freshData.avatar_url || null);
+                                setEditAvatarFile(null);
+                                
+                                // Update selectedStudent with fresh data
+                                setSelectedStudent({ ...s, ...freshData });
+                              } else {
+                                // Fallback to existing data if fetch fails
+                                setEditLanguage(isSupportedLanguage(s.language_preference) ? s.language_preference : language);
+                                setEditGender(s.gender || '');
+                                setEditAddress(s.address || '');
+                                setEditDateOfBirth(s.date_of_birth || '');
+                                setEditParentName(s.parent_name || '');
+                                setEditParentPhone(s.parent_phone || '');
+                                setEditEmergencyContact(s.emergency_contact || '');
+                                setEditAvatarUrl(s.avatar_url || '');
+                                setEditAvatarPreview(s.avatar_url || null);
+                                setEditAvatarFile(null);
+                              }
+                            } catch (err) {
+                              console.error('Error fetching student data:', err);
+                              // Fallback to existing data
+                              setEditLanguage(isSupportedLanguage(s.language_preference) ? s.language_preference : language);
+                              setEditGender(s.gender || '');
+                              setEditAddress(s.address || '');
+                              setEditDateOfBirth(s.date_of_birth || '');
+                              setEditParentName(s.parent_name || '');
+                              setEditParentPhone(s.parent_phone || '');
+                              setEditEmergencyContact(s.emergency_contact || '');
+                              setEditAvatarUrl(s.avatar_url || '');
+                              setEditAvatarPreview(s.avatar_url || null);
+                              setEditAvatarFile(null);
+                            }
                           }}
                           aria-label={t('edit')}
                         >
@@ -689,7 +967,60 @@ export default function StudentsPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => { setSelectedStudent(s); setIsDialogOpen(true); }}>
+                              <DropdownMenuItem onClick={async () => {
+                                setSelectedStudent(s);
+                                setIsDialogOpen(true);
+                                
+                                // Fetch fresh data from database to ensure all fields are loaded
+                                try {
+                                  const { data: freshData, error } = await supabase
+                                    .from('profiles')
+                                    .select('*')
+                                    .eq('id', s.id)
+                                    .single();
+                                  
+                                  if (!error && freshData) {
+                                    setEditLanguage(isSupportedLanguage(freshData.language_preference) ? freshData.language_preference : language);
+                                    setEditGender(freshData.gender || '');
+                                    setEditAddress(freshData.address || '');
+                                    setEditDateOfBirth(freshData.date_of_birth || '');
+                                    setEditParentName(freshData.parent_name || '');
+                                    setEditParentPhone(freshData.parent_phone || '');
+                                    setEditEmergencyContact(freshData.emergency_contact || '');
+                                    setEditAvatarUrl(freshData.avatar_url || '');
+                                    setEditAvatarPreview(freshData.avatar_url || null);
+                                    setEditAvatarFile(null);
+                                    
+                                    // Update selectedStudent with fresh data
+                                    setSelectedStudent({ ...s, ...freshData });
+                                  } else {
+                                    // Fallback to existing data if fetch fails
+                                    setEditLanguage(isSupportedLanguage(s.language_preference) ? s.language_preference : language);
+                                    setEditGender(s.gender || '');
+                                    setEditAddress(s.address || '');
+                                    setEditDateOfBirth(s.date_of_birth || '');
+                                    setEditParentName(s.parent_name || '');
+                                    setEditParentPhone(s.parent_phone || '');
+                                    setEditEmergencyContact(s.emergency_contact || '');
+                                    setEditAvatarUrl(s.avatar_url || '');
+                                    setEditAvatarPreview(s.avatar_url || null);
+                                    setEditAvatarFile(null);
+                                  }
+                                } catch (err) {
+                                  console.error('Error fetching student data:', err);
+                                  // Fallback to existing data
+                                  setEditLanguage(isSupportedLanguage(s.language_preference) ? s.language_preference : language);
+                                  setEditGender(s.gender || '');
+                                  setEditAddress(s.address || '');
+                                  setEditDateOfBirth(s.date_of_birth || '');
+                                  setEditParentName(s.parent_name || '');
+                                  setEditParentPhone(s.parent_phone || '');
+                                  setEditEmergencyContact(s.emergency_contact || '');
+                                  setEditAvatarUrl(s.avatar_url || '');
+                                  setEditAvatarPreview(s.avatar_url || null);
+                                  setEditAvatarFile(null);
+                                }
+                              }}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 {t('edit')}
                               </DropdownMenuItem>
@@ -790,38 +1121,188 @@ export default function StudentsPage() {
               </DialogDescription>
             </DialogHeader>
             {selectedStudent && (
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+                {/* Avatar Upload */}
+                <div className="space-y-4 border-b pb-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('profilePicture' as TranslationKey)}</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <Avatar className="h-20 w-20 ring-2 ring-blue-500/20">
+                        <AvatarImage src={editAvatarPreview || editAvatarUrl || undefined} />
+                        <AvatarFallback className="bg-blue-600 text-white font-semibold text-lg">
+                          {selectedStudent.full_name.charAt(0).toUpperCase() || <User className="h-6 w-6" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      {(editAvatarPreview || editAvatarUrl) && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                          onClick={() => {
+                            setEditAvatarFile(null);
+                            setEditAvatarPreview(null);
+                            setEditAvatarUrl('');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (!file.type.startsWith('image/')) {
+                            toast.error(t('invalidImageFile' as TranslationKey));
+                            return;
+                          }
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error(t('imageTooLarge' as TranslationKey));
+                            return;
+                          }
+                          setEditAvatarFile(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditAvatarPreview(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                        className="hidden"
+                        id="edit-avatar-upload"
+                      />
+                      <label htmlFor="edit-avatar-upload">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full font-sans"
+                          disabled={uploadingEditAvatar}
+                          asChild
+                        >
+                          <span className="cursor-pointer">
+                            {uploadingEditAvatar ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {t('uploading' as TranslationKey)}
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                {editAvatarPreview || editAvatarUrl ? t('changePicture' as TranslationKey) : t('uploadPicture' as TranslationKey)}
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                      </label>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                        {t('imageUploadHint' as TranslationKey)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('basicInformation' as TranslationKey)}</h3>
                 <form id="edit-student-form" className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium font-sans">{t('fullName')}</label>
+                      <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                     <Input name="full_name" defaultValue={selectedStudent.full_name} className="mt-1 font-sans" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium font-sans">{t('email')}</label>
-                    <Input name="email" defaultValue={selectedStudent.email} className="mt-1 font-sans" />
+                      <label className="text-sm font-medium font-sans">{t('email')}</label>
+                      <Input name="email" defaultValue={selectedStudent.email} className="mt-1 font-sans" disabled />
                   </div>
                 <div className="grid grid-cols-2 gap-4 col-span-2">
                   <div>
-                    <label className="text-sm font-medium font-sans">{t('phone')}</label>
+                        <label className="text-sm font-medium font-sans">{t('phone')}</label>
                     <Input name="phone" defaultValue={selectedStudent.phone} className="mt-1 font-sans" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium font-sans">{t('language')}</label>
-                    <Select value={editLanguage} onValueChange={(value) => setEditLanguage(value as Language)}>
+                        <label className="text-sm font-medium font-sans">{t('language')}</label>
+                        <Select value={editLanguage} onValueChange={(value) => setEditLanguage(value as Language)}>
                       <SelectTrigger className="mt-1 font-sans">
-                        <SelectValue placeholder={t('language')} />
+                            <SelectValue placeholder={t('language')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {languageOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
+                            {languageOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+                    <div className="grid grid-cols-2 gap-4 col-span-2">
+                      <div>
+                        <label className="text-sm font-medium font-sans">{t('gender' as TranslationKey)}</label>
+                        <Select value={editGender} onValueChange={(v) => setEditGender(v as 'male' | 'female' | '')}>
+                          <SelectTrigger className="mt-1 font-sans">
+                            <SelectValue placeholder={t('selectGender' as TranslationKey)} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">{t('male' as TranslationKey)}</SelectItem>
+                            <SelectItem value="female">{t('female' as TranslationKey)}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium font-sans">{t('address' as TranslationKey)}</label>
+                        <Input 
+                          value={editAddress} 
+                          onChange={(e) => setEditAddress(e.target.value)} 
+                          className="mt-1 font-sans" 
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 col-span-2">
+                      <div>
+                        <label className="text-sm font-medium font-sans">{t('dateOfBirth' as TranslationKey)}</label>
+                        <Input 
+                          type="date"
+                          value={editDateOfBirth} 
+                          onChange={(e) => setEditDateOfBirth(e.target.value)} 
+                          className="mt-1 font-sans" 
+                        />
+                      </div>
+                    </div>
                 </form>
+                </div>
+
+                {/* Student-specific fields */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('studentInformation' as TranslationKey)}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium font-sans">{t('parentName' as TranslationKey)}</label>
+                      <Input 
+                        value={editParentName} 
+                        onChange={(e) => setEditParentName(e.target.value)} 
+                        className="mt-1 font-sans" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium font-sans">{t('parentPhone' as TranslationKey)}</label>
+                      <Input 
+                        value={editParentPhone} 
+                        onChange={(e) => setEditParentPhone(e.target.value)} 
+                        className="mt-1 font-sans" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium font-sans">{t('emergencyContact' as TranslationKey)}</label>
+                    <Input 
+                      value={editEmergencyContact} 
+                      onChange={(e) => setEditEmergencyContact(e.target.value)} 
+                      className="mt-1 font-sans" 
+                    />
+                  </div>
+                </div>
               </div>
             )}
             <DialogFooter>
@@ -829,39 +1310,75 @@ export default function StudentsPage() {
                 {t('cancel')}
               </Button>
               <LoadingButton
-                loading={savingEdit}
+                loading={savingEdit || uploadingEditAvatar}
                 className="btn-gradient font-sans"
                 onClick={async () => {
                   if (!selectedStudent) return;
                   try {
                     setSavingEdit(true);
-                    // Simple update: only example fields
+                    // Get form values
                     const form = document.querySelector('#edit-student-form') as HTMLFormElement | null;
                     const full_name = (form?.querySelector('[name="full_name"]') as HTMLInputElement | null)?.value || selectedStudent.full_name;
                     const email = (form?.querySelector('[name="email"]') as HTMLInputElement | null)?.value || selectedStudent.email;
                     const phone = (form?.querySelector('[name="phone"]') as HTMLInputElement | null)?.value || selectedStudent.phone || null;
-                    const { error } = await supabase.rpc('admin_update_profile', {
-                      p_id: selectedStudent.id,
-                      p_full_name: full_name || null,
-                      p_email: email || null,
-                      p_phone: phone || null,
-                      p_language: editLanguage,
-                      p_role: null,
-                    });
+                    
+                    // Upload avatar if a new file was selected
+                    let finalAvatarUrl = editAvatarUrl;
+                    if (editAvatarFile) {
+                      setUploadingEditAvatar(true);
+                      const { data: uploadData, error: uploadError } = await uploadUserAvatar(editAvatarFile, selectedStudent.id);
+                      if (uploadError) {
+                        toast.error(uploadError.message || t('failedToUploadAvatar' as TranslationKey));
+                        setUploadingEditAvatar(false);
+                        return;
+                      }
+                      finalAvatarUrl = uploadData?.publicUrl || '';
+                      setUploadingEditAvatar(false);
+                    }
+                    
+                    // Update profile with all fields
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({
+                        full_name: full_name.trim(),
+                        phone: phone?.trim() || null,
+                        language_preference: editLanguage,
+                        gender: editGender || null,
+                        avatar_url: finalAvatarUrl || null,
+                        address: editAddress?.trim() || null,
+                        date_of_birth: editDateOfBirth || null,
+                        parent_name: editParentName?.trim() || null,
+                        parent_phone: editParentPhone?.trim() || null,
+                        emergency_contact: editEmergencyContact?.trim() || null,
+                      })
+                      .eq('id', selectedStudent.id);
+                    
                     if (error) { toast.error(t('saveFailed')); return; }
                     // Optimistic UI update
                     setStudents(prev => prev.map(s => s.id === selectedStudent.id ? {
                       ...s,
                       full_name,
-                      email,
                       phone: phone || undefined,
                       language_preference: editLanguage,
+                      gender: editGender || undefined,
+                      avatar_url: finalAvatarUrl || undefined,
+                      address: editAddress || undefined,
+                      date_of_birth: editDateOfBirth || undefined,
+                      parent_name: editParentName || undefined,
+                      parent_phone: editParentPhone || undefined,
+                      emergency_contact: editEmergencyContact || undefined,
                     } : s));
                     toast.success(t('studentUpdated'));
                     setIsDialogOpen(false);
                     setSelectedStudent(null);
+                    setEditAvatarFile(null);
+                    setEditAvatarPreview(null);
+                    setEditAvatarUrl('');
                     // Avoid immediate refetch to prevent stale overwrite when Realtime is off
-                  } finally { setSavingEdit(false); }
+                  } finally { 
+                    setSavingEdit(false);
+                    setUploadingEditAvatar(false);
+                  }
                 }}
               >
                 {t('saveChanges')}

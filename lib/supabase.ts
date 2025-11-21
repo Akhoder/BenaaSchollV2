@@ -15,6 +15,22 @@ export interface Profile {
   avatar_url?: string;
   phone?: string;
   language_preference: 'en' | 'ar' | 'fr';
+  gender?: 'male' | 'female';
+  // Common fields
+  address?: string;
+  date_of_birth?: string;
+  // Teacher fields
+  specialization?: string;
+  years_of_experience?: number;
+  qualifications?: string;
+  bio?: string;
+  // Student fields
+  parent_name?: string;
+  parent_phone?: string;
+  emergency_contact?: string;
+  // Admin/Supervisor fields
+  appointment_date?: string;
+  department?: string;
   created_at: string;
   updated_at: string;
 }
@@ -555,6 +571,66 @@ export async function uploadLessonAttachmentFile(file: File, userId: string) {
   }
   const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
   return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+// ============================================
+// AVATAR UPLOAD FUNCTIONS
+// ============================================
+
+export async function uploadUserAvatar(file: File, userId: string) {
+  const bucket = 'avatars';
+  const ext = file.name.split('.').pop() || 'jpg';
+  
+  // Validate file type (images only)
+  const allowedExt = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+  if (!allowedExt.includes(ext.toLowerCase())) {
+    return { data: null, error: new Error('Unsupported file type. Only images are allowed (PNG, JPG, JPEG, GIF, WEBP)') } as any;
+  }
+  
+  // Validate file size (max 5MB for avatars)
+  const maxBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxBytes) {
+    return { data: null, error: new Error('File too large (max 5MB)') } as any;
+  }
+  
+  // Generate unique filename
+  const uid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? (crypto as any).randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const path = `${userId}/${uid}.${ext.toLowerCase()}`;
+  
+  const contentTypeByExt: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const contentType = file.type || contentTypeByExt[ext.toLowerCase()] || 'image/jpeg';
+  
+  // Upload file
+  const { data, error } = await (supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType,
+  }) as any);
+  
+  if (error) {
+    return { data: null, error: new Error(`Upload failed: ${error.message || 'Unknown error'}`) } as any;
+  }
+  
+  // Get public URL
+  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+export async function deleteUserAvatar(path: string) {
+  const bucket = 'avatars';
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) {
+    return { error };
+  }
+  return { error: null };
 }
 
 // ============================================

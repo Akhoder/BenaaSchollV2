@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -373,6 +373,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 bg-[hsl(var(--primary-light))] dark:bg-[hsl(var(--primary-light))] px-2 sm:px-3 py-1.5 rounded-full border border-[hsl(var(--border))] hover:shadow-md transition">
                     <Avatar className="h-8 w-8 ring-2 ring-[hsl(var(--primary))]/20">
+                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
                       <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white text-sm font-semibold">
                         {profile?.full_name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
@@ -391,6 +392,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <Link href="/dashboard/settings/profile" prefetch={true} className="block">
+                    <DropdownMenuItem>
+                      <UserCircle className="h-4 w-4 mr-2" />
+                      {t('editProfile')}
+                    </DropdownMenuItem>
+                  </Link>
                   {profile?.role === 'admin' && (
                     <Link href="/dashboard/settings/branding" prefetch={true} className="block">
                       <DropdownMenuItem>

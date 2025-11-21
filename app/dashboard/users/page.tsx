@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -51,8 +52,11 @@ import {
   Shield,
   Loader2,
   Users,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, uploadUserAvatar, deleteUserAvatar } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -73,6 +77,22 @@ interface UserProfile {
   language_preference: string;
   phone?: string;
   avatar_url?: string;
+  gender?: 'male' | 'female';
+  // Common fields
+  address?: string;
+  date_of_birth?: string;
+  // Teacher fields
+  specialization?: string;
+  years_of_experience?: number;
+  qualifications?: string;
+  bio?: string;
+  // Student fields
+  parent_name?: string;
+  parent_phone?: string;
+  emergency_contact?: string;
+  // Admin/Supervisor fields
+  appointment_date?: string;
+  department?: string;
   created_at: string;
   updated_at: string;
 }
@@ -93,6 +113,27 @@ export default function UsersPage() {
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserProfile['role']>('student');
   const [editPhone, setEditPhone] = useState('');
+  const [editGender, setEditGender] = useState<'male' | 'female' | ''>('');
+  // Common fields
+  const [editAddress, setEditAddress] = useState('');
+  const [editDateOfBirth, setEditDateOfBirth] = useState('');
+  // Teacher fields
+  const [editSpecialization, setEditSpecialization] = useState('');
+  const [editYearsOfExperience, setEditYearsOfExperience] = useState('');
+  const [editQualifications, setEditQualifications] = useState('');
+  const [editBio, setEditBio] = useState('');
+  // Student fields
+  const [editParentName, setEditParentName] = useState('');
+  const [editParentPhone, setEditParentPhone] = useState('');
+  const [editEmergencyContact, setEditEmergencyContact] = useState('');
+  // Admin/Supervisor fields
+  const [editAppointmentDate, setEditAppointmentDate] = useState('');
+  const [editDepartment, setEditDepartment] = useState('');
+  // Avatar upload
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [newPw, setNewPw] = useState('');
@@ -243,54 +284,113 @@ export default function UsersPage() {
   const handleEditSave = useCallback(async () => {
     try {
       setSavingEdit(true);
+      
+      // Upload avatar if a new file was selected
+      let avatarUrl = editAvatarUrl;
+      if (avatarFile && selectedUser) {
+        setUploadingAvatar(true);
+        const { data: uploadData, error: uploadError } = await uploadUserAvatar(avatarFile, selectedUser.id);
+        if (uploadError) {
+          toast.error(uploadError.message || t('failedToUploadAvatar' as TranslationKey));
+          setUploadingAvatar(false);
+          return;
+        }
+        avatarUrl = uploadData?.publicUrl || '';
+        setUploadingAvatar(false);
+      } else if (avatarFile && !selectedUser) {
+        // For new users, we'll upload after creating the user
+        // But we need the user ID first, so we'll handle this after insert
+      }
+
+      const updateData: any = {
+        full_name: editName.trim(),
+        email: editEmail.trim(),
+        role: editRole,
+        phone: editPhone.trim() || null,
+        avatar_url: avatarUrl || null,
+        gender: editGender || null,
+        // Common fields
+        address: editAddress.trim() || null,
+        date_of_birth: editDateOfBirth || null,
+        // Teacher fields
+        specialization: editSpecialization.trim() || null,
+        years_of_experience: editYearsOfExperience ? parseInt(editYearsOfExperience) : null,
+        qualifications: editQualifications.trim() || null,
+        bio: editBio.trim() || null,
+        // Student fields
+        parent_name: editParentName.trim() || null,
+        parent_phone: editParentPhone.trim() || null,
+        emergency_contact: editEmergencyContact.trim() || null,
+        // Admin/Supervisor fields
+        appointment_date: editAppointmentDate || null,
+        department: editDepartment.trim() || null,
+      };
+
       if (selectedUser) {
-        const { error } = await supabase.rpc('admin_update_profile', {
-          p_id: selectedUser.id,
-          p_full_name: editName || null,
-          p_email: editEmail || null,
-          p_phone: editPhone || null,
-          p_language: null,
-          p_role: editRole || null,
-        });
+        // Update existing user
+        const { error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', selectedUser.id);
+        
         if (error) {
           console.error(error);
-          toast.error(t('failedToSave'));
+          toast.error(t('failedToSave' as TranslationKey));
           return;
         }
-        setUsers(prev => prev.map(u => u.id === selectedUser.id ? {
-          ...u,
-          full_name: editName,
-          email: editEmail,
-          role: editRole,
-          phone: editPhone || undefined,
-        } : u));
-        toast.success(t('userUpdated'));
+        setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, ...updateData } : u));
+        toast.success(t('userUpdated' as TranslationKey));
       } else {
+        // Create new user
         if (!editName.trim() || !editEmail.trim()) {
-          toast.error(t('nameAndEmailRequired'));
+          toast.error(t('nameAndEmailRequired' as TranslationKey));
           return;
         }
-        const { error } = await supabase.from('profiles').insert([{
-          full_name: editName.trim(),
-          email: editEmail.trim(),
-          role: editRole,
-          phone: editPhone.trim() || null,
+        const { data: newUser, error } = await supabase.from('profiles').insert([{
+          ...updateData,
           language_preference: 'en',
-        }]);
+          gender: editGender || null,
+        }]).select().single();
+        
         if (error) {
           console.error(error);
-          toast.error(t('failedToCreate'));
+          toast.error(t('failedToCreate' as TranslationKey));
           return;
         }
-        toast.success(t('userCreated'));
+
+        // Upload avatar for new user if file was selected
+        if (avatarFile && newUser) {
+          setUploadingAvatar(true);
+          const { data: uploadData, error: uploadError } = await uploadUserAvatar(avatarFile, newUser.id);
+          if (!uploadError && uploadData?.publicUrl) {
+            await supabase
+              .from('profiles')
+              .update({ avatar_url: uploadData.publicUrl })
+              .eq('id', newUser.id);
+          }
+          setUploadingAvatar(false);
+        }
+
+        toast.success(t('userCreated' as TranslationKey));
         await fetchUsers();
       }
       setIsDialogOpen(false);
       setSelectedUser(null);
+      setAvatarFile(null);
+      setAvatarPreview(null);
     } finally {
       setSavingEdit(false);
+      setUploadingAvatar(false);
     }
-  }, [selectedUser, editName, editEmail, editRole, editPhone, t, fetchUsers]);
+  }, [
+    selectedUser, editName, editEmail, editRole, editPhone, editGender, editAvatarUrl,
+    editAddress, editDateOfBirth,
+    editSpecialization, editYearsOfExperience, editQualifications, editBio,
+    editParentName, editParentPhone, editEmergencyContact,
+    editAppointmentDate, editDepartment,
+    avatarFile,
+    t, fetchUsers
+  ]);
 
   const handlePasswordChange = useCallback(async () => {
     if (!selectedUser) return;
@@ -326,14 +426,81 @@ export default function UsersPage() {
       setEditEmail(user.email || '');
       setEditRole(user.role);
       setEditPhone(user.phone || '');
+      setEditGender(user.gender || '');
+      // Common fields
+      setEditAddress(user.address || '');
+      setEditDateOfBirth(user.date_of_birth || '');
+      // Teacher fields
+      setEditSpecialization(user.specialization || '');
+      setEditYearsOfExperience(user.years_of_experience?.toString() || '');
+      setEditQualifications(user.qualifications || '');
+      setEditBio(user.bio || '');
+      // Student fields
+      setEditParentName(user.parent_name || '');
+      setEditParentPhone(user.parent_phone || '');
+      setEditEmergencyContact(user.emergency_contact || '');
+      // Admin/Supervisor fields
+      setEditAppointmentDate(user.appointment_date || '');
+      setEditDepartment(user.department || '');
+      // Avatar
+      setEditAvatarUrl(user.avatar_url || '');
+      setAvatarPreview(user.avatar_url || null);
+      setAvatarFile(null);
     } else {
       setSelectedUser(null);
       setEditName('');
       setEditEmail('');
       setEditRole('student');
       setEditPhone('');
+      setEditGender('');
+      // Reset all fields
+      setEditAddress('');
+      setEditDateOfBirth('');
+      setEditSpecialization('');
+      setEditYearsOfExperience('');
+      setEditQualifications('');
+      setEditBio('');
+      setEditParentName('');
+      setEditParentPhone('');
+      setEditEmergencyContact('');
+      setEditAppointmentDate('');
+      setEditDepartment('');
+      // Reset avatar
+      setEditAvatarUrl('');
+      setAvatarPreview(null);
+      setAvatarFile(null);
     }
     setIsDialogOpen(true);
+  }, []);
+
+  const handleAvatarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('invalidImageFile' as TranslationKey));
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('imageTooLarge' as TranslationKey));
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, [t]);
+
+  const handleRemoveAvatar = useCallback(() => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setEditAvatarUrl('');
   }, []);
 
   if (authLoading || loading) {
@@ -668,42 +835,220 @@ export default function UsersPage() {
                 {selectedUser ? t('updateUserInfo') : t('addNewUser')}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">{t('fullName')}</label>
-                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{t('email')}</label>
-                  <Input 
-                    value={editEmail} 
-                    onChange={(e) => setEditEmail(e.target.value)} 
-                    className="mt-1"
-                    disabled={!!selectedUser}
-                  />
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+              {/* Avatar Upload */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('profilePicture' as TranslationKey)}</h3>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 ring-2 ring-blue-500/20">
+                      <AvatarImage src={avatarPreview || editAvatarUrl || undefined} />
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-xl">
+                        {editName.charAt(0).toUpperCase() || <User className="h-8 w-8" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    {(avatarPreview || editAvatarUrl) && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={handleRemoveAvatar}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                      id="avatar-upload"
+                    />
+                    <label htmlFor="avatar-upload">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={uploadingAvatar}
+                        asChild
+                      >
+                        <span className="cursor-pointer">
+                          {uploadingAvatar ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {t('uploading' as TranslationKey)}
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              {avatarPreview || editAvatarUrl ? t('changePicture' as TranslationKey) : t('uploadPicture' as TranslationKey)}
+                            </>
+                          )}
+                        </span>
+                      </Button>
+                    </label>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {t('imageUploadHint' as TranslationKey)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">{t('role')}</label>
-                  <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">{t('admin')}</SelectItem>
-                      <SelectItem value="teacher">{t('teacher')}</SelectItem>
-                      <SelectItem value="student">{t('student')}</SelectItem>
-                      <SelectItem value="supervisor">{t('supervisor')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('basicInformation' as TranslationKey)}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">{t('fullName')}</label>
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('email')}</label>
+                    <Input 
+                      value={editEmail} 
+                      onChange={(e) => setEditEmail(e.target.value)} 
+                      className="mt-1"
+                      disabled={!!selectedUser}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">{t('phone')}</label>
-                  <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">{t('role')}</label>
+                    <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">{t('admin')}</SelectItem>
+                        <SelectItem value="teacher">{t('teacher')}</SelectItem>
+                        <SelectItem value="student">{t('student')}</SelectItem>
+                        <SelectItem value="supervisor">{t('supervisor')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('phone')}</label>
+                    <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">{t('gender' as TranslationKey)}</label>
+                    <Select value={editGender} onValueChange={(v) => setEditGender(v as 'male' | 'female' | '')}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder={t('selectGender' as TranslationKey)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">{t('male' as TranslationKey)}</SelectItem>
+                        <SelectItem value="female">{t('female' as TranslationKey)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('address' as TranslationKey)}</label>
+                    <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">{t('dateOfBirth' as TranslationKey)}</label>
+                    <Input 
+                      type="date"
+                      value={editDateOfBirth} 
+                      onChange={(e) => setEditDateOfBirth(e.target.value)} 
+                      className="mt-1" 
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Teacher-specific fields */}
+              {(editRole === 'teacher') && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('teacherInformation' as TranslationKey)}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">{t('specialization' as TranslationKey)}</label>
+                      <Input value={editSpecialization} onChange={(e) => setEditSpecialization(e.target.value)} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">{t('yearsOfExperience' as TranslationKey)}</label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        value={editYearsOfExperience} 
+                        onChange={(e) => setEditYearsOfExperience(e.target.value)} 
+                        className="mt-1" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('qualifications' as TranslationKey)}</label>
+                    <Textarea 
+                      value={editQualifications} 
+                      onChange={(e) => setEditQualifications(e.target.value)} 
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('bio' as TranslationKey)}</label>
+                    <Textarea 
+                      value={editBio} 
+                      onChange={(e) => setEditBio(e.target.value)} 
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Student-specific fields */}
+              {(editRole === 'student') && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('studentInformation' as TranslationKey)}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">{t('parentName' as TranslationKey)}</label>
+                      <Input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">{t('parentPhone' as TranslationKey)}</label>
+                      <Input value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} className="mt-1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">{t('emergencyContact' as TranslationKey)}</label>
+                    <Input value={editEmergencyContact} onChange={(e) => setEditEmergencyContact(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              )}
+
+              {/* Admin/Supervisor-specific fields */}
+              {(editRole === 'admin' || editRole === 'supervisor') && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('administrativeInformation' as TranslationKey)}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">{t('appointmentDate' as TranslationKey)}</label>
+                      <Input 
+                        type="date"
+                        value={editAppointmentDate} 
+                        onChange={(e) => setEditAppointmentDate(e.target.value)} 
+                        className="mt-1" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">{t('department' as TranslationKey)}</label>
+                      <Input value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} className="mt-1" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
