@@ -145,7 +145,7 @@ export default function MyClassesPage() {
       <div className="space-y-6 animate-fade-in">
         <PageHeader 
           icon={School}
-          title={t('myClasses') || 'My Classes'}
+          title="My Classes"
           description={t('chooseClassDescription' as TranslationKey)}
           gradient="from-blue-600 via-cyan-600 to-blue-700"
         />

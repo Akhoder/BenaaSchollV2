@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -12,14 +13,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, FileText, Award, Filter, Users, CheckCircle2, XCircle, UserX } from 'lucide-react';
+import { Loader2, BookOpen, Plus, MoreVertical, Edit, Trash2, Search, FileText, Award, Filter, Users, CheckCircle2, XCircle, UserX, Upload, X, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { supabase } from '@/lib/supabase';
+import { supabase, uploadSubjectImage, deleteSubjectImage } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
   Pagination,
@@ -37,9 +39,14 @@ interface SubjectRow {
   subject_name: string;
   teacher_id: string | null;
   created_at: string;
+  updated_at?: string;
   class_name?: string;
   teacher_name?: string;
   published?: boolean;
+  description?: string | null;
+  objectives?: string[] | null;
+  reference_url?: string | null;
+  image_url?: string | null;
 }
 
 interface ClassRow { id: string; class_name: string; }
@@ -73,7 +80,14 @@ export default function SubjectsPage() {
     subject_name: '',
     class_id: '',
     teacher_id: '',
+    description: '',
+    objectives: [] as string[],
+    reference_url: '',
+    image_url: '',
   });
+  
+  const [objectiveInput, setObjectiveInput] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -99,7 +113,7 @@ export default function SubjectsPage() {
         supabase.from('classes').select('id, class_name').order('created_at', { ascending: false }),
         supabase
           .from('class_subjects')
-          .select(`id, class_id, subject_name, teacher_id, created_at, published, classes(class_name), teacher:profiles!teacher_id(full_name)`)
+          .select(`id, class_id, subject_name, teacher_id, created_at, updated_at, published, description, objectives, reference_url, image_url, classes(class_name), teacher:profiles!teacher_id(full_name)`)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -148,7 +162,12 @@ export default function SubjectsPage() {
         subject_name: s.subject_name,
         teacher_id: s.teacher_id,
         created_at: s.created_at,
+        updated_at: s.updated_at,
         published: s.published,
+        description: s.description,
+        objectives: s.objectives,
+        reference_url: s.reference_url,
+        image_url: s.image_url,
         class_name: s.classes?.class_name ?? classNameById[s.class_id],
         teacher_name: s.teacher?.full_name ?? (s.teacher_id ? teacherNameById[s.teacher_id] : undefined),
       }));
@@ -164,7 +183,10 @@ export default function SubjectsPage() {
     }
   };
 
-  const resetForm = () => setForm({ subject_name: '', class_id: '', teacher_id: '' });
+  const resetForm = () => {
+    setForm({ subject_name: '', class_id: '', teacher_id: '', description: '', objectives: [], reference_url: '', image_url: '' });
+    setObjectiveInput('');
+  };
 
   const openCreate = () => {
     setSelected(null);
@@ -178,7 +200,12 @@ export default function SubjectsPage() {
       subject_name: row.subject_name || '',
       class_id: row.class_id || '',
       teacher_id: row.teacher_id || '',
+      description: row.description || '',
+      objectives: row.objectives || [],
+      reference_url: row.reference_url || '',
+      image_url: row.image_url || '',
     });
+    setObjectiveInput('');
     setIsDialogOpen(true);
   };
 
@@ -189,17 +216,27 @@ export default function SubjectsPage() {
         return;
       }
       setIsSaving(true);
+      const updateData: any = {
+        subject_name: form.subject_name,
+        class_id: form.class_id,
+        teacher_id: form.teacher_id || null,
+        description: form.description || null,
+        objectives: form.objectives.length > 0 ? form.objectives : null,
+        reference_url: form.reference_url || null,
+        image_url: form.image_url || null,
+      };
+      
       if (selected) {
         const { error } = await supabase
           .from('class_subjects')
-          .update({ subject_name: form.subject_name, class_id: form.class_id, teacher_id: form.teacher_id || null })
+          .update(updateData)
           .eq('id', selected.id);
         if (error) throw error;
         toast.success(t('subjectUpdated'));
       } else {
         const { error } = await supabase
           .from('class_subjects')
-          .insert({ subject_name: form.subject_name, class_id: form.class_id, teacher_id: form.teacher_id || null });
+          .insert(updateData);
         if (error) throw error;
         toast.success(t('subjectCreated'));
       }
@@ -490,6 +527,7 @@ export default function SubjectsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                      <TableHead className="font-semibold font-sans w-16">{t('image') || 'Image'}</TableHead>
                       <TableHead className="font-semibold font-sans">{t('subject')}</TableHead>
                       <TableHead className="font-semibold font-sans">{t('classes')}</TableHead>
                       <TableHead className="font-semibold font-sans">{t('teacher')}</TableHead>
@@ -500,7 +538,41 @@ export default function SubjectsPage() {
                   <TableBody>
                     {paginatedSubjects.map((s) => (
                       <TableRow key={s.id}>
-                        <TableCell>{s.subject_name}</TableCell>
+                        <TableCell>
+                          <Link href={`/dashboard/subjects/${s.id}/lessons`} className="block">
+                            {s.image_url ? (
+                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                                <img
+                                  src={s.image_url}
+                                  alt={s.subject_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                                <BookOpen className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                              </div>
+                            )}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Link 
+                            href={`/dashboard/subjects/${s.id}/lessons`}
+                            className="block group"
+                          >
+                            <div className="font-medium font-sans text-foreground group-hover:text-primary transition-colors cursor-pointer">
+                              {s.subject_name}
+                            </div>
+                            {s.description && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                                {s.description}
+                              </div>
+                            )}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-sans">{s.class_name || '—'}</Badge>
                         </TableCell>
@@ -652,7 +724,7 @@ export default function SubjectsPage() {
         </Card>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">{selected ? t('editSubject') : t('addSubject')}</DialogTitle>
               <DialogDescription className="font-sans">
@@ -699,6 +771,164 @@ export default function SubjectsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              
+              {/* ✅ NEW: Description Field */}
+              <div>
+                <Label className="text-sm font-medium font-sans">{t('description') || 'Description'} ({t('optional')})</Label>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder={t('subjectDescriptionPlaceholder') || 'Enter subject description...'}
+                  className="mt-1 font-sans min-h-[100px]"
+                  rows={4}
+                />
+              </div>
+              
+              {/* ✅ NEW: Objectives Field */}
+              <div>
+                <Label className="text-sm font-medium font-sans">{t('objectives') || 'Objectives'} ({t('optional')})</Label>
+                <div className="mt-1 space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      value={objectiveInput}
+                      onChange={(e) => setObjectiveInput(e.target.value)}
+                      placeholder={t('addObjective') || 'Add an objective...'}
+                      className="font-sans"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && objectiveInput.trim()) {
+                          e.preventDefault();
+                          setForm({ ...form, objectives: [...form.objectives, objectiveInput.trim()] });
+                          setObjectiveInput('');
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (objectiveInput.trim()) {
+                          setForm({ ...form, objectives: [...form.objectives, objectiveInput.trim()] });
+                          setObjectiveInput('');
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {form.objectives.length > 0 && (
+                    <div className="space-y-1">
+                      {form.objectives.map((obj, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-md">
+                          <span className="flex-1 text-sm font-sans">{obj}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => {
+                              setForm({ ...form, objectives: form.objectives.filter((_, i) => i !== idx) });
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* ✅ NEW: Reference URL Field */}
+              <div>
+                <Label className="text-sm font-medium font-sans flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4" />
+                  {t('reference') || 'Reference URL'} ({t('optional')})
+                </Label>
+                <Input
+                  type="url"
+                  value={form.reference_url}
+                  onChange={(e) => setForm({ ...form, reference_url: e.target.value })}
+                  placeholder="https://drive.google.com/..."
+                  className="mt-1 font-sans"
+                />
+              </div>
+              
+              {/* ✅ NEW: Image Upload Field */}
+              <div>
+                <Label className="text-sm font-medium font-sans flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  {t('subjectImage') || 'Subject Image'} ({t('optional')})
+                </Label>
+                <div className="mt-1 space-y-2">
+                  {form.image_url ? (
+                    <div className="relative">
+                      <img
+                        src={form.image_url}
+                        alt="Subject preview"
+                        className="w-full h-48 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={async () => {
+                          if (form.image_url && selected?.image_url === form.image_url) {
+                            // Delete from storage if it's the existing image
+                            await deleteSubjectImage(form.image_url);
+                          }
+                          setForm({ ...form, image_url: '' });
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        {t('remove') || 'Remove'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        id="subject-image-upload"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !profile?.id) return;
+                          
+                          setUploadingImage(true);
+                          try {
+                            const { data, error } = await uploadSubjectImage(file, profile.id);
+                            if (error) throw error;
+                            if (data?.publicUrl) {
+                              setForm({ ...form, image_url: data.publicUrl });
+                              toast.success(t('imageUploaded') || 'Image uploaded successfully');
+                            }
+                          } catch (err: any) {
+                            toast.error(err.message || t('uploadFailed') || 'Upload failed');
+                          } finally {
+                            setUploadingImage(false);
+                          }
+                        }}
+                      />
+                      <label htmlFor="subject-image-upload" className="cursor-pointer">
+                        {uploadingImage ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <span className="text-sm text-slate-600 dark:text-slate-400">{t('uploading') || 'Uploading...'}</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <Upload className="h-8 w-8 text-slate-400" />
+                            <span className="text-sm text-slate-600 dark:text-slate-400">{t('clickToUpload') || 'Click to upload image'}</span>
+                            <span className="text-xs text-slate-500">PNG, JPG, WEBP (max 5MB)</span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>

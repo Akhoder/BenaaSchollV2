@@ -19,7 +19,7 @@ import * as api from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import type { AttachmentType, Lesson } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Image as ImageIcon, FileText, File as FileIcon, Loader2, Calendar, GripVertical, BookOpen, Plus, Video, PlayCircle, FileVideo, CheckCircle2, XCircle, Search, Filter, ArrowLeft } from 'lucide-react';
+import { Image as ImageIcon, FileText, File as FileIcon, Loader2, Calendar, GripVertical, BookOpen, Plus, Video, PlayCircle, FileVideo, CheckCircle2, XCircle, Search, Filter, ArrowLeft, ExternalLink, User, Target } from 'lucide-react';
 import { ContentGenerator } from '@/components/ContentGenerator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { LessonStatus } from '@/lib/supabase';
@@ -467,7 +467,15 @@ export default function SubjectLessonsPage() {
   const [addUrlByLesson, setAddUrlByLesson] = useState<Record<string, string>>({});
   const [showAddDialog, setShowAddDialog] = useState<boolean>(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [subjectInfo, setSubjectInfo] = useState<{ subject_name: string; class_name: string } | null>(null);
+  const [subjectInfo, setSubjectInfo] = useState<{ 
+    subject_name: string; 
+    class_name: string;
+    description?: string | null;
+    objectives?: string[] | null;
+    reference_url?: string | null;
+    image_url?: string | null;
+    teacher?: { full_name: string } | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -484,10 +492,10 @@ export default function SubjectLessonsPage() {
 
   const loadSubjectInfo = async () => {
     try {
-      // First, get the subject with class_id
+      // Get subject with all new fields and teacher info
       const { data: subjectData, error: subjectError } = await supabase
         .from('class_subjects')
-        .select('subject_name, class_id')
+        .select('subject_name, class_id, description, objectives, reference_url, image_url, teacher:profiles!teacher_id(full_name)')
         .eq('id', subjectId)
         .single();
       
@@ -518,7 +526,12 @@ export default function SubjectLessonsPage() {
       
       setSubjectInfo({
         subject_name: subjectData.subject_name || '',
-        class_name: className
+        class_name: className,
+        description: subjectData.description,
+        objectives: subjectData.objectives,
+        reference_url: subjectData.reference_url,
+        image_url: subjectData.image_url,
+        teacher: (subjectData as any).teacher || null,
       });
     } catch (err) {
       console.error('Error loading subject info:', err);
@@ -910,32 +923,122 @@ export default function SubjectLessonsPage() {
         </PageHeader>
 
         {subjectInfo && (
-          <Card className="card-hover glass-strong border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold font-display text-foreground">
+          <Card className="card-hover glass-strong border-primary/20 overflow-hidden">
+            <CardContent className="p-0">
+              {/* Subject Header with Image */}
+              <div className="relative">
+                {subjectInfo.image_url ? (
+                  <div className="h-48 w-full relative overflow-hidden">
+                    <img
+                      src={subjectInfo.image_url}
+                      alt={subjectInfo.subject_name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h2 className="text-3xl font-bold font-display mb-2">
                         {subjectInfo.subject_name}
                       </h2>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-2">
-                        <span className="font-medium">{t('class')}:</span>
-                        <span>{subjectInfo.class_name}</span>
-                      </p>
+                      <div className="flex items-center gap-4 text-sm text-white/90">
+                        {subjectInfo.class_name && (
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="h-4 w-4" />
+                            {subjectInfo.class_name}
+                          </span>
+                        )}
+                        {subjectInfo.teacher?.full_name && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            {subjectInfo.teacher.full_name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1.5">
-                    <BookOpen className="h-3 w-3 mr-1.5" />
-                    {t('subjectLabel')}
-                  </Badge>
-                </div>
+                ) : (
+                  <div className="h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-slate-100 dark:from-primary/20 dark:via-primary/10 dark:to-slate-800 p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center">
+                        <BookOpen className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold font-display text-foreground mb-1">
+                          {subjectInfo.subject_name}
+                        </h2>
+                        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                          {subjectInfo.class_name && (
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-3.5 w-3.5" />
+                              {subjectInfo.class_name}
+                            </span>
+                          )}
+                          {subjectInfo.teacher?.full_name && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3.5 w-3.5" />
+                              {subjectInfo.teacher.full_name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Subject Details */}
+              {(subjectInfo.description || subjectInfo.objectives || subjectInfo.reference_url) && (
+                <div className="p-6 space-y-4 border-t border-slate-200 dark:border-slate-700">
+                  {/* Description */}
+                  {subjectInfo.description && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {t('description') || 'Description'}
+                      </h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        {subjectInfo.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Objectives */}
+                  {subjectInfo.objectives && subjectInfo.objectives.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        {t('objectives') || 'Objectives'}
+                      </h3>
+                      <ul className="space-y-2">
+                        {subjectInfo.objectives.map((obj, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+                            <span className="text-primary mt-0.5">•</span>
+                            <span>{obj}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Reference URL */}
+                  {subjectInfo.reference_url && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        {t('reference') || 'Reference'}
+                      </h3>
+                      <a
+                        href={subjectInfo.reference_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        {subjectInfo.reference_url}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1010,15 +1113,15 @@ export default function SubjectLessonsPage() {
             subjectName={subjectInfo.subject_name}
             onQuestionsGenerated={(questions) => {
               console.log('Generated questions:', questions);
-              toast.success(t('questionsGenerated') || 'Questions generated successfully');
+              toast.success('Questions generated successfully');
             }}
             onLessonPlanGenerated={(lessonPlan) => {
               console.log('Generated lesson plan:', lessonPlan);
-              toast.success(t('lessonPlanGenerated') || 'Lesson plan generated successfully');
+              toast.success('Lesson plan generated successfully');
             }}
             onExercisesGenerated={(exercises) => {
               console.log('Generated exercises:', exercises);
-              toast.success(t('exercisesGenerated') || 'Exercises generated successfully');
+              toast.success('Exercises generated successfully');
             }}
           />
         )}

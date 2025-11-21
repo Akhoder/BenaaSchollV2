@@ -200,7 +200,7 @@ export default function TakeQuizPage() {
       const { error } = await submitQuizAttempt(attempt!.id, duration);
       if (error) { toast.error('Submit failed'); return; }
 
-      // Auto-grade mcq_single questions
+      // Auto-grade auto-gradable questions
       const { quiz, questions, optionsByQuestion } = bundle!;
       const { data: ansRows } = await fetchAnswersForAttempt(attempt!.id);
       const toGrade: Array<{ id: string; is_correct: boolean; points_awarded: number }> = [];
@@ -209,6 +209,8 @@ export default function TakeQuizPage() {
         const q = (questions as any[]).find((x: any) => x.id === row.question_id);
         if (!q) return;
         const points = Number(q.points || 1);
+        
+        // MCQ Single Choice
         if (q.type === 'mcq_single') {
           const selected = (row.answer_payload?.selected_option_ids || [])[0];
           const opts = optionsByQuestion.get(q.id) || [];
@@ -217,7 +219,8 @@ export default function TakeQuizPage() {
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
-        if (q.type === 'mcq_multi') {
+        // MCQ Multiple Choice
+        else if (q.type === 'mcq_multi') {
           const selected: string[] = row.answer_payload?.selected_option_ids || [];
           const opts = optionsByQuestion.get(q.id) || [];
           const correctIds = opts.filter((o: any) => o.is_correct).map((o: any) => o.id).sort();
@@ -226,7 +229,18 @@ export default function TakeQuizPage() {
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
-        if (q.type === 'numeric') {
+        // True/False
+        else if (q.type === 'true_false') {
+          const provided = row.answer_payload?.bool;
+          const opts = optionsByQuestion.get(q.id) || [];
+          const correctOpt = opts.find((o: any) => o.is_correct);
+          const correctVal = correctOpt ? correctOpt.text === 'True' || correctOpt.text === 'true' || correctOpt.text === 'T' : undefined;
+          const correct = typeof provided === 'boolean' && typeof correctVal === 'boolean' && provided === correctVal;
+          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
+          if (correct) total += points;
+        }
+        // Numeric
+        else if (q.type === 'numeric') {
           const provided = row.answer_payload?.number;
           const opts = optionsByQuestion.get(q.id) || [];
           const correctOpt = opts.find((o: any) => o.is_correct);
@@ -236,6 +250,7 @@ export default function TakeQuizPage() {
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
+        // Note: short_text, ordering, matching require manual grading
       });
       if (toGrade.length > 0) {
         await gradeAnswersBulk(toGrade);

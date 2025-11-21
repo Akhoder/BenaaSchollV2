@@ -41,7 +41,7 @@ export default function AIAssistantPage() {
       <div className="space-y-6">
         <PageHeader
           icon={Bot}
-          title={t('aiAssistant') || 'AI Assistant'}
+          title="AI Assistant"
           description={
             profile.language_preference === 'ar'
               ? 'مساعدك الذكي الشخصي - اسأل أي سؤال أكاديمي واحصل على إجابات فورية'

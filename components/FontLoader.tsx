@@ -21,9 +21,10 @@ export function FontLoader() {
     preconnect2.crossOrigin = 'anonymous';
     document.head.appendChild(preconnect2);
 
-    // Load fonts asynchronously
+    // ✅ PERFORMANCE: Load only essential font weights to reduce bundle size
+    // Reduced from 6 weights to 3 weights per font (50% reduction)
     const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;500;600;700;800;900&display=swap';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Cairo:wght@400;600;700&display=swap';
     fontLink.rel = 'stylesheet';
     fontLink.media = 'print';
     fontLink.onload = () => {

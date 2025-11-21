@@ -259,8 +259,9 @@ Soyez utile, amical et professionnel. Écrivez en français.`,
         console.log('OpenAI failed, trying Gemini as fallback...');
         try {
           return await callAIWithGemini(messages, studentContext, language, geminiKey, systemPrompt);
-        } catch (geminiError) {
-          throw new Error(`Both OpenAI and Gemini failed. OpenAI: ${error.message}, Gemini: ${geminiError.message}`);
+        } catch (geminiError: unknown) {
+          const geminiMessage = geminiError instanceof Error ? geminiError.message : String(geminiError);
+          throw new Error(`Both OpenAI and Gemini failed. OpenAI: ${error.message}, Gemini: ${geminiMessage}`);
         }
       }
       throw error;

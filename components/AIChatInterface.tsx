@@ -132,7 +132,7 @@ export function AIChatInterface({ conversationId: initialConversationId, classNa
       console.error('Error sending message:', error);
       
       // Provide user-friendly error messages
-      let errorMessage = t('errorSendingMessage') || 'Failed to send message';
+      let errorMessage = 'Failed to send message';
       
       if (error.message?.includes('quota') || error.message?.includes('insufficient_quota')) {
         errorMessage = language === 'ar' 
@@ -173,7 +173,7 @@ export function AIChatInterface({ conversationId: initialConversationId, classNa
           <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600">
             <Bot className="h-5 w-5 text-white" />
           </div>
-          <span>{t('aiAssistant') || 'AI Assistant'}</span>
+          <span>AI Assistant</span>
           <Sparkles className="h-4 w-4 text-purple-500 ml-auto" />
         </CardTitle>
       </CardHeader>

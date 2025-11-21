@@ -274,7 +274,7 @@ async function analyzeStudent(
     });
     
     const averageGrade = grades.length > 0
-      ? grades.reduce((a, b) => a + b, 0) / grades.length
+      ? grades.reduce((a: number, b: number) => a + b, 0) / grades.length
       : 0;
     
     const trend = calculateTrend(grades);

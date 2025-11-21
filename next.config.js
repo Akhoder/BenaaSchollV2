@@ -53,13 +53,16 @@ const nextConfig = {
     return config;
   },
   
-  // تحسينات الأداء
+  // ✅ PERFORMANCE: تحسينات الأداء
   experimental: {
     optimizePackageImports: [
       'lucide-react', 
       '@radix-ui/react-icons',
       'recharts',
-      'date-fns'
+      'date-fns',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select'
     ],
   },
   // ضغط الملفات

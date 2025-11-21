@@ -51,13 +51,19 @@ import {
   fetchMyNotifications 
 } from '@/lib/supabase';
 import { getStatsOptimized } from '@/lib/optimizedQueries';
-import { AdminCharts } from '@/components/AdminCharts';
+// ✅ PERFORMANCE: Lazy load heavy charts component
+import dynamic from 'next/dynamic';
+const AdminCharts = dynamic(() => import('@/components/AdminCharts').then(mod => ({ default: mod.AdminCharts })), {
+  loading: () => <div className="grid gap-6 md:grid-cols-2"><div className="h-64 animate-pulse bg-muted rounded-xl" /><div className="h-64 animate-pulse bg-muted rounded-xl" /></div>,
+  ssr: false
+});
 import { QuickInsights } from '@/components/QuickInsights';
 import { EnhancedActivityTimeline } from '@/components/EnhancedActivityTimeline';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePrefetch } from '@/hooks/usePrefetch';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -823,7 +829,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {t('assignmentCompletion') || 'Assignment Completion'}
+                      Assignment Completion
                     </span>
                     <span className="text-sm font-bold text-blue-600">
                       {completionRate}%
@@ -861,7 +867,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-red-600" />
                     <span className="text-sm text-slate-700 dark:text-slate-300">
-                      {t('overdueAssignments') || 'Overdue Assignments'}
+                      Overdue Assignments
                     </span>
                   </div>
                   <Badge className="bg-red-500 text-white">
@@ -874,7 +880,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-amber-600" />
                     <span className="text-sm text-slate-700 dark:text-slate-300">
-                      {t('urgentAssignments') || 'Urgent Assignments'}
+                      Urgent Assignments
                     </span>
                   </div>
                   <Badge className="bg-amber-500 text-white">
@@ -1212,7 +1218,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                           {isUrgent && !assignment.submission && (
                             <Badge className="bg-amber-500 text-white">
                               <Clock className="h-3 w-3 mr-1" />
-                              {t('urgent')} • {daysLeft} {daysLeft === 1 ? t('day') : t('days')} {t('left') || 'left'}
+                              {t('urgent')} • {daysLeft} {daysLeft === 1 ? t('day') : t('days')} left
                             </Badge>
                           )}
                         </div>
@@ -1277,7 +1283,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   {t('myEnrolledClasses')}
                 </CardTitle>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {Object.keys(myClassEnrollments).length} {Object.keys(myClassEnrollments).length === 1 ? t('class') : t('classes')} {t('enrolled') || 'enrolled'}
+                  {Object.keys(myClassEnrollments).length} {Object.keys(myClassEnrollments).length === 1 ? t('class') : t('classes')} enrolled
                 </p>
               </div>
             </div>
@@ -1419,7 +1425,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {publishedClasses.length > 0 
                     ? `${publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length} ${publishedClasses.filter((c: any) => !myClassEnrollments[c.id]).length === 1 ? t('class') : t('classes')} ${t('available')}`
-                    : t('loadingClasses') || 'Loading classes...'
+                    : 'Loading classes...'
                   }
                 </p>
               </div>
@@ -1433,10 +1439,10 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   <BookOpen className="h-20 w-20 mx-auto opacity-50 animate-float relative" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                  {t('noPublishedClasses') || 'No Published Classes'}
+                  No Published Classes
                 </h3>
                 <p className="text-sm font-sans mb-4">
-                  {t('noPublishedClassesDescription') || 'There are no published classes available at the moment. Please check back later or contact your administrator.'}
+                  There are no published classes available at the moment. Please check back later or contact your administrator.
                 </p>
                 <Link href="/dashboard/classes" prefetch={true}>
                   <Button variant="outline" className="hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
@@ -1452,10 +1458,10 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                   <CheckCircle2 className="h-20 w-20 mx-auto opacity-50 animate-float relative text-emerald-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                  {t('allClassesEnrolled') || 'All Classes Enrolled'}
+                  All Classes Enrolled
                 </h3>
                 <p className="text-sm font-sans mb-4">
-                  {t('allClassesEnrolledDescription') || 'You are enrolled in all available classes. Great job!'}
+                  You are enrolled in all available classes. Great job!
                 </p>
                 <Link href="/dashboard/classes" prefetch={true}>
                   <Button variant="outline" className="hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
@@ -1582,6 +1588,20 @@ export default function DashboardPage() {
       router.push('/login');
     }
   }, [user?.id, loading, router]);
+
+  // ✅ PERFORMANCE: Strategic prefetching for important pages
+  const importantPages = useMemo(() => {
+    if (!profile) return [];
+    const basePages = ['/dashboard/my-classes', '/dashboard/my-assignments'];
+    if (profile.role === 'admin') {
+      return [...basePages, '/dashboard/students', '/dashboard/classes', '/dashboard/users'];
+    } else if (profile.role === 'teacher') {
+      return [...basePages, '/dashboard/classes', '/dashboard/students'];
+    }
+    return basePages;
+  }, [profile?.role]);
+  
+  usePrefetch(importantPages);
 
   // ✅ PERFORMANCE: Optimize dependencies - only depend on profile.id and role
   useEffect(() => {

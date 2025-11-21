@@ -12,6 +12,7 @@ import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { 
   BookOpen, 
@@ -24,7 +25,8 @@ import {
   User,
   FileText,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass, getSubjectProgressStats } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -161,10 +163,8 @@ export default function ClassViewPage() {
             progressMap[subject.id] = progressEntry;
           }
 
+          // ✅ FIX: SubjectProgressStats doesn't have last_activity_at, use subject dates instead
           const activityDate =
-            progressEntry?.last_activity_at ||
-            progressEntry?.last_completed_at ||
-            progressEntry?.updated_at ||
             subject.updated_at ||
             subject.created_at;
 
@@ -486,26 +486,72 @@ export default function ClassViewPage() {
                         <div className="flex items-start justify-between gap-4">
                           {/* Subject Info */}
                           <div className="flex items-start gap-4 flex-1 min-w-0">
-                            {/* Subject Icon */}
+                            {/* Subject Image/Icon */}
                             <div className="relative flex-shrink-0">
-                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative border-2 border-blue-100 dark:border-blue-900">
-                                <BookOpen className="h-8 w-8 text-white" />
-                              </div>
+                              {subject.image_url ? (
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-blue-100 dark:border-blue-900 relative">
+                                  <img
+                                    src={subject.image_url}
+                                    alt={subject.subject_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative border-2 border-blue-100 dark:border-blue-900">
+                                    <BookOpen className="h-8 w-8 text-white" />
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                             {/* Subject Details */}
                             <div className="flex-1 min-w-0 pt-1">
-                              <CardTitle className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              <CardTitle className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
                                 {subject.subject_name}
                               </CardTitle>
                               
-                              {/* Teacher Info */}
+                              {/* ✅ NEW: Subject Description */}
+                              {subject.description && (
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{subject.description}</p>
+                              )}
+                              
+                              {/* Teacher Info with Avatar */}
                               {subject.teacher?.full_name && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                  <User className="h-4 w-4" />
-                                  <span className="truncate">{subject.teacher.full_name}</span>
-                                </div>
+                                <Link
+                                  href={`/dashboard/teachers/${subject.teacher.id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group/teacher"
+                                >
+                                  {subject.teacher.avatar_url ? (
+                                    <Avatar className="h-6 w-6 border border-slate-200 dark:border-slate-700">
+                                      <AvatarImage src={subject.teacher.avatar_url} alt={subject.teacher.full_name} />
+                                      <AvatarFallback className="text-xs">
+                                        {subject.teacher.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  ) : (
+                                    <div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                      <User className="h-3.5 w-3.5 text-slate-500" />
+                                    </div>
+                                  )}
+                                  <span className="truncate group-hover/teacher:underline">{subject.teacher.full_name}</span>
+                                </Link>
+                              )}
+                              
+                              {/* ✅ NEW: Reference URL */}
+                              {subject.reference_url && (
+                                <a
+                                  href={subject.reference_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mb-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  {language === 'ar' ? 'المرجع' : 'Reference'}
+                                </a>
                               )}
                               
                               {progress && progress.total_lessons > 0 ? (

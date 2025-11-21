@@ -253,11 +253,17 @@ export default function SubjectLessonsPage() {
       // Load assignments for this subject
       const { data: assns } = await fetchMyAssignmentsForSubject(currentSubjectId);
       setAssignments(assns || []);
-      // Load submissions per assignment
+      // ✅ PERFORMANCE: Load all submissions in parallel instead of sequential loop
       const subs: Record<string, any> = {};
-      for (const a of (assns || [])) {
-        const { data: sub } = await fetchSubmissionForAssignment(a.id);
-        if (sub) subs[a.id] = sub;
+      if (assns && assns.length > 0) {
+        const submissionPromises = assns.map(async (a: any) => {
+          const { data: sub } = await fetchSubmissionForAssignment(a.id);
+          return { assignmentId: a.id, submission: sub };
+        });
+        const submissionResults = await Promise.all(submissionPromises);
+        submissionResults.forEach(({ assignmentId, submission }) => {
+          if (submission) subs[assignmentId] = submission;
+        });
       }
       setSubmissions(subs);
 
@@ -759,21 +765,65 @@ export default function SubjectLessonsPage() {
         {/* Subject Header - Mobile Only */}
         <div className="lg:hidden relative overflow-hidden rounded-2xl p-6 mb-6 border border-white/20 bg-gradient-to-br from-cyan-600 via-teal-600 to-blue-700 text-white shadow-xl">
           <div className="relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <BookOpen className="h-8 w-8 text-white" />
-              </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-display font-bold mb-1">{subject.subject_name}</h1>
-                    {subject.teacher?.full_name && (
-                      <div className="flex items-center gap-2 text-sm text-white/90 mb-1">
-                        <User className="h-3.5 w-3.5" />
-                        <span>{subject.teacher.full_name}</span>
-                      </div>
-                    )}
-                    <p className="text-sm text-white/90">Lesson {activeLessonIndex + 1} of {lessons.length}</p>
+            <div className="flex items-center gap-4 mb-4">
+              {/* ✅ NEW: Subject Image */}
+              {subject.image_url ? (
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 flex-shrink-0">
+                  <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                  <BookOpen className="h-8 w-8 text-white" />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="text-2xl font-display font-bold mb-1">{subject.subject_name}</h1>
+                {subject.teacher?.full_name && (
+                  <div className="flex items-center gap-2 text-sm text-white/90 mb-1">
+                    <User className="h-3.5 w-3.5" />
+                    <span>{subject.teacher.full_name}</span>
                   </div>
+                )}
+                <p className="text-sm text-white/90">Lesson {activeLessonIndex + 1} of {lessons.length}</p>
+              </div>
             </div>
+            
+            {/* ✅ NEW: Subject Description */}
+            {subject.description && (
+              <div className="mb-3 pb-3 border-b border-white/20">
+                <p className="text-sm text-white/90 leading-relaxed">{subject.description}</p>
+              </div>
+            )}
+            
+            {/* ✅ NEW: Objectives */}
+            {subject.objectives && subject.objectives.length > 0 && (
+              <div className="mb-3 pb-3 border-b border-white/20">
+                <p className="text-sm font-semibold text-white mb-2">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
+                <ul className="space-y-1">
+                  {subject.objectives.map((obj: string, idx: number) => (
+                    <li key={idx} className="text-sm text-white/90 flex items-start gap-2">
+                      <span className="text-white mt-0.5">•</span>
+                      <span>{obj}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* ✅ NEW: Reference URL */}
+            {subject.reference_url && (
+              <div>
+                <a
+                  href={subject.reference_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-white hover:underline flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 inline-block"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {language === 'ar' ? 'المرجع' : 'Reference'}
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -794,9 +844,16 @@ export default function SubjectLessonsPage() {
                 </Button>
                 <div className="p-4 bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 rounded-xl border border-cyan-200 dark:border-cyan-800">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                      <BookOpen className="h-6 w-6 text-white" />
-                    </div>
+                    {/* ✅ NEW: Subject Image */}
+                    {subject.image_url ? (
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-cyan-200 dark:border-cyan-800 flex-shrink-0">
+                        <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                        <BookOpen className="h-6 w-6 text-white" />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 dark:text-white text-sm">{subject.subject_name}</h3>
                       {subject.teacher?.full_name && (
@@ -808,6 +865,43 @@ export default function SubjectLessonsPage() {
                       <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
                     </div>
                   </div>
+                  
+                  {/* ✅ NEW: Subject Description */}
+                  {subject.description && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{subject.description}</p>
+                    </div>
+                  )}
+                  
+                  {/* ✅ NEW: Objectives */}
+                  {subject.objectives && subject.objectives.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
+                      <ul className="space-y-1">
+                        {subject.objectives.map((obj: string, idx: number) => (
+                          <li key={idx} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
+                            <span className="text-cyan-600 dark:text-cyan-400 mt-0.5">•</span>
+                            <span>{obj}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* ✅ NEW: Reference URL */}
+                  {subject.reference_url && (
+                    <div className="mb-3">
+                      <a
+                        href={subject.reference_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {language === 'ar' ? 'المرجع' : 'Reference'}
+                      </a>
+                    </div>
+                  )}
                   {/* Subject Progress */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">

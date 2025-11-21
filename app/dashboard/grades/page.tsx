@@ -58,34 +58,44 @@ export default function GradesPage() {
       );
       const subjectsResults = await Promise.all(subjectsPromises);
       
-      // Get all assignments and grades for enrolled subjects
+      // ✅ PERFORMANCE: Get all assignments and grades in parallel
       const allGrades: any[] = [];
       const subjectNames: Record<string, string> = {};
+      const allSubjectIds: string[] = [];
 
+      // Collect all subject IDs
       for (const { classId, subjects } of subjectsResults) {
         for (const subject of subjects || []) {
           subjectNames[subject.id] = subject.subject_name;
+          allSubjectIds.push(subject.id);
+        }
+      }
 
-          // Get submissions for this subject's assignments
-          const { data: assignments } = await api.supabase
-            .from('assignments')
-            .select('id, title, total_points')
-            .eq('subject_id', subject.id)
-            .in('status', ['published', 'closed']);
+      // Get all assignments for all subjects in parallel
+      if (allSubjectIds.length > 0) {
+        const { data: allAssignments } = await api.supabase
+          .from('assignments')
+          .select('id, title, total_points, subject_id')
+          .in('subject_id', allSubjectIds)
+          .in('status', ['published', 'closed']);
 
-          if (assignments && assignments.length > 0) {
-            for (const assignment of assignments) {
-              const { data: submission } = await api.fetchSubmissionForAssignment(assignment.id);
-              if (submission && submission.status === 'graded' && submission.score !== null) {
-                allGrades.push({
-                  ...submission,
-                  assignment_title: assignment.title,
-                  total_points: assignment.total_points,
-                  subject_name: subject.subject_name,
-                });
-              }
+        if (allAssignments && allAssignments.length > 0) {
+          // Get all submissions in parallel
+          const submissionPromises = allAssignments.map(async (assignment) => {
+            const { data: submission } = await api.fetchSubmissionForAssignment(assignment.id);
+            if (submission && submission.status === 'graded' && submission.score !== null) {
+              return {
+                ...submission,
+                assignment_title: assignment.title,
+                total_points: assignment.total_points,
+                subject_name: subjectNames[assignment.subject_id] || 'Unknown',
+              };
             }
-          }
+            return null;
+          });
+
+          const submissions = await Promise.all(submissionPromises);
+          allGrades.push(...submissions.filter((s: any): s is any => s !== null));
         }
       }
 

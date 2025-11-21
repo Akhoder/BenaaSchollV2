@@ -112,7 +112,12 @@ export interface SubjectRow {
   subject_name: string;
   teacher_id: string | null;
   published?: boolean;
+  description?: string | null;
+  objectives?: string[] | null;
+  reference_url?: string | null;
+  image_url?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export type AssignmentType = 'homework' | 'quiz' | 'test' | 'project';
@@ -272,7 +277,7 @@ export async function fetchMyEnrolledClassesWithDetails() {
 export async function fetchSubjectsForClass(classId: string) {
   return await supabase
     .from('class_subjects')
-    .select('id, subject_name, teacher_id, created_at, teacher:profiles!teacher_id(full_name)')
+    .select('id, subject_name, teacher_id, created_at, updated_at, description, objectives, reference_url, image_url, teacher:profiles!teacher_id(id, full_name, avatar_url)')
     .eq('class_id', classId)
     .order('created_at', { ascending: false });
 }
@@ -622,6 +627,71 @@ export async function uploadUserAvatar(file: File, userId: string) {
   // Get public URL
   const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
   return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+// ============================================
+// SUBJECT IMAGE UPLOAD FUNCTIONS
+// ============================================
+
+export async function uploadSubjectImage(file: File, userId: string) {
+  const bucket = 'subject-images';
+  const ext = file.name.split('.').pop() || 'jpg';
+  
+  // Validate file type (images only)
+  const allowedExt = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+  if (!allowedExt.includes(ext.toLowerCase())) {
+    return { data: null, error: new Error('Unsupported file type. Only images are allowed (PNG, JPG, JPEG, GIF, WEBP)') } as any;
+  }
+  
+  // Validate file size (max 5MB for subject images)
+  const maxBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxBytes) {
+    return { data: null, error: new Error('File too large (max 5MB)') } as any;
+  }
+  
+  // Generate unique filename
+  const uid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? (crypto as any).randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const path = `${userId}/${uid}.${ext.toLowerCase()}`;
+  
+  const contentTypeByExt: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const contentType = file.type || contentTypeByExt[ext.toLowerCase()] || 'image/jpeg';
+  
+  // Upload file
+  const { data, error } = await (supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType,
+  }) as any);
+  
+  if (error) {
+    return { data: null, error: new Error(`Upload failed: ${error.message || 'Unknown error'}`) } as any;
+  }
+  
+  // Get public URL
+  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+export async function deleteSubjectImage(imageUrl: string) {
+  const bucket = 'subject-images';
+  // Extract path from URL
+  const urlParts = imageUrl.split('/');
+  const pathIndex = urlParts.findIndex(part => part === bucket);
+  if (pathIndex === -1) {
+    return { data: null, error: new Error('Invalid image URL') } as any;
+  }
+  const path = urlParts.slice(pathIndex + 1).join('/');
+  
+  const { data, error } = await supabase.storage.from(bucket).remove([path]);
+  return { data, error };
 }
 
 export async function deleteUserAvatar(path: string) {
@@ -1519,10 +1589,37 @@ export async function recalcAttemptScore(attemptId: string) {
     .from('quiz_answers')
     .select('points_awarded')
     .eq('attempt_id', attemptId);
-  const total = (answers || []).reduce((acc: number, r: any) => acc + (Number(r.points_awarded) || 0), 0);
+  
+  // Calculate total: sum all points_awarded (null or undefined = 0)
+  const total = (answers || []).reduce((acc: number, r: any) => {
+    const points = r.points_awarded;
+    // Handle null, undefined, or invalid numbers
+    if (points === null || points === undefined || isNaN(Number(points))) {
+      return acc;
+    }
+    return acc + Number(points);
+  }, 0);
+  
+  // Get current attempt to preserve submitted_at if already set
+  const { data: currentAttempt } = await supabase
+    .from('quiz_attempts')
+    .select('submitted_at')
+    .eq('id', attemptId)
+    .single();
+  
+  const updateData: any = {
+    score: total,
+    status: 'graded'
+  };
+  
+  // Only set submitted_at if not already set
+  if (!currentAttempt?.submitted_at) {
+    updateData.submitted_at = new Date().toISOString();
+  }
+  
   return await supabase
     .from('quiz_attempts')
-    .update({ score: total, status: 'graded', submitted_at: new Date().toISOString() } as any)
+    .update(updateData)
     .eq('id', attemptId)
     .select('*')
     .single();

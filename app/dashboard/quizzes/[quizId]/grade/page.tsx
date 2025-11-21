@@ -61,9 +61,28 @@ export default function GradeQuizPage() {
   };
 
   const gradeShortText = async (answerId: string, points: number) => {
-    const ok = await updateAnswerGrade(answerId, null, points);
+    // Validate points (should be >= 0 and not NaN)
+    const validPoints = isNaN(points) || points < 0 ? 0 : points;
+    const ok = await updateAnswerGrade(answerId, null, validPoints);
     if ((ok as any).error) { toast.error('Failed to grade'); return; }
+    
+    // Find the attempt that contains this answer
+    let attemptId: string | null = null;
+    for (const att of attempts) {
+      const answers = answersByAttempt.get(att.id) || [];
+      if (answers.some((a: any) => a.id === answerId)) {
+        attemptId = att.id;
+        break;
+      }
+    }
+    
+    // Recalculate attempt score after grading
+    if (attemptId) {
+      await recalcAttemptScore(attemptId);
+    }
+    
     toast.success('Answer graded');
+    await load(); // Refresh data
   };
 
   const finalizeAttempt = async (attemptId: string) => {

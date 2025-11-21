@@ -207,7 +207,7 @@ export function IntelligentSearch({ className }: IntelligentSearchProps) {
               type="text"
               placeholder={
                 language === 'ar'
-                  ? 'ابحث عن طلاب، فصول، مواد...'
+                  ? 'ابحث عن معلمين، طلاب، فصول، مواد...'
                   : language === 'fr'
                   ? 'Rechercher des étudiants, classes, matières...'
                   : 'Search students, classes, subjects...'

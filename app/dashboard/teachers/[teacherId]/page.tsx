@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Phone, Calendar, School, BookOpen, Users, GraduationCap, ArrowLeft, Globe, Award, TrendingUp } from 'lucide-react';
+import { Loader2, Mail, Phone, Calendar, School, BookOpen, Users, GraduationCap, ArrowLeft, Globe, Award, TrendingUp, MapPin, Briefcase, User, FileText, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,6 +24,13 @@ interface TeacherProfile {
   avatar_url?: string;
   phone?: string;
   language_preference?: string;
+  gender?: 'male' | 'female';
+  address?: string;
+  date_of_birth?: string;
+  specialization?: string;
+  years_of_experience?: number;
+  qualifications?: string;
+  bio?: string;
   created_at: string;
   updated_at: string;
 }
@@ -226,7 +233,9 @@ export default function TeacherProfilePage() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString; // Return as-is if invalid
     return date.toLocaleDateString(
       language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US',
       { year: 'numeric', month: 'long', day: 'numeric' }
@@ -319,10 +328,28 @@ export default function TeacherProfilePage() {
                       <GraduationCap className="h-4 w-4 mr-1" />
                       {language === 'ar' ? 'معلم' : 'Teacher'}
                     </Badge>
+                    {teacher.gender && (
+                      <Badge variant="outline" className="text-sm px-3 py-1">
+                        <User className="h-3 w-3 mr-1" />
+                        {teacher.gender === 'male' ? (language === 'ar' ? 'ذكر' : 'Male') : (language === 'ar' ? 'أنثى' : 'Female')}
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-muted-foreground text-lg">
-                    {language === 'ar' ? 'معلم محترف في المدرسة' : 'Professional Teacher'}
-                  </p>
+                  {teacher.specialization ? (
+                    <p className="text-muted-foreground text-lg font-medium">
+                      {teacher.specialization}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground text-lg">
+                      {language === 'ar' ? 'معلم محترف في المدرسة' : 'Professional Teacher'}
+                    </p>
+                  )}
+                  {teacher.years_of_experience && (
+                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      {teacher.years_of_experience} {language === 'ar' ? 'سنة خبرة' : 'years of experience'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Contact Info Grid */}
@@ -349,6 +376,34 @@ export default function TeacherProfilePage() {
                           {language === 'ar' ? 'الهاتف' : 'Phone'}
                         </p>
                         <p className="text-sm font-medium">{teacher.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {teacher.address && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          {language === 'ar' ? 'العنوان' : 'Address'}
+                        </p>
+                        <p className="text-sm font-medium truncate">{teacher.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {teacher.date_of_birth && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Calendar className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                          {language === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}
+                        </p>
+                        <p className="text-sm font-medium">{formatDate(teacher.date_of_birth)}</p>
                       </div>
                     </div>
                   )}
@@ -381,6 +436,57 @@ export default function TeacherProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Bio & Qualifications Section */}
+        {(teacher.bio || teacher.qualifications || teacher.specialization) && (
+          <Card className="border-2">
+            <CardHeader className="border-b bg-muted/50">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                {language === 'ar' ? 'معلومات إضافية' : 'Additional Information'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {teacher.bio && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {language === 'ar' ? 'نبذة عن المعلم' : 'About'}
+                  </h3>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    {teacher.bio}
+                  </p>
+                </div>
+              )}
+              
+              {teacher.specialization && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    {language === 'ar' ? 'التخصص' : 'Specialization'}
+                  </h3>
+                  <p className="text-sm text-foreground">
+                    {teacher.specialization}
+                  </p>
+                </div>
+              )}
+              
+              {teacher.qualifications && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    {language === 'ar' ? 'المؤهلات' : 'Qualifications'}
+                  </h3>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    {teacher.qualifications}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards - Enhanced Design */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

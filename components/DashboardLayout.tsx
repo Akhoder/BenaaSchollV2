@@ -36,7 +36,7 @@ import { SkipLink } from '@/components/KeyboardNavigation';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SecurityIndicator } from '@/components/SecurityIndicators';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface DashboardLayoutProps {
@@ -78,7 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('myAssignments'), href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
         { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['student'] },
-        { name: t('aiAssistant') || 'AI Assistant', href: '/dashboard/ai-assistant', icon: Bot, roles: ['student'] },
+        { name: 'AI Assistant', href: '/dashboard/ai-assistant', icon: Bot, roles: ['student'] },
       ],
       roles: ['student']
     },
@@ -91,7 +91,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('quizzes'), href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher'] },
-        { name: t('analytics') || 'Analytics', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
+        { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },
@@ -116,15 +116,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     },
   ];
 
-  // Filter groups and items based on user role
-  const filteredGroups = navigationGroups
-    .map(group => ({
-      ...group,
-      items: group.items.filter(item => 
-        profile?.role && item.roles.includes(profile.role)
-      )
-    }))
-    .filter(group => group.items.length > 0);
+  // ✅ PERFORMANCE: Memoize navigation groups to prevent unnecessary re-renders
+  const filteredGroupsMemo = useMemo(() => {
+    return navigationGroups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => 
+          profile?.role && item.roles.includes(profile.role)
+        )
+      }))
+      .filter(group => group.items.length > 0);
+  }, [profile?.role, language, t]);
 
   const toggleGroup = (groupTitle: string) => {
     setOpenGroups(prev => ({
@@ -134,12 +136,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   // Find the most specific matching item across all groups
-  const findMostSpecificMatch = (pathname: string): string | null => {
+  const findMostSpecificMatch = useCallback((pathname: string, groups: NavGroup[]): string | null => {
     let exactMatch: string | null = null;
     let bestPartialMatch: string | null = null;
     let bestPartialMatchLength = 0;
 
-    filteredGroups.forEach(group => {
+    groups.forEach(group => {
       group.items.forEach(item => {
         // Exact match is always best - return immediately if found
         if (pathname === item.href) {
@@ -155,14 +157,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // Exact match always wins
     return exactMatch || bestPartialMatch;
-  };
+  }, []);
 
-  const NavItems = () => {
-    const mostSpecificMatch = findMostSpecificMatch(pathname);
-    
+  // ✅ PERFORMANCE: Memoize most specific match calculation
+  const mostSpecificMatch = useMemo(() => findMostSpecificMatch(pathname, filteredGroupsMemo), [pathname, filteredGroupsMemo, findMostSpecificMatch]);
+
+  const NavItems = memo(() => {
     return (
     <>
-      {filteredGroups.map((group) => {
+      {filteredGroupsMemo.map((group) => {
         const isGroupOpen = openGroups[group.title] ?? true; // Default to open
         const hasMultipleItems = group.items.length > 1;
 
@@ -267,7 +270,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       })}
     </>
     );
-  };
+  });
+  
+  NavItems.displayName = 'NavItems';
 
   return (
     <div className="min-h-screen bg-background">
