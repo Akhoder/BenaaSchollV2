@@ -303,7 +303,7 @@ export default function TeacherProfilePage() {
                         <AvatarFallback className="text-4xl md:text-5xl bg-gradient-to-br from-primary to-accent text-white font-bold">
                           {teacher.full_name
                             .split(' ')
-                            .map((n) => n[0])
+                            .map((n: string) => n[0])
                             .join('')
                             .toUpperCase()
                             .slice(0, 2)}

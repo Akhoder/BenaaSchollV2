@@ -54,7 +54,7 @@ interface TeacherRow { id: string; full_name: string; }
 
 export default function SubjectsPage() {
   const { profile, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
@@ -758,7 +758,7 @@ export default function SubjectsPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium font-sans">{t('teacher')} ({t('optional')})</Label>
+                <Label className="text-sm font-medium font-sans">{t('teacher')} ({language === 'ar' ? 'اختياري' : 'optional'})</Label>
                 <Select value={form.teacher_id} onValueChange={(v) => setForm({ ...form, teacher_id: v })}>
                   <SelectTrigger className="mt-1 font-sans">
                     <SelectValue placeholder={t('selectTeacher')} />
@@ -775,11 +775,11 @@ export default function SubjectsPage() {
               
               {/* ✅ NEW: Description Field */}
               <div>
-                <Label className="text-sm font-medium font-sans">{t('description') || 'Description'} ({t('optional')})</Label>
+                <Label className="text-sm font-medium font-sans">{t('description') || 'Description'} ({language === 'ar' ? 'اختياري' : 'optional'})</Label>
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder={t('subjectDescriptionPlaceholder') || 'Enter subject description...'}
+                  placeholder={language === 'ar' ? 'أدخل وصف المادة...' : 'Enter subject description...'}
                   className="mt-1 font-sans min-h-[100px]"
                   rows={4}
                 />
@@ -787,13 +787,13 @@ export default function SubjectsPage() {
               
               {/* ✅ NEW: Objectives Field */}
               <div>
-                <Label className="text-sm font-medium font-sans">{t('objectives') || 'Objectives'} ({t('optional')})</Label>
+                <Label className="text-sm font-medium font-sans">{t('objectives') || 'Objectives'} ({language === 'ar' ? 'اختياري' : 'optional'})</Label>
                 <div className="mt-1 space-y-2">
                   <div className="flex gap-2">
                     <Input
                       value={objectiveInput}
                       onChange={(e) => setObjectiveInput(e.target.value)}
-                      placeholder={t('addObjective') || 'Add an objective...'}
+                      placeholder={language === 'ar' ? 'أضف هدفاً...' : 'Add an objective...'}
                       className="font-sans"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && objectiveInput.trim()) {
@@ -844,7 +844,7 @@ export default function SubjectsPage() {
               <div>
                 <Label className="text-sm font-medium font-sans flex items-center gap-2">
                   <LinkIcon className="h-4 w-4" />
-                  {t('reference') || 'Reference URL'} ({t('optional')})
+                  {language === 'ar' ? 'رابط المرجع' : 'Reference URL'} ({language === 'ar' ? 'اختياري' : 'optional'})
                 </Label>
                 <Input
                   type="url"
@@ -859,7 +859,7 @@ export default function SubjectsPage() {
               <div>
                 <Label className="text-sm font-medium font-sans flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
-                  {t('subjectImage') || 'Subject Image'} ({t('optional')})
+                  {t('subjectImage') || 'Subject Image'} ({language === 'ar' ? 'اختياري' : 'optional'})
                 </Label>
                 <div className="mt-1 space-y-2">
                   {form.image_url ? (

@@ -528,7 +528,7 @@ export default function ClassViewPage() {
                                     <Avatar className="h-6 w-6 border border-slate-200 dark:border-slate-700">
                                       <AvatarImage src={subject.teacher.avatar_url} alt={subject.teacher.full_name} />
                                       <AvatarFallback className="text-xs">
-                                        {subject.teacher.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        {subject.teacher.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                   ) : (

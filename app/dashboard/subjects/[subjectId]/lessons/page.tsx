@@ -444,7 +444,7 @@ export default function SubjectLessonsPage() {
   const router = useRouter();
   const subjectId = (params?.subjectId as string) || '';
   const { user, profile, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
@@ -1024,7 +1024,7 @@ export default function SubjectLessonsPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                         <ExternalLink className="h-4 w-4" />
-                        {t('reference') || 'Reference'}
+                        {language === 'ar' ? 'مرجع' : 'Reference'}
                       </h3>
                       <a
                         href={subjectInfo.reference_url}
