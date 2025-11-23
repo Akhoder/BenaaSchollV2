@@ -2,6 +2,14 @@
 
 ## المشكلة: "Failed to publish the project"
 
+### ⚠️ الخطأ الشائع:
+```
+Error: Page "/dashboard/assignments/[assignmentId]/submissions" is missing "generateStaticParams()"
+so it cannot be used with "output: export" config.
+```
+
+**السبب:** Vercel يحاول استخدام static export بينما المشروع يحتاج serverless functions.
+
 ---
 
 ## ✅ الحل السريع (5 دقائق)
@@ -52,6 +60,44 @@ Functions Directory: netlify/functions
 ---
 
 ## 🐛 أخطاء شائعة وحلولها
+
+### ❌ Error: "Page is missing generateStaticParams() so it cannot be used with output: export"
+
+**السبب:** Vercel يضيف `output: 'export'` تلقائياً في بعض الحالات.
+
+**الحل الفوري:**
+
+1. **في Vercel Dashboard:**
+   - اذهب إلى Settings → General
+   - تحت "Build & Development Settings"
+   - تأكد من:
+     - Framework Preset: **Next.js**
+     - Build Command: **npm run build** (بدون أي إضافات)
+     - Output Directory: **فارغ** (اتركه فارغاً!)
+     - Install Command: **npm install**
+
+2. **في Project Settings:**
+   - Settings → Environment Variables
+   - **لا تضف** أي متغير اسمه `NEXT_OUTPUT` أو `OUTPUT`
+   - أضف فقط:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL
+     NEXT_PUBLIC_SUPABASE_ANON_KEY
+     ```
+
+3. **أعد النشر:**
+   - Deployments → اختر آخر deploy فاشل
+   - اضغط على `⋮` → Redeploy
+
+**ملاحظة مهمة:** المشروع يحتوي على:
+- ✅ API Routes (يحتاج serverless)
+- ✅ Dynamic Routes (يحتاج serverless)
+- ✅ Supabase (يحتاج server-side)
+- ❌ لا يمكن استخدام static export (`output: 'export'`)
+
+تم التأكد من أن `next.config.js` **لا يحتوي** على `output: 'export'` والملفات صحيحة.
+
+---
 
 ### Error: "NEXT_PUBLIC_SUPABASE_URL is not defined"
 
