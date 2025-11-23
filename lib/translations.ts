@@ -826,6 +826,10 @@ export const translations = {
     male: 'Male',
     female: 'Female',
     selectGender: 'Select gender',
+    subjectImage: 'Subject Image',
+    reference: 'Reference',
+    imageUploaded: 'Image uploaded successfully',
+    clickToUpload: 'Click to upload image',
   },
   ar: {
     appName: 'مدرسة البناء العلمي',
@@ -1642,6 +1646,10 @@ export const translations = {
     male: 'ذكر',
     female: 'أنثى',
     selectGender: 'اختر الجنس',
+    subjectImage: 'صورة المادة',
+    reference: 'المرجع',
+    imageUploaded: 'تم رفع الصورة بنجاح',
+    clickToUpload: 'انقر لرفع الصورة',
   },
   fr: {
     appName: 'Madrasat Al-Binaa Al-Ilmi',
@@ -2407,6 +2415,10 @@ export const translations = {
     male: 'Homme',
     female: 'Femme',
     selectGender: 'Sélectionner le genre',
+    subjectImage: 'Image du sujet',
+    reference: 'Référence',
+    imageUploaded: 'Image téléchargée avec succès',
+    clickToUpload: 'Cliquez pour télécharger l\'image',
   },
 };
 
