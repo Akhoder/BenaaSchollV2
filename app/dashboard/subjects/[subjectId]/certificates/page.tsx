@@ -1,4 +1,25 @@
+'use client';
+
 import SubjectCertificatesClient from './SubjectCertificatesClient';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect } from 'react';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, Plus, Award, Eye, CheckCircle, FileCheck, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import * as api from '@/lib/supabase';
+import type { Certificate, CertificateStatus, CertificateGrade } from '@/lib/supabase';
 
 export const dynamic = 'force-static';
 

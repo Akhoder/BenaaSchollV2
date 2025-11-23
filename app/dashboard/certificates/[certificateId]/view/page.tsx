@@ -1,4 +1,20 @@
+'use client';
+
 import CertificateViewClient from './CertificateViewClient';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect, useRef } from 'react';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Loader2, ArrowLeft, Printer, Download, Award } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import * as api from '@/lib/supabase';
+import type { Certificate } from '@/lib/supabase';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
 export const dynamic = 'force-static';
 

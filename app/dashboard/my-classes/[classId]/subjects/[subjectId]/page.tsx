@@ -1,3 +1,5 @@
+'use client';
+
 import SubjectLessonsClient from './SubjectLessonsClient';
 
 import { useEffect, useState, useRef, useMemo } from 'react';
