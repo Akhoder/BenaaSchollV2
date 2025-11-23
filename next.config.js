@@ -51,6 +51,28 @@ const nextConfig = {
       };
     }
     
+    // ✅ MEMORY OPTIMIZATION: Reduce memory usage during build
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks?.cacheGroups,
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+        },
+      },
+    };
+    
     return config;
   },
   

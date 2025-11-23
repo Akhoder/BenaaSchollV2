@@ -74,23 +74,23 @@ export default function GradesPage() {
       // Get all assignments for all subjects in parallel
       if (allSubjectIds.length > 0) {
         const { data: allAssignments } = await api.supabase
-          .from('assignments')
+            .from('assignments')
           .select('id, title, total_points, subject_id')
           .in('subject_id', allSubjectIds)
-          .in('status', ['published', 'closed']);
+            .in('status', ['published', 'closed']);
 
         if (allAssignments && allAssignments.length > 0) {
           // Get all submissions in parallel
           const submissionPromises = allAssignments.map(async (assignment) => {
-            const { data: submission } = await api.fetchSubmissionForAssignment(assignment.id);
-            if (submission && submission.status === 'graded' && submission.score !== null) {
+              const { data: submission } = await api.fetchSubmissionForAssignment(assignment.id);
+              if (submission && submission.status === 'graded' && submission.score !== null) {
               return {
-                ...submission,
-                assignment_title: assignment.title,
-                total_points: assignment.total_points,
+                  ...submission,
+                  assignment_title: assignment.title,
+                  total_points: assignment.total_points,
                 subject_name: subjectNames[assignment.subject_id] || 'Unknown',
               };
-            }
+              }
             return null;
           });
 
