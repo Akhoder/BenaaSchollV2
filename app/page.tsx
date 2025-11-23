@@ -9,6 +9,7 @@ import {
   Globe, Brain, Target, Clock, MessageSquare, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import Link from 'next/link';
 
 export default function UltraModernLandingPage() {
@@ -54,9 +55,12 @@ export default function UltraModernLandingPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
                 <div className="relative overflow-hidden rounded-2xl border-2 border-primary/20 group-hover:border-primary/40 transition-all">
-                  <img 
+                  <OptimizedImage 
                     src="/icons/logo.jpg" 
                     alt="مدرسة البناء العلمي" 
+                    width={48}
+                    height={48}
+                    priority
                     className="w-12 h-12 object-cover"
                   />
                 </div>
@@ -399,9 +403,11 @@ export default function UltraModernLandingPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="relative overflow-hidden rounded-xl border-2 border-white/30 bg-white p-1">
-                  <img 
+                  <OptimizedImage 
                     src="/icons/logo.jpg" 
                     alt="مدرسة البناء العلمي" 
+                    width={48}
+                    height={48}
                     className="w-12 h-12 object-contain"
                   />
                 </div>

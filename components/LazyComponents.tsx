@@ -2,6 +2,13 @@
 
 import React, { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
+
+/**
+ * Lazy Components with Code Splitting
+ * Phase 3 UX Improvement: Speed and Performance
+ * Lazy loads heavy components to improve initial page load
+ */
 
 // Lazy loading للمكونات الثقيلة
 export const LazyCharts = lazy(() => import('@/components/Charts').then(module => ({ 
@@ -11,6 +18,27 @@ export const LazyCharts = lazy(() => import('@/components/Charts').then(module =
 export const LazyEnhancedTable = lazy(() => import('@/components/EnhancedTable').then(m => ({ default: m.EnhancedTable })));
 
 export const LazyOptimizedTable = lazy(() => import('@/components/OptimizedTable').then(m => ({ default: m.OptimizedTable })));
+
+// Lazy load admin-only components (commented out - components don't exist yet)
+// export const LazyAdminPanel = lazy(() => 
+//   import('@/components/AdminPanel').catch(() => ({ 
+//     default: () => <div>Admin panel not available</div> 
+//   }))
+// );
+
+// Lazy load heavy form components (commented out - components don't exist yet)
+// export const LazyRichTextEditor = lazy(() => 
+//   import('@/components/RichTextEditor').catch(() => ({ 
+//     default: () => <div>Editor not available</div> 
+//   }))
+// );
+
+// Lazy load file uploader (commented out - components don't exist yet)
+// export const LazyFileUploader = lazy(() => 
+//   import('@/components/FileUploader').catch(() => ({ 
+//     default: () => <div>File uploader not available</div> 
+//   }))
+// );
 
 // مكون تحميل محسن
 export const LoadingSpinner = ({ 
@@ -50,7 +78,23 @@ export const OptimizedTableWithSuspense = (props: any) => (
 
 // مكون محسن للرسوم البيانية مع Suspense
 export const ChartsWithSuspense = (props: any) => (
-  <Suspense fallback={<LoadingSpinner text="جاري تحميل الرسوم البيانية..." />}>
+  <Suspense fallback={<DashboardStatsSkeleton />}>
     <LazyCharts {...props} />
   </Suspense>
 );
+
+// Generic lazy wrapper with Suspense
+export function withLazyLoading<P extends Record<string, any>>(
+  importFn: () => Promise<{ default: React.ComponentType<P> }>,
+  fallback?: React.ReactNode
+) {
+  const LazyComponent = lazy(importFn);
+  
+  return function LazyWrapper(props: P) {
+    return (
+      <Suspense fallback={fallback || <LoadingSpinner />}>
+        <LazyComponent {...(props as any)} />
+      </Suspense>
+    );
+  };
+}

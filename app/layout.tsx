@@ -4,11 +4,12 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
+import { WebVitals } from '@/components/WebVitals';
+import { FeedbackWidget } from '@/components/FeedbackWidget';
+import { FontLoader } from '@/components/FontLoader';
 
-// ✅ ULTRA MODERN FONTS - خطوط عصرية 2024
-// تم تحميل الخطوط عبر CSS @import في globals.css لتجنب مشاكل التحميل في وضع التطوير
-// Poppins & Cairo - يتم تحميلهما من Google Fonts عبر CSS مباشرة
-// Fallback fonts: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif
+// ✅ PERFORMANCE: Optimized font loading with preconnect and font-display
+// Fonts loaded asynchronously via FontLoader component to prevent render blocking
 
 // Get base URL from environment variable or use default
 // In production, set NEXT_PUBLIC_APP_URL to your domain (e.g., https://benaaschool.ly)
@@ -54,11 +55,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="font-sans antialiased">
+        <FontLoader />
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>
               {children}
               <Toaster />
+              <WebVitals />
+              <FeedbackWidget />
             </AuthProvider>
           </LanguageProvider>
         </ServiceWorkerProvider>

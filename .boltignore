@@ -1,0 +1,12 @@
+# Bolt.new ignore file
+.next
+node_modules
+.env.local
+.env*.local
+*.log
+.DS_Store
+coverage
+.vercel
+dist
+build
+

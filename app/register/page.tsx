@@ -8,6 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InputMask } from '@/components/InputMask';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { validateEmail, validatePassword, validateName, getFieldError } from '@/lib/formValidation';
+import { cn } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 import { 
   Sparkles, Mail, Lock, User, Eye, EyeOff,
   Rocket, BookOpen, Users, Award, CheckCircle
@@ -28,47 +33,54 @@ export default function UltraModernRegisterPage() {
     role: 'student',
     preferredLanguage: language,
   });
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+    fullName: false,
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const validateEmail = useCallback((email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }, []);
+  // Real-time validation
+  const emailError = getFieldError(formData.email, touched.email, validateEmail);
+  const passwordError = getFieldError(formData.password, touched.password, validatePassword);
+  const fullNameError = getFieldError(formData.fullName, touched.fullName, validateName);
 
-  const validateForm = useCallback((): boolean => {
-    if (!formData.fullName.trim()) {
-      toast.error('الاسم الكامل مطلوب');
-      return false;
+  const handleFieldChange = (field: 'email' | 'password' | 'fullName', value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Mark as touched when user starts typing
+    if (!touched[field]) {
+      setTouched(prev => ({ ...prev, [field]: true }));
     }
+  };
 
-    if (!formData.email.trim()) {
-      toast.error('البريد الإلكتروني مطلوب');
-      return false;
-    }
-
-    if (!validateEmail(formData.email)) {
-      toast.error('صيغة البريد الإلكتروني غير صحيحة');
-      return false;
-    }
-
-    if (!formData.password.trim()) {
-      toast.error('كلمة المرور مطلوبة');
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-      return false;
-    }
-
-    return true;
-  }, [formData, validateEmail]);
+  const handleBlur = (field: 'email' | 'password' | 'fullName') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    // Mark all fields as touched
+    setTouched({ email: true, password: true, fullName: true });
+
+    // Validate
+    const emailValidation = validateEmail(formData.email);
+    const passwordValidation = validatePassword(formData.password);
+    const fullNameValidation = validateName(formData.fullName);
+
+    if (!fullNameValidation.isValid) {
+      toast.error(fullNameValidation.error || 'الاسم الكامل مطلوب');
+      return;
+    }
+
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'البريد الإلكتروني مطلوب');
+      return;
+    }
+
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.error || 'كلمة المرور مطلوبة');
       return;
     }
 
@@ -140,9 +152,12 @@ export default function UltraModernRegisterPage() {
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-3xl blur-2xl opacity-40" />
                   <div className="relative glass-card p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
-                    <img 
-                      src="/icons/logo.jpg" 
-                      alt="مدرسة البناء العلمي" 
+                    <OptimizedImage
+                      src="/icons/logo.jpg"
+                      alt="مدرسة البناء العلمي"
+                      width={64}
+                      height={64}
+                      priority 
                       className="w-32 h-32 object-contain"
                     />
                   </div>
@@ -166,17 +181,32 @@ export default function UltraModernRegisterPage() {
                   الاسم الكامل
                 </Label>
                 <div className="relative">
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <User className={cn(
+                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                    fullNameError ? "text-error" : "text-muted-foreground"
+                  )} />
                   <Input
                     id="fullName"
                     type="text"
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="input-ultra pr-12"
+                    onChange={(e) => handleFieldChange('fullName', e.target.value)}
+                    onBlur={() => handleBlur('fullName')}
+                    className={cn(
+                      "input-ultra pr-12",
+                      fullNameError && "border-error focus:border-error focus:ring-error/20"
+                    )}
                     placeholder="أدخل اسمك الكامل"
                     disabled={loading}
+                    aria-invalid={!!fullNameError}
+                    aria-describedby={fullNameError ? "fullName-error" : undefined}
                   />
                 </div>
+                {fullNameError && (
+                  <div id="fullName-error" className="flex items-center gap-2 text-sm text-error animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{fullNameError}</span>
+                  </div>
+                )}
               </div>
 
               {/* Email */}
@@ -185,18 +215,33 @@ export default function UltraModernRegisterPage() {
                   البريد الإلكتروني
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Mail className={cn(
+                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                    emailError ? "text-error" : "text-muted-foreground"
+                  )} />
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="input-ultra pr-12"
+                    onChange={(e) => handleFieldChange('email', e.target.value)}
+                    onBlur={() => handleBlur('email')}
+                    className={cn(
+                      "input-ultra pr-12",
+                      emailError && "border-error focus:border-error focus:ring-error/20"
+                    )}
                     placeholder="example@email.com"
                     disabled={loading}
                     dir="ltr"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "email-error" : undefined}
                   />
                 </div>
+                {emailError && (
+                  <div id="email-error" className="flex items-center gap-2 text-sm text-error animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{emailError}</span>
+                  </div>
+                )}
               </div>
 
               {/* Password */}
@@ -205,20 +250,30 @@ export default function UltraModernRegisterPage() {
                   كلمة المرور
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className={cn(
+                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                    passwordError ? "text-error" : "text-muted-foreground"
+                  )} />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-ultra pr-12 pl-12"
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    onBlur={() => handleBlur('password')}
+                    className={cn(
+                      "input-ultra pr-12 pl-12",
+                      passwordError && "border-error focus:border-error focus:ring-error/20"
+                    )}
                     placeholder="••••••••"
                     disabled={loading}
+                    aria-invalid={!!passwordError}
+                    aria-describedby={passwordError ? "password-error" : undefined}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors min-h-[48px] min-w-[48px]"
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -227,13 +282,22 @@ export default function UltraModernRegisterPage() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  يجب أن تكون 6 أحرف على الأقل
-                </p>
-                <p className="text-xs text-muted-foreground/80 flex items-center gap-1 mt-1">
-                  <Lock className="w-3 h-3" />
-                  <span>نظامنا يتحقق من كلمات المرور المسربة لحماية حسابك</span>
-                </p>
+                {passwordError ? (
+                  <div id="password-error" className="flex items-center gap-2 text-sm text-error animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{passwordError}</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      يجب أن تكون 6 أحرف على الأقل
+                    </p>
+                    <p className="text-xs text-muted-foreground/80 flex items-center gap-1 mt-1">
+                      <Lock className="w-3 h-3" />
+                      <span>نظامنا يتحقق من كلمات المرور المسربة لحماية حسابك</span>
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Role */}

@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, role: string, language: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -129,6 +130,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }, [router]);
 
+  const refreshProfile = useCallback(async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
+    }
+  }, [user?.id]);
+
   // ✅ PERFORMANCE: Memoize context value to prevent re-renders
   const value = useMemo(() => ({
     user,
@@ -136,8 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signIn,
     signUp,
-    signOut
-  }), [user, profile, loading, signIn, signUp, signOut]);
+    signOut,
+    refreshProfile
+  }), [user, profile, loading, signIn, signUp, signOut, refreshProfile]);
 
   return (
     <AuthContext.Provider value={value}>

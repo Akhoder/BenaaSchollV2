@@ -15,6 +15,22 @@ export interface Profile {
   avatar_url?: string;
   phone?: string;
   language_preference: 'en' | 'ar' | 'fr';
+  gender?: 'male' | 'female';
+  // Common fields
+  address?: string;
+  date_of_birth?: string;
+  // Teacher fields
+  specialization?: string;
+  years_of_experience?: number;
+  qualifications?: string;
+  bio?: string;
+  // Student fields
+  parent_name?: string;
+  parent_phone?: string;
+  emergency_contact?: string;
+  // Admin/Supervisor fields
+  appointment_date?: string;
+  department?: string;
   created_at: string;
   updated_at: string;
 }
@@ -96,7 +112,12 @@ export interface SubjectRow {
   subject_name: string;
   teacher_id: string | null;
   published?: boolean;
+  description?: string | null;
+  objectives?: string[] | null;
+  reference_url?: string | null;
+  image_url?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export type AssignmentType = 'homework' | 'quiz' | 'test' | 'project';
@@ -235,6 +256,7 @@ export async function fetchMyEnrolledClassesWithDetails() {
   }
   
   const classIds = enrollments.map(e => e.class_id);
+  const enrolledMap = new Map(enrollments.map((e) => [e.class_id, e.enrolled_at]));
   
   // Get classes details
   const { data: classes, error: cErr } = await supabase
@@ -244,13 +266,18 @@ export async function fetchMyEnrolledClassesWithDetails() {
   
   if (cErr) return { data: [], error: cErr };
   
-  return { data: classes || [], error: null };
+  const enriched = (classes || []).map((cls: any) => ({
+    ...cls,
+    enrolled_at: enrolledMap.get(cls.id) || null,
+  }));
+  
+  return { data: enriched, error: null };
 }
 
 export async function fetchSubjectsForClass(classId: string) {
   return await supabase
     .from('class_subjects')
-    .select('id, subject_name, teacher_id, created_at, teacher:profiles!teacher_id(full_name)')
+    .select('id, subject_name, teacher_id, created_at, updated_at, description, objectives, reference_url, image_url, teacher:profiles!teacher_id(id, full_name, avatar_url)')
     .eq('class_id', classId)
     .order('created_at', { ascending: false });
 }
@@ -552,6 +579,131 @@ export async function uploadLessonAttachmentFile(file: File, userId: string) {
 }
 
 // ============================================
+// AVATAR UPLOAD FUNCTIONS
+// ============================================
+
+export async function uploadUserAvatar(file: File, userId: string) {
+  const bucket = 'avatars';
+  const ext = file.name.split('.').pop() || 'jpg';
+  
+  // Validate file type (images only)
+  const allowedExt = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+  if (!allowedExt.includes(ext.toLowerCase())) {
+    return { data: null, error: new Error('Unsupported file type. Only images are allowed (PNG, JPG, JPEG, GIF, WEBP)') } as any;
+  }
+  
+  // Validate file size (max 5MB for avatars)
+  const maxBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxBytes) {
+    return { data: null, error: new Error('File too large (max 5MB)') } as any;
+  }
+  
+  // Generate unique filename
+  const uid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? (crypto as any).randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const path = `${userId}/${uid}.${ext.toLowerCase()}`;
+  
+  const contentTypeByExt: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const contentType = file.type || contentTypeByExt[ext.toLowerCase()] || 'image/jpeg';
+  
+  // Upload file
+  const { data, error } = await (supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType,
+  }) as any);
+  
+  if (error) {
+    return { data: null, error: new Error(`Upload failed: ${error.message || 'Unknown error'}`) } as any;
+  }
+  
+  // Get public URL
+  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+// ============================================
+// SUBJECT IMAGE UPLOAD FUNCTIONS
+// ============================================
+
+export async function uploadSubjectImage(file: File, userId: string) {
+  const bucket = 'subject-images';
+  const ext = file.name.split('.').pop() || 'jpg';
+  
+  // Validate file type (images only)
+  const allowedExt = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+  if (!allowedExt.includes(ext.toLowerCase())) {
+    return { data: null, error: new Error('Unsupported file type. Only images are allowed (PNG, JPG, JPEG, GIF, WEBP)') } as any;
+  }
+  
+  // Validate file size (max 5MB for subject images)
+  const maxBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxBytes) {
+    return { data: null, error: new Error('File too large (max 5MB)') } as any;
+  }
+  
+  // Generate unique filename
+  const uid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? (crypto as any).randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const path = `${userId}/${uid}.${ext.toLowerCase()}`;
+  
+  const contentTypeByExt: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const contentType = file.type || contentTypeByExt[ext.toLowerCase()] || 'image/jpeg';
+  
+  // Upload file
+  const { data, error } = await (supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType,
+  }) as any);
+  
+  if (error) {
+    return { data: null, error: new Error(`Upload failed: ${error.message || 'Unknown error'}`) } as any;
+  }
+  
+  // Get public URL
+  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
+export async function deleteSubjectImage(imageUrl: string) {
+  const bucket = 'subject-images';
+  // Extract path from URL
+  const urlParts = imageUrl.split('/');
+  const pathIndex = urlParts.findIndex(part => part === bucket);
+  if (pathIndex === -1) {
+    return { data: null, error: new Error('Invalid image URL') } as any;
+  }
+  const path = urlParts.slice(pathIndex + 1).join('/');
+  
+  const { data, error } = await supabase.storage.from(bucket).remove([path]);
+  return { data, error };
+}
+
+export async function deleteUserAvatar(path: string) {
+  const bucket = 'avatars';
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) {
+    return { error };
+  }
+  return { error: null };
+}
+
+// ============================================
 // LESSON PROGRESS FUNCTIONS
 // ============================================
 
@@ -767,13 +919,18 @@ export async function getMyConversations() {
   return { data: myConversations, error: null };
 }
 
+export async function ensureSubjectConversation(subjectId: string) {
+  return await supabase.rpc('ensure_subject_conversation', { p_subject_id: subjectId });
+}
+
 // Get conversation messages with sender info
 export async function getConversationMessages(conversationId: string, limit = 50) {
   const { data, error } = await supabase
     .from('messages')
     .select(`
       *,
-      sender:profiles!sender_id(id, full_name, email)
+      sender:profiles!sender_id(id, full_name, email, role),
+      deleted_by_user:profiles!deleted_by(id, full_name, role)
     `)
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
@@ -846,6 +1003,91 @@ export async function sendMessage(
   }
   
   return { data, error: null };
+}
+
+// Update a message
+export async function updateMessage(messageId: string, content: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  // First check if the message belongs to the user
+  const { data: message, error: fetchError } = await supabase
+    .from('messages')
+    .select('sender_id')
+    .eq('id', messageId)
+    .single();
+  
+  if (fetchError || !message) {
+    return { data: null, error: fetchError || new Error('Message not found') } as any;
+  }
+  
+  if (message.sender_id !== uid) {
+    return { data: null, error: new Error('Not authorized to edit this message') } as any;
+  }
+  
+  const { data: updated, error } = await supabase
+    .from('messages')
+    .update({
+      content,
+      is_edited: true,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', messageId)
+    .select()
+    .single();
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  return { data: updated, error: null };
+}
+
+// Delete a message
+export async function deleteMessage(messageId: string) {
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes?.user?.id;
+  if (!uid) return { data: null, error: new Error('Not authenticated') } as any;
+  
+  // Get user role first
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', uid)
+    .single();
+  
+  const isAdmin = profile?.role === 'admin';
+  
+  // Get message to check ownership
+  const { data: message, error: fetchError } = await supabase
+    .from('messages')
+    .select('sender_id')
+    .eq('id', messageId)
+    .single();
+  
+  if (fetchError || !message) {
+    return { data: null, error: fetchError || new Error('Message not found') } as any;
+  }
+  
+  // Check authorization
+  if (!isAdmin && message.sender_id !== uid) {
+    return { data: null, error: new Error('Not authorized to delete this message') } as any;
+  }
+  
+  // Use RPC function to handle deletion (bypasses RLS)
+  const { data, error } = await supabase.rpc('delete_message_admin', {
+    p_message_id: messageId
+  });
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  // RPC returns array, get first item
+  const deleted = Array.isArray(data) ? data[0] : data;
+  
+  return { data: deleted, error: null };
 }
 
 // Mark messages as read
@@ -1274,7 +1516,12 @@ export async function fetchStaffQuizzes() {
       attempts_allowed,
       created_at,
       subject:class_subjects!subject_id(id, subject_name),
-      lesson:lessons!lesson_id(id, title)
+      lesson:lessons!lesson_id(
+        id, 
+        title, 
+        subject_id,
+        subject:class_subjects!subject_id(id, subject_name)
+      )
     `)
     .order('created_at', { ascending: false });
 }
@@ -1342,10 +1589,37 @@ export async function recalcAttemptScore(attemptId: string) {
     .from('quiz_answers')
     .select('points_awarded')
     .eq('attempt_id', attemptId);
-  const total = (answers || []).reduce((acc: number, r: any) => acc + (Number(r.points_awarded) || 0), 0);
+  
+  // Calculate total: sum all points_awarded (null or undefined = 0)
+  const total = (answers || []).reduce((acc: number, r: any) => {
+    const points = r.points_awarded;
+    // Handle null, undefined, or invalid numbers
+    if (points === null || points === undefined || isNaN(Number(points))) {
+      return acc;
+    }
+    return acc + Number(points);
+  }, 0);
+  
+  // Get current attempt to preserve submitted_at if already set
+  const { data: currentAttempt } = await supabase
+    .from('quiz_attempts')
+    .select('submitted_at')
+    .eq('id', attemptId)
+    .single();
+  
+  const updateData: any = {
+    score: total,
+    status: 'graded'
+  };
+  
+  // Only set submitted_at if not already set
+  if (!currentAttempt?.submitted_at) {
+    updateData.submitted_at = new Date().toISOString();
+  }
+  
   return await supabase
     .from('quiz_attempts')
-    .update({ score: total, status: 'graded', submitted_at: new Date().toISOString() } as any)
+    .update(updateData)
     .eq('id', attemptId)
     .select('*')
     .single();
