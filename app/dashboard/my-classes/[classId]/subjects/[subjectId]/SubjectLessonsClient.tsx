@@ -1,10 +1,12 @@
-import SubjectLessonsClient from './SubjectLessonsClient';
+﻿'use client';
+
+// Force dynamic rendering - this page requires runtime params and auth
+export const dynamicParams = true;
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,9 +65,8 @@ import { supabase } from '@/lib/supabase';
 import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { SubjectDiscussion } from '@/components/dashboard/SubjectDiscussion';
 
-export default function SubjectLessonsPage() {
+export default function SubjectLessonsClient() {
   // Hooks must be called unconditionally (React rules)
   const params = useParams();
   const router = useRouter();
@@ -78,10 +79,6 @@ export default function SubjectLessonsPage() {
   const authLoading = authContext?.loading ?? true;
   const t = languageContext?.t ?? (() => '');
   const language = languageContext?.language ?? 'en';
-  const dateLocale = useMemo(
-    () => (language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US'),
-    [language]
-  );
   
   // Safely extract params with proper type checking and null safety
   const classId = params && typeof params.classId === 'string' ? params.classId : null;
@@ -253,17 +250,11 @@ export default function SubjectLessonsPage() {
       // Load assignments for this subject
       const { data: assns } = await fetchMyAssignmentsForSubject(currentSubjectId);
       setAssignments(assns || []);
-      // ✅ PERFORMANCE: Load all submissions in parallel instead of sequential loop
+      // Load submissions per assignment
       const subs: Record<string, any> = {};
-      if (assns && assns.length > 0) {
-        const submissionPromises = assns.map(async (a: any) => {
-          const { data: sub } = await fetchSubmissionForAssignment(a.id);
-          return { assignmentId: a.id, submission: sub };
-        });
-        const submissionResults = await Promise.all(submissionPromises);
-        submissionResults.forEach(({ assignmentId, submission }) => {
-          if (submission) subs[assignmentId] = submission;
-        });
+      for (const a of (assns || [])) {
+        const { data: sub } = await fetchSubmissionForAssignment(a.id);
+        if (sub) subs[a.id] = sub;
       }
       setSubmissions(subs);
 
@@ -507,7 +498,7 @@ export default function SubjectLessonsPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+              {language === 'ar' ? '╪ش╪د╪▒┘è ╪ز╪ص┘à┘è┘ ╪د┘╪ذ┘è╪د┘╪د╪ز...' : 'Loading data...'}
             </p>
           </div>
         </div>
@@ -523,7 +514,7 @@ export default function SubjectLessonsPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
+              {language === 'ar' ? '╪ش╪د╪▒┘è ╪ز╪ص┘à┘è┘ ╪د┘╪ذ┘è╪د┘╪د╪ز...' : 'Loading data...'}
             </p>
           </div>
         </div>
@@ -547,7 +538,7 @@ export default function SubjectLessonsPage() {
       <div className="space-y-2" ref={sidebarRef}>
         {lessonsToShow.length === 0 ? (
           <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-            {language === 'ar' ? 'لا توجد دروس مطابقة' : 'No lessons found'}
+            {language === 'ar' ? '┘╪د ╪ز┘ê╪ش╪» ╪»╪▒┘ê╪│ ┘à╪╖╪د╪ذ┘é╪ر' : 'No lessons found'}
           </div>
         ) : (
           lessonsToShow.map((lesson) => {
@@ -617,7 +608,7 @@ export default function SubjectLessonsPage() {
                     >
                       <Badge 
                         className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer"
-                        title={language === 'ar' ? `${quizzesByLesson[lesson.id].length} اختبار متاح لهذا الدرس - اضغط للانتقال` : `${quizzesByLesson[lesson.id].length} quiz${quizzesByLesson[lesson.id].length > 1 ? 'zes' : ''} available - Click to go to quiz`}
+                        title={language === 'ar' ? `${quizzesByLesson[lesson.id].length} ╪د╪«╪ز╪ذ╪د╪▒ ┘à╪ز╪د╪ص ┘┘ç╪░╪د ╪د┘╪»╪▒╪│ - ╪د╪╢╪║╪╖ ┘┘╪د┘╪ز┘é╪د┘` : `${quizzesByLesson[lesson.id].length} quiz${quizzesByLesson[lesson.id].length > 1 ? 'zes' : ''} available - Click to go to quiz`}
                       >
                         <GraduationCap className="h-3 w-3 mr-1" />
                         {quizzesByLesson[lesson.id].length}
@@ -647,7 +638,7 @@ export default function SubjectLessonsPage() {
                 {lessonProgress && (
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{language === 'ar' ? '╪د┘╪ز┘é╪»┘à' : 'Progress'}</span>
                       <span className="font-semibold text-gray-700 dark:text-gray-300">{lessonProgress.progress_percentage || 0}%</span>
                     </div>
                     <Progress value={lessonProgress.progress_percentage || 0} className="h-1.5" />
@@ -677,17 +668,17 @@ export default function SubjectLessonsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                      {language === 'ar' ? 'شهادة جاهزة للإصدار!' : 'Certificate Ready to Issue!'}
+                      {language === 'ar' ? '╪┤┘ç╪د╪»╪ر ╪ش╪د┘ç╪▓╪ر ┘┘╪ح╪╡╪»╪د╪▒!' : 'Certificate Ready to Issue!'}
                     </h3>
                     <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
                       {language === 'ar' 
-                        ? `تهانينا! لقد أكملت جميع الدروس والاختبارات في مادة ${subject?.subject_name || ''}. يمكنك الآن إصدار شهادتك مباشرة.`
+                        ? `╪ز┘ç╪د┘┘è┘╪د! ┘┘é╪» ╪ث┘â┘à┘╪ز ╪ش┘à┘è╪╣ ╪د┘╪»╪▒┘ê╪│ ┘ê╪د┘╪د╪«╪ز╪ذ╪د╪▒╪د╪ز ┘┘è ┘à╪د╪»╪ر ${subject?.subject_name || ''}. ┘è┘à┘â┘┘â ╪د┘╪ت┘ ╪ح╪╡╪»╪د╪▒ ╪┤┘ç╪د╪»╪ز┘â ┘à╪ذ╪د╪┤╪▒╪ر.`
                         : `Congratulations! You've completed all lessons and quizzes for ${subject?.subject_name || ''}. You can now issue your certificate.`
                       }
                     </p>
                     <div className="flex items-center gap-4 text-xs text-amber-600 dark:text-amber-400">
                       <span>
-                        {language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
+                        {language === 'ar' ? '╪د┘╪╣┘╪د┘à╪ر ╪د┘┘┘ç╪د╪خ┘è╪ر' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
                       </span>
                       <span className="font-semibold">{certificateEligibility.grade || '-'}</span>
                     </div>
@@ -700,16 +691,16 @@ export default function SubjectLessonsPage() {
                       setIssuingCertificate(true);
                       const { data, error } = await api.studentIssueCertificate(safeSubjectId);
                       if (error) {
-                        toast.error(language === 'ar' ? 'فشل إصدار الشهادة' : 'Failed to issue certificate');
+                        toast.error(language === 'ar' ? '┘╪┤┘ ╪ح╪╡╪»╪د╪▒ ╪د┘╪┤┘ç╪د╪»╪ر' : 'Failed to issue certificate');
                         return;
                       }
-                      toast.success(language === 'ar' ? 'تم إصدار الشهادة بنجاح!' : 'Certificate issued successfully!');
+                      toast.success(language === 'ar' ? '╪ز┘à ╪ح╪╡╪»╪د╪▒ ╪د┘╪┤┘ç╪د╪»╪ر ╪ذ┘╪ش╪د╪ص!' : 'Certificate issued successfully!');
                       setCertificateEligibility(null);
                       // Redirect to certificates page
                       router.push('/dashboard/my-certificates');
                     } catch (err: any) {
                       console.error(err);
-                      toast.error(err.message || (language === 'ar' ? 'خطأ في إصدار الشهادة' : 'Error issuing certificate'));
+                      toast.error(err.message || (language === 'ar' ? '╪«╪╖╪ث ┘┘è ╪ح╪╡╪»╪د╪▒ ╪د┘╪┤┘ç╪د╪»╪ر' : 'Error issuing certificate'));
                     } finally {
                       setIssuingCertificate(false);
                     }
@@ -719,12 +710,12 @@ export default function SubjectLessonsPage() {
                   {issuingCertificate ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}
+                      {language === 'ar' ? '╪ش╪د╪▒┘è ╪د┘╪ح╪╡╪»╪د╪▒...' : 'Issuing...'}
                     </>
                   ) : (
                     <>
                       <Award className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'إصدار الشهادة' : 'Issue Certificate'}
+                      {language === 'ar' ? '╪ح╪╡╪»╪د╪▒ ╪د┘╪┤┘ç╪د╪»╪ر' : 'Issue Certificate'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
@@ -765,65 +756,21 @@ export default function SubjectLessonsPage() {
         {/* Subject Header - Mobile Only */}
         <div className="lg:hidden relative overflow-hidden rounded-2xl p-6 mb-6 border border-white/20 bg-gradient-to-br from-cyan-600 via-teal-600 to-blue-700 text-white shadow-xl">
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-4">
-              {/* ✅ NEW: Subject Image */}
-              {subject.image_url ? (
-                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 flex-shrink-0">
-                  <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                  <BookOpen className="h-8 w-8 text-white" />
-                </div>
-              )}
-              <div className="flex-1">
-                <h1 className="text-2xl font-display font-bold mb-1">{subject.subject_name}</h1>
-                {subject.teacher?.full_name && (
-                  <div className="flex items-center gap-2 text-sm text-white/90 mb-1">
-                    <User className="h-3.5 w-3.5" />
-                    <span>{subject.teacher.full_name}</span>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                <BookOpen className="h-8 w-8 text-white" />
+              </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-display font-bold mb-1">{subject.subject_name}</h1>
+                    {subject.teacher?.full_name && (
+                      <div className="flex items-center gap-2 text-sm text-white/90 mb-1">
+                        <User className="h-3.5 w-3.5" />
+                        <span>{subject.teacher.full_name}</span>
+                      </div>
+                    )}
+                    <p className="text-sm text-white/90">Lesson {activeLessonIndex + 1} of {lessons.length}</p>
                   </div>
-                )}
-                <p className="text-sm text-white/90">Lesson {activeLessonIndex + 1} of {lessons.length}</p>
-              </div>
             </div>
-            
-            {/* ✅ NEW: Subject Description */}
-            {subject.description && (
-              <div className="mb-3 pb-3 border-b border-white/20">
-                <p className="text-sm text-white/90 leading-relaxed">{subject.description}</p>
-              </div>
-            )}
-            
-            {/* ✅ NEW: Objectives */}
-            {subject.objectives && subject.objectives.length > 0 && (
-              <div className="mb-3 pb-3 border-b border-white/20">
-                <p className="text-sm font-semibold text-white mb-2">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
-                <ul className="space-y-1">
-                  {subject.objectives.map((obj: string, idx: number) => (
-                    <li key={idx} className="text-sm text-white/90 flex items-start gap-2">
-                      <span className="text-white mt-0.5">•</span>
-                      <span>{obj}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {/* ✅ NEW: Reference URL */}
-            {subject.reference_url && (
-              <div>
-                <a
-                  href={subject.reference_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-white hover:underline flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 inline-block"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {language === 'ar' ? 'المرجع' : 'Reference'}
-                </a>
-              </div>
-            )}
           </div>
         </div>
 
@@ -844,16 +791,9 @@ export default function SubjectLessonsPage() {
                 </Button>
                 <div className="p-4 bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 rounded-xl border border-cyan-200 dark:border-cyan-800">
                   <div className="flex items-center gap-3 mb-3">
-                    {/* ✅ NEW: Subject Image */}
-                    {subject.image_url ? (
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-cyan-200 dark:border-cyan-800 flex-shrink-0">
-                        <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                        <BookOpen className="h-6 w-6 text-white" />
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                      <BookOpen className="h-6 w-6 text-white" />
+                    </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 dark:text-white text-sm">{subject.subject_name}</h3>
                       {subject.teacher?.full_name && (
@@ -862,57 +802,20 @@ export default function SubjectLessonsPage() {
                           <span className="truncate">{subject.teacher.full_name}</span>
                         </div>
                       )}
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} {language === 'ar' ? '╪»╪▒╪│' : 'Lessons'}</p>
                     </div>
                   </div>
-                  
-                  {/* ✅ NEW: Subject Description */}
-                  {subject.description && (
-                    <div className="mb-3">
-                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{subject.description}</p>
-                    </div>
-                  )}
-                  
-                  {/* ✅ NEW: Objectives */}
-                  {subject.objectives && subject.objectives.length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
-                      <ul className="space-y-1">
-                        {subject.objectives.map((obj: string, idx: number) => (
-                          <li key={idx} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
-                            <span className="text-cyan-600 dark:text-cyan-400 mt-0.5">•</span>
-                            <span>{obj}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {/* ✅ NEW: Reference URL */}
-                  {subject.reference_url && (
-                    <div className="mb-3">
-                      <a
-                        href={subject.reference_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        {language === 'ar' ? 'المرجع' : 'Reference'}
-                      </a>
-                    </div>
-                  )}
                   {/* Subject Progress */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? '╪د┘╪ز┘é╪»┘à' : 'Progress'}</span>
                       <span className="font-semibold text-gray-900 dark:text-white">{subjectProgress.percentage}%</span>
                     </div>
                     <Progress value={subjectProgress.percentage} className="h-2" />
                     <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                      <span>{subjectProgress.completed} {language === 'ar' ? 'مكتمل' : 'Completed'}</span>
-                      <span>{subjectProgress.inProgress} {language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span>
-                      <span>{subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress} {language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span>
+                      <span>{subjectProgress.completed} {language === 'ar' ? '┘à┘â╪ز┘à┘' : 'Completed'}</span>
+                      <span>{subjectProgress.inProgress} {language === 'ar' ? '┘é┘è╪» ╪د┘╪ز┘é╪»┘à' : 'In Progress'}</span>
+                      <span>{subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress} {language === 'ar' ? '┘┘à ┘è╪ذ╪»╪ث' : 'Not Started'}</span>
                     </div>
                   </div>
                 </div>
@@ -920,7 +823,7 @@ export default function SubjectLessonsPage() {
 
               <Card className="border-gray-200 dark:border-gray-800 overflow-hidden">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
+                  <CardTitle className="text-sm font-semibold">{language === 'ar' ? '╪د┘╪»╪▒┘ê╪│' : 'Lessons'}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   {/* Search and Filter */}
@@ -928,7 +831,7 @@ export default function SubjectLessonsPage() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <Input
-                        placeholder={language === 'ar' ? 'بحث في الدروس...' : 'Search lessons...'}
+                        placeholder={language === 'ar' ? '╪ذ╪ص╪س ┘┘è ╪د┘╪»╪▒┘ê╪│...' : 'Search lessons...'}
                         value={lessonSearchQuery}
                         onChange={(e) => setLessonSearchQuery(e.target.value)}
                         className="pl-10 h-9 text-sm"
@@ -947,13 +850,13 @@ export default function SubjectLessonsPage() {
                     <Select value={lessonStatusFilter} onValueChange={(v) => setLessonStatusFilter(v as any)}>
                       <SelectTrigger className="h-9 text-sm">
                         <Filter className="h-3.5 w-3.5 mr-2" />
-                        <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
+                        <SelectValue placeholder={language === 'ar' ? '╪د┘╪ص╪د┘╪ر' : 'Status'} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">{language === 'ar' ? 'جميع الدروس' : 'All Lessons'}</SelectItem>
-                        <SelectItem value="completed">{language === 'ar' ? 'مكتملة' : 'Completed'}</SelectItem>
-                        <SelectItem value="in_progress">{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</SelectItem>
-                        <SelectItem value="not_started">{language === 'ar' ? 'لم تبدأ' : 'Not Started'}</SelectItem>
+                        <SelectItem value="all">{language === 'ar' ? '╪ش┘à┘è╪╣ ╪د┘╪»╪▒┘ê╪│' : 'All Lessons'}</SelectItem>
+                        <SelectItem value="completed">{language === 'ar' ? '┘à┘â╪ز┘à┘╪ر' : 'Completed'}</SelectItem>
+                        <SelectItem value="in_progress">{language === 'ar' ? '┘é┘è╪» ╪د┘╪ز┘é╪»┘à' : 'In Progress'}</SelectItem>
+                        <SelectItem value="not_started">{language === 'ar' ? '┘┘à ╪ز╪ذ╪»╪ث' : 'Not Started'}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1021,7 +924,7 @@ export default function SubjectLessonsPage() {
                       className="flex-1"
                     >
                       <ChevronLeft className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'السابق' : 'Previous'}
+                      {language === 'ar' ? '╪د┘╪│╪د╪ذ┘é' : 'Previous'}
                     </Button>
                     <Button
                       variant="outline"
@@ -1029,7 +932,7 @@ export default function SubjectLessonsPage() {
                       disabled={activeLessonIndex === lessons.length - 1}
                       className="flex-1"
                     >
-                      {language === 'ar' ? 'التالي' : 'Next'}
+                      {language === 'ar' ? '╪د┘╪ز╪د┘┘è' : 'Next'}
                       <ChevronRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
@@ -1043,7 +946,7 @@ export default function SubjectLessonsPage() {
                       onClick={() => handleMarkComplete(activeLesson.id)}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'تمييز كمكتمل' : 'Mark Complete'}
+                      {language === 'ar' ? '╪ز┘à┘è┘è╪▓ ┘â┘à┘â╪ز┘à┘' : 'Mark Complete'}
                     </Button>
                   )}
                 </div>
@@ -1057,24 +960,24 @@ export default function SubjectLessonsPage() {
                   <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
                     <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
                       <Video className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'الفيديو' : 'Video'}
+                      {language === 'ar' ? '╪د┘┘┘è╪»┘è┘ê' : 'Video'}
                     </TabsTrigger>
                     {hasAttachments && (
                       <TabsTrigger value="resources" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
                         <FileText className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الموارد' : 'Resources'}
+                        {language === 'ar' ? '╪د┘┘à┘ê╪د╪▒╪»' : 'Resources'}
                       </TabsTrigger>
                     )}
                     {hasAssignments && (
                       <TabsTrigger value="assignments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
                         <FileText className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الواجبات' : 'Assignments'}
+                        {language === 'ar' ? '╪د┘┘ê╪د╪ش╪ذ╪د╪ز' : 'Assignments'}
                       </TabsTrigger>
                     )}
                     {(hasQuizzes || lessonQuizzes.length > 0) && (
                       <TabsTrigger value="quizzes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
                         <GraduationCap className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الاختبارات' : 'Quizzes'}
+                        {language === 'ar' ? '╪د┘╪د╪«╪ز╪ذ╪د╪▒╪د╪ز' : 'Quizzes'}
                       </TabsTrigger>
                     )}
                   </TabsList>
@@ -1083,7 +986,7 @@ export default function SubjectLessonsPage() {
                   <TabsContent value="video" className="p-6 space-y-4">
                     {activeLesson.description && (
                       <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{language === 'ar' ? 'الوصف' : 'Description'}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{language === 'ar' ? '╪د┘┘ê╪╡┘' : 'Description'}</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">{activeLesson.description}</p>
                       </div>
                     )}
@@ -1091,7 +994,7 @@ export default function SubjectLessonsPage() {
                     {progress && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'تقدم الدرس' : 'Lesson Progress'}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? '╪ز┘é╪»┘à ╪د┘╪»╪▒╪│' : 'Lesson Progress'}</span>
                           <span className="font-semibold text-gray-900 dark:text-white">{progress.progress_percentage || 0}%</span>
                         </div>
                         <Progress value={progress.progress_percentage || 0} className="h-2" />
@@ -1106,7 +1009,7 @@ export default function SubjectLessonsPage() {
                         <div>
                           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
                             <FileText className="h-4 w-4" />
-                            {language === 'ar' ? 'موارد الدرس' : 'Lesson Resources'}
+                            {language === 'ar' ? '┘à┘ê╪د╪▒╪» ╪د┘╪»╪▒╪│' : 'Lesson Resources'}
                           </h3>
                           <div className="grid gap-3 md:grid-cols-2">
                             {(attachmentsByLesson[activeLesson.id] || []).map((att: any) => {
@@ -1154,7 +1057,7 @@ export default function SubjectLessonsPage() {
                         <div>
                           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
                             <FileText className="h-4 w-4" />
-                            {language === 'ar' ? 'واجبات المادة' : 'Subject Assignments'}
+                            {language === 'ar' ? '┘ê╪د╪ش╪ذ╪د╪ز ╪د┘┘à╪د╪»╪ر' : 'Subject Assignments'}
                           </h3>
                           <div className="grid gap-3 md:grid-cols-2">
                             {assignments.map((a: any) => {
@@ -1165,26 +1068,26 @@ export default function SubjectLessonsPage() {
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
                                       <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{a.title}</h4>
-                                      <p className="text-xs text-muted-foreground">{dueStr && `${language === 'ar' ? 'موعد التسليم: ' : 'Due: '}${dueStr}`}</p>
+                                      <p className="text-xs text-muted-foreground">{dueStr && `${language === 'ar' ? '┘à┘ê╪╣╪» ╪د┘╪ز╪│┘┘è┘à: ' : 'Due: '}${dueStr}`}</p>
                                       {a.description && (
                                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
                                       )}
                                       {sub ? (
                                         <div className="mt-2">
-                                          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{language === 'ar' ? 'تم التسليم' : 'Submitted'}</Badge>
+                                          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{language === 'ar' ? '╪ز┘à ╪د┘╪ز╪│┘┘è┘à' : 'Submitted'}</Badge>
                                           {sub.status === 'graded' && (
                                             <Badge className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{sub.score}/{a.total_points}</Badge>
                                           )}
                                         </div>
                                       ) : (
                                         <div className="mt-2">
-                                          <Badge variant="outline">{language === 'ar' ? 'معلق' : 'Pending'}</Badge>
+                                          <Badge variant="outline">{language === 'ar' ? '┘à╪╣┘┘é' : 'Pending'}</Badge>
                                         </div>
                                       )}
                                     </div>
                                     <div>
                                       <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)}>
-                                        {sub ? (language === 'ar' ? 'عرض' : 'View') : (language === 'ar' ? 'تسليم' : 'Submit')}
+                                        {sub ? (language === 'ar' ? '╪╣╪▒╪╢' : 'View') : (language === 'ar' ? '╪ز╪│┘┘è┘à' : 'Submit')}
                                       </Button>
                                     </div>
                                   </div>
@@ -1210,10 +1113,10 @@ export default function SubjectLessonsPage() {
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                  {language === 'ar' ? 'اختبار الدرس' : 'Lesson Quiz'}
+                                  {language === 'ar' ? '╪د╪«╪ز╪ذ╪د╪▒ ╪د┘╪»╪▒╪│' : 'Lesson Quiz'}
                                 </h3>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
+                                  {language === 'ar' ? '╪د╪«╪ز╪ذ╪د╪▒ ┘┘: ' : 'Quiz for: '}
                                   <span className="font-medium text-purple-600 dark:text-purple-400">{activeLesson.title}</span>
                                 </p>
                               </div>
@@ -1245,12 +1148,12 @@ export default function SubjectLessonsPage() {
                                           <h4 className="font-semibold text-gray-900 dark:text-white">{q.title}</h4>
                                           <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs">
                                             <GraduationCap className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'درس' : 'Lesson'}
+                                            {language === 'ar' ? '╪»╪▒╪│' : 'Lesson'}
                                           </Badge>
                                           {isCompleted && (
                                             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs">
                                               <CheckCircle2 className="h-3 w-3 mr-1" />
-                                              {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                              {language === 'ar' ? '┘à┘â╪ز┘à┘' : 'Completed'}
                                             </Badge>
                                           )}
                                         </div>
@@ -1263,14 +1166,14 @@ export default function SubjectLessonsPage() {
                                           {q.time_limit_minutes && (
                                             <div className="flex items-center gap-1">
                                               <Clock className="h-3.5 w-3.5" />
-                                              <span>{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
+                                              <span>{q.time_limit_minutes} {language === 'ar' ? '╪»┘é┘è┘é╪ر' : 'min'}</span>
                                             </div>
                                           )}
                                           {q.attempts_allowed && (
                                             <div className="flex items-center gap-1">
                                               <FileText className="h-3.5 w-3.5" />
                                               <span>
-                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? 'محاولات' : 'محاولة') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
+                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? '┘à╪ص╪د┘ê┘╪د╪ز' : '┘à╪ص╪د┘ê┘╪ر') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
                                               </span>
                                             </div>
                                           )}
@@ -1279,7 +1182,7 @@ export default function SubjectLessonsPage() {
                                           <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
                                             <div className="flex items-center justify-between">
                                               <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                                                {language === 'ar' ? 'آخر نتيجة:' : 'Last Result:'}
+                                                {language === 'ar' ? '╪ت╪«╪▒ ┘╪ز┘è╪ش╪ر:' : 'Last Result:'}
                                               </span>
                                               {latestAttempt.score !== null && latestAttempt.score !== undefined ? (
                                                 <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
@@ -1288,8 +1191,8 @@ export default function SubjectLessonsPage() {
                                               ) : (
                                                 <span className="text-xs text-emerald-600 dark:text-emerald-400">
                                                   {latestAttempt.status === 'graded' 
-                                                    ? (language === 'ar' ? 'تم التصحيح' : 'Graded')
-                                                    : (language === 'ar' ? 'قيد التصحيح' : 'Pending')}
+                                                    ? (language === 'ar' ? '╪ز┘à ╪د┘╪ز╪╡╪ص┘è╪ص' : 'Graded')
+                                                    : (language === 'ar' ? '┘é┘è╪» ╪د┘╪ز╪╡╪ص┘è╪ص' : 'Pending')}
                                                 </span>
                                               )}
                                             </div>
@@ -1303,7 +1206,7 @@ export default function SubjectLessonsPage() {
                                         {!isCompleted && hasRemainingAttempts && (
                                           <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                                             {language === 'ar' 
-                                              ? `محاولات متبقية: ${remainingAttempts}` 
+                                              ? `┘à╪ص╪د┘ê┘╪د╪ز ┘à╪ز╪ذ┘é┘è╪ر: ${remainingAttempts}` 
                                               : `Remaining attempts: ${remainingAttempts}`}
                                           </div>
                                         )}
@@ -1321,22 +1224,22 @@ export default function SubjectLessonsPage() {
                                         {isCompleted ? (
                                           <>
                                             <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            {language === 'ar' ? '┘à┘â╪ز┘à┘' : 'Completed'}
                                           </>
                                         ) : isActive && !isStarted ? (
                                           <>
                                             <Play className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'متاح' : 'Available'}
+                                            {language === 'ar' ? '┘à╪ز╪د╪ص' : 'Available'}
                                           </>
                                         ) : isActive && isStarted ? (
                                           <>
                                             <Calendar className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}
+                                            {language === 'ar' ? '┘è╪ذ╪»╪ث ┘é╪▒┘è╪ذ╪د┘ï' : 'Starts Soon'}
                                           </>
                                         ) : (
                                           <>
                                             <Lock className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مغلق' : 'Closed'}
+                                            {language === 'ar' ? '┘à╪║┘┘é' : 'Closed'}
                                           </>
                                         )}
                                       </Badge>
@@ -1348,7 +1251,7 @@ export default function SubjectLessonsPage() {
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                                          {language === 'ar' ? 'عرض النتيجة' : 'View Results'}
+                                          {language === 'ar' ? '╪╣╪▒╪╢ ╪د┘┘╪ز┘è╪ش╪ر' : 'View Results'}
                                         </Button>
                                       ) : (
                                         <Button 
@@ -1363,8 +1266,8 @@ export default function SubjectLessonsPage() {
                                         >
                                           <Play className="h-3.5 w-3.5 mr-1.5" />
                                           {hasRemainingAttempts 
-                                            ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
-                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}
+                                            ? (language === 'ar' ? '╪د╪ذ╪»╪ث ╪د┘╪د╪«╪ز╪ذ╪د╪▒' : 'Start Quiz') 
+                                            : (language === 'ar' ? '┘╪د ╪ز┘ê╪ش╪» ┘à╪ص╪د┘ê┘╪د╪ز ┘à╪ز╪ذ┘é┘è╪ر' : 'No Attempts Left')}
                                         </Button>
                                       )}
                                     </div>
@@ -1384,10 +1287,10 @@ export default function SubjectLessonsPage() {
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                  {language === 'ar' ? 'اختبار المادة' : 'Subject Quiz'}
+                                  {language === 'ar' ? '╪د╪«╪ز╪ذ╪د╪▒ ╪د┘┘à╪د╪»╪ر' : 'Subject Quiz'}
                                 </h3>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
+                                  {language === 'ar' ? '╪د╪«╪ز╪ذ╪د╪▒ ┘┘: ' : 'Quiz for: '}
                                   <span className="font-medium text-blue-600 dark:text-blue-400">{subject.subject_name}</span>
                                 </p>
                               </div>
@@ -1419,12 +1322,12 @@ export default function SubjectLessonsPage() {
                                           <h4 className="font-semibold text-gray-900 dark:text-white">{q.title}</h4>
                                           <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs">
                                             <BookOpen className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مادة' : 'Subject'}
+                                            {language === 'ar' ? '┘à╪د╪»╪ر' : 'Subject'}
                                           </Badge>
                                           {isCompleted && (
                                             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs">
                                               <CheckCircle2 className="h-3 w-3 mr-1" />
-                                              {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                              {language === 'ar' ? '┘à┘â╪ز┘à┘' : 'Completed'}
                                             </Badge>
                                           )}
                                         </div>
@@ -1437,14 +1340,14 @@ export default function SubjectLessonsPage() {
                                           {q.time_limit_minutes && (
                                             <div className="flex items-center gap-1">
                                               <Clock className="h-3.5 w-3.5" />
-                                              <span>{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
+                                              <span>{q.time_limit_minutes} {language === 'ar' ? '╪»┘é┘è┘é╪ر' : 'min'}</span>
                                             </div>
                                           )}
                                           {q.attempts_allowed && (
                                             <div className="flex items-center gap-1">
                                               <FileText className="h-3.5 w-3.5" />
                                               <span>
-                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? 'محاولات' : 'محاولة') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
+                                                {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? '┘à╪ص╪د┘ê┘╪د╪ز' : '┘à╪ص╪د┘ê┘╪ر') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
                                               </span>
                                             </div>
                                           )}
@@ -1453,7 +1356,7 @@ export default function SubjectLessonsPage() {
                                           <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
                                             <div className="flex items-center justify-between">
                                               <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                                                {language === 'ar' ? 'آخر نتيجة:' : 'Last Result:'}
+                                                {language === 'ar' ? '╪ت╪«╪▒ ┘╪ز┘è╪ش╪ر:' : 'Last Result:'}
                                               </span>
                                               {latestAttempt.score !== null && latestAttempt.score !== undefined ? (
                                                 <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
@@ -1462,8 +1365,8 @@ export default function SubjectLessonsPage() {
                                               ) : (
                                                 <span className="text-xs text-emerald-600 dark:text-emerald-400">
                                                   {latestAttempt.status === 'graded' 
-                                                    ? (language === 'ar' ? 'تم التصحيح' : 'Graded')
-                                                    : (language === 'ar' ? 'قيد التصحيح' : 'Pending')}
+                                                    ? (language === 'ar' ? '╪ز┘à ╪د┘╪ز╪╡╪ص┘è╪ص' : 'Graded')
+                                                    : (language === 'ar' ? '┘é┘è╪» ╪د┘╪ز╪╡╪ص┘è╪ص' : 'Pending')}
                                                 </span>
                                               )}
                                             </div>
@@ -1477,7 +1380,7 @@ export default function SubjectLessonsPage() {
                                         {!isCompleted && hasRemainingAttempts && (
                                           <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                                             {language === 'ar' 
-                                              ? `محاولات متبقية: ${remainingAttempts}` 
+                                              ? `┘à╪ص╪د┘ê┘╪د╪ز ┘à╪ز╪ذ┘é┘è╪ر: ${remainingAttempts}` 
                                               : `Remaining attempts: ${remainingAttempts}`}
                                           </div>
                                         )}
@@ -1495,22 +1398,22 @@ export default function SubjectLessonsPage() {
                                         {isCompleted ? (
                                           <>
                                             <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            {language === 'ar' ? '┘à┘â╪ز┘à┘' : 'Completed'}
                                           </>
                                         ) : isActive && !isStarted ? (
                                           <>
                                             <Play className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'متاح' : 'Available'}
+                                            {language === 'ar' ? '┘à╪ز╪د╪ص' : 'Available'}
                                           </>
                                         ) : isActive && isStarted ? (
                                           <>
                                             <Calendar className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}
+                                            {language === 'ar' ? '┘è╪ذ╪»╪ث ┘é╪▒┘è╪ذ╪د┘ï' : 'Starts Soon'}
                                           </>
                                         ) : (
                                           <>
                                             <Lock className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مغلق' : 'Closed'}
+                                            {language === 'ar' ? '┘à╪║┘┘é' : 'Closed'}
                                           </>
                                         )}
                                       </Badge>
@@ -1522,7 +1425,7 @@ export default function SubjectLessonsPage() {
                                           className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                         >
                                           <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                                          {language === 'ar' ? 'عرض النتيجة' : 'View Results'}
+                                          {language === 'ar' ? '╪╣╪▒╪╢ ╪د┘┘╪ز┘è╪ش╪ر' : 'View Results'}
                                         </Button>
                                       ) : (
                                         <Button 
@@ -1537,8 +1440,8 @@ export default function SubjectLessonsPage() {
                                         >
                                           <Play className="h-3.5 w-3.5 mr-1.5" />
                                           {hasRemainingAttempts 
-                                            ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
-                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}
+                                            ? (language === 'ar' ? '╪د╪ذ╪»╪ث ╪د┘╪د╪«╪ز╪ذ╪د╪▒' : 'Start Quiz') 
+                                            : (language === 'ar' ? '┘╪د ╪ز┘ê╪ش╪» ┘à╪ص╪د┘ê┘╪د╪ز ┘à╪ز╪ذ┘é┘è╪ر' : 'No Attempts Left')}
                                         </Button>
                                       )}
                                     </div>
@@ -1552,42 +1455,6 @@ export default function SubjectLessonsPage() {
                     </TabsContent>
                   )}
                 </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* Subject Discussion */}
-            <Card className="border-gray-200 dark:border-gray-800">
-              <CardHeader className="pb-2">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-xl font-semibold">
-                      {t('subjectDiscussion' as TranslationKey)}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {t('subjectDiscussionDescription' as TranslationKey)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/dashboard/messages?subject=${safeSubjectId}`)}
-                  >
-                    {t('viewAllDiscussions' as TranslationKey)}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {profile?.id && (
-                  <SubjectDiscussion
-                    subjectId={safeSubjectId}
-                    subjectName={subject.subject_name}
-                    t={t}
-                    dateLocale={dateLocale}
-                    currentUserId={profile.id}
-                    currentUserRole={profile.role as 'admin' | 'teacher' | 'student'}
-                    variant="card"
-                  />
-                )}
               </CardContent>
             </Card>
           </div>

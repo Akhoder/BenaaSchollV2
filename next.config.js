@@ -8,9 +8,10 @@ const nextConfig = {
   // If you see errors about output: 'export', check CI/CD settings (GitHub Actions, etc.)
   
   // ✅ IMAGE OPTIMIZATION: Enable Next.js image optimization
+  // Note: GitHub Actions will automatically set unoptimized: true for static export
   images: { 
-    unoptimized: false, // Changed to false to enable optimization
-    formats: ['image/webp', 'image/avif'],
+    unoptimized: process.env.GITHUB_PAGES === 'true' ? true : false, // Auto-disable for GitHub Pages
+    formats: process.env.GITHUB_PAGES === 'true' ? undefined : ['image/webp', 'image/avif'],
     minimumCacheTTL: 31536000, // 1 year cache
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],

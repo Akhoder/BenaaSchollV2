@@ -1,9 +1,24 @@
-import CertificateViewClient from './CertificateViewClient';
+'use client';
 
-export const dynamic = 'force-static';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import * as api from '@/lib/supabase';
+import type { Certificate } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { Loader2, Printer, Download, ArrowLeft, Award } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
+// Client component - generateStaticParams handled in page.tsx
+export const dynamicParams = true;
 
-export default function CertificateViewPage() {
+export default function CertificateViewClient() {
   const params = useParams();
   const router = useRouter();
   const certificateId = (params?.certificateId as string) || '';
@@ -212,7 +227,7 @@ export default function CertificateViewPage() {
       // keep template borders/shadows intact to match on-screen appearance
       clone.style.boxSizing = 'border-box';
       // Enforce Arabic-friendly text rendering
-      clone.style.fontFamily = "Cairo, system-ui, sans-serif";
+      clone.style.fontFamily = "Almarai, Tajawal, system-ui, sans-serif";
       clone.style.letterSpacing = 'normal';
       clone.style.wordSpacing = 'normal';
       clone.style.unicodeBidi = 'isolate-override';
@@ -238,7 +253,7 @@ export default function CertificateViewPage() {
       ];
       problematicSelectors.forEach((sel) => {
         clone.querySelectorAll<HTMLElement>(sel).forEach((el) => {
-          el.style.fontFamily = "Cairo, system-ui, sans-serif";
+          el.style.fontFamily = "Cairo, Almarai, Tajawal, system-ui, sans-serif";
           el.style.letterSpacing = 'normal';
           el.style.wordSpacing = 'normal';
           el.style.textTransform = 'none';
@@ -254,7 +269,7 @@ export default function CertificateViewPage() {
       style.textContent = `
         * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; font-variant-ligatures: normal; -webkit-font-feature-settings: 'liga' 1, 'calt' 1; font-feature-settings: 'liga' 1, 'calt' 1; }
         [dir="rtl"], [lang="ar"] { direction: rtl !important; text-align: right !important; }
-        h1, h2, h3, .font-display { font-family: 'Cairo', system-ui, sans-serif !important; letter-spacing: normal; }
+        h1, h2, h3, .font-display { font-family: 'Cairo', 'Almarai', 'Tajawal', system-ui, sans-serif !important; letter-spacing: normal; }
         p, span, div { letter-spacing: normal; word-spacing: normal; }
       `;
       root.appendChild(style);
@@ -269,7 +284,8 @@ export default function CertificateViewPage() {
           document.head.appendChild(link);
         }
       };
-      ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
+      ensureFontLink('pdf-fonts-almarai-tajawal', 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap');
+      ensureFontLink('pdf-fonts-cairo', 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
 
       // Apply template CSS and class
       const templateCSS = getCertificateTemplateCSS(template, { royalGold: branding.royal_gold, royalBgTint: branding.royal_bg_tint });
@@ -481,7 +497,7 @@ export default function CertificateViewPage() {
             className={`${template==='modern' ? 'cert-template-modern' : template==='royal' ? 'cert-template-royal' : 'cert-template-classic'} relative rounded-lg shadow-2xl p-12 print:p-16 print:shadow-none`}
             dir="rtl"
             lang="ar"
-            style={{ fontFamily: "'Cairo', system-ui, sans-serif" }}
+            style={{ fontFamily: "'Almarai', 'Tajawal', system-ui, sans-serif" }}
           >
             {branding?.watermark_enabled && (
               (() => {
@@ -608,3 +624,4 @@ export default function CertificateViewPage() {
     </DashboardLayout>
   );
 }
+

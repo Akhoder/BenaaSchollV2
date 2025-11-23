@@ -1,12 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ============================================
    📝 GOOGLE FONTS - Removed @import for better performance
    Fonts are now loaded via <link> tags in layout.tsx with preconnect
    This prevents render-blocking and improves Lighthouse scores
    ============================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ============================================
    ✨ ULTRA MODERN DESIGN SYSTEM 2025

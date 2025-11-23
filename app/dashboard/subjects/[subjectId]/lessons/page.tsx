@@ -1,4 +1,4 @@
-'use client';
+import SubjectLessonsClient from './SubjectLessonsClient';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';

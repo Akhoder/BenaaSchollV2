@@ -1,4 +1,4 @@
-'use client';
+import ClassViewClient from './ClassViewClient';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';

@@ -1,9 +1,29 @@
-import SubjectCertificatesClient from './SubjectCertificatesClient';
+'use client';
 
-export const dynamic = 'force-static';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import * as api from '@/lib/supabase';
+import type { Certificate, CertificateStatus, CertificateGrade } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { Loader2, Award, CheckCircle, XCircle, Eye, Printer, Download, FileCheck, Plus } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { Switch } from '@/components/ui/switch';
 
+// Client component - generateStaticParams handled in page.tsx
+export const dynamicParams = true;
 
-export default function SubjectCertificatesPage() {
+export default function SubjectCertificatesClient() {
   const params = useParams();
   const router = useRouter();
   const subjectId = (params?.subjectId as string) || '';
@@ -133,9 +153,9 @@ export default function SubjectCertificatesPage() {
 
   const getStatusBadge = (status: CertificateStatus, autoIssued: boolean) => {
     const config = {
-      draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-      issued: { label: 'Issued', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-      published: { label: 'Published', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      draft: { label: t('draft') || 'Draft', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+      issued: { label: t('issued') || 'Issued', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      published: { label: t('published') || 'Published', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
     };
     const cfg = config[status] || config.draft;
     return (

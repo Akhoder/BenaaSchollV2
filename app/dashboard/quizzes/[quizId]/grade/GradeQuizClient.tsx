@@ -1,8 +1,21 @@
-import GradeQuizClient from './GradeQuizClient';
+'use client';
 
-export const dynamic = 'force-static';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { supabase, fetchQuizBundle, fetchAttemptsWithAnswers, updateAnswerGrade, recalcAttemptScore, updateAnswerPayload } from '@/lib/supabase';
 
-export default function GradeQuizPage() {
+// Client component - generateStaticParams handled in page.tsx
+export const dynamicParams = true;
+
+export default function GradeQuizClient() {
   const { profile, loading: authLoading } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -51,28 +64,9 @@ export default function GradeQuizPage() {
   };
 
   const gradeShortText = async (answerId: string, points: number) => {
-    // Validate points (should be >= 0 and not NaN)
-    const validPoints = isNaN(points) || points < 0 ? 0 : points;
-    const ok = await updateAnswerGrade(answerId, null, validPoints);
+    const ok = await updateAnswerGrade(answerId, null, points);
     if ((ok as any).error) { toast.error('Failed to grade'); return; }
-    
-    // Find the attempt that contains this answer
-    let attemptId: string | null = null;
-    for (const att of attempts) {
-      const answers = answersByAttempt.get(att.id) || [];
-      if (answers.some((a: any) => a.id === answerId)) {
-        attemptId = att.id;
-        break;
-      }
-    }
-    
-    // Recalculate attempt score after grading
-    if (attemptId) {
-      await recalcAttemptScore(attemptId);
-    }
-    
     toast.success('Answer graded');
-    await load(); // Refresh data
   };
 
   const finalizeAttempt = async (attemptId: string) => {
@@ -198,3 +192,4 @@ export default function GradeQuizPage() {
     </DashboardLayout>
   );
 }
+
