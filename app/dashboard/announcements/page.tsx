@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -42,6 +42,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import type { TranslationKey } from '@/lib/translations';
 
 interface Announcement {
   id: string;
@@ -56,7 +57,6 @@ interface Announcement {
   target_roles: string[];
   is_published: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 export default function AnnouncementsPage() {
@@ -76,23 +76,7 @@ export default function AnnouncementsPage() {
   const [editIsPublished, setEditIsPublished] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-      return;
-    }
-
-    if (authLoading === false && profile && !['admin', 'teacher', 'supervisor', 'student'].includes(profile.role)) {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (profile) {
-      fetchAnnouncements();
-    }
-  }, [profile, authLoading, router]);
-
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -107,33 +91,65 @@ export default function AnnouncementsPage() {
       setAnnouncements(data || []);
     } catch (error: any) {
       console.error('Error fetching announcements:', error);
-      toast.error('Failed to load announcements');
+      toast.error(t('failedToLoadAnnouncements' as TranslationKey));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  const canCreate = profile && ['admin', 'teacher', 'supervisor'].includes(profile.role);
-  const canEdit = (ann: Announcement) => 
-    profile && (profile.role === 'admin' || ann.author_id === profile.id);
-  const canDelete = profile && profile.role === 'admin';
+  useEffect(() => {
+    if (!authLoading && !profile) {
+      router.push('/login');
+      return;
+    }
 
-  const filteredAnnouncements = announcements.filter(ann => {
-    const matchesSearch = searchQuery === '' || 
-      ann.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ann.content.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = roleFilter === 'all' || 
-      (roleFilter === 'published' && ann.is_published) ||
-      (roleFilter === 'draft' && !ann.is_published);
-    
-    const matchesRole = profile && (
-      profile.role === 'admin' || 
-      (ann.is_published && ann.target_roles.includes(profile.role))
-    );
+    if (authLoading === false && profile && !['admin', 'teacher', 'supervisor', 'student'].includes(profile.role)) {
+      router.push('/dashboard');
+      return;
+    }
 
-    return matchesSearch && matchesFilter && matchesRole;
-  });
+    if (profile) {
+      fetchAnnouncements();
+    }
+  }, [profile, authLoading, router, fetchAnnouncements]);
+
+  const canCreate = useMemo(() => profile && ['admin', 'teacher', 'supervisor'].includes(profile.role), [profile]);
+  const canEdit = useCallback((ann: Announcement) => 
+    profile && (profile.role === 'admin' || ann.author_id === profile.id), [profile]);
+  const canDelete = useMemo(() => profile && profile.role === 'admin', [profile]);
+
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter(ann => {
+      const matchesSearch = searchQuery === '' || 
+        ann.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ann.content.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesFilter = roleFilter === 'all' || 
+        (roleFilter === 'published' && ann.is_published) ||
+        (roleFilter === 'draft' && !ann.is_published);
+      
+      const matchesRole = profile && (
+        profile.role === 'admin' || 
+        (ann.is_published && ann.target_roles.includes(profile.role))
+      );
+
+      return matchesSearch && matchesFilter && matchesRole;
+    });
+  }, [announcements, searchQuery, roleFilter, profile]);
+
+  const stats = useMemo(() => ({
+    total: announcements.length,
+    published: announcements.filter(a => a.is_published).length,
+    drafts: announcements.filter(a => !a.is_published).length,
+    myAnnouncements: announcements.filter(a => a.author_id === profile?.id).length,
+  }), [announcements, profile?.id]);
+
+  const roleColors = useMemo(() => ({
+    admin: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    teacher: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    student: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+    supervisor: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  }), []);
 
   if (authLoading || loading) {
     return (
@@ -141,7 +157,7 @@ export default function AnnouncementsPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">Loading announcements...</p>
+            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">{t('loadingAnnouncements' as TranslationKey)}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -152,20 +168,6 @@ export default function AnnouncementsPage() {
     return null;
   }
 
-  const stats = {
-    total: announcements.length,
-    published: announcements.filter(a => a.is_published).length,
-    drafts: announcements.filter(a => !a.is_published).length,
-    myAnnouncements: announcements.filter(a => a.author_id === profile?.id).length,
-  };
-
-  const roleColors = {
-    admin: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    teacher: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    student: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-    supervisor: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -173,7 +175,7 @@ export default function AnnouncementsPage() {
         <PageHeader 
           icon={Megaphone}
           title={t('announcements')}
-          description="Stay informed with latest news and updates"
+          description={t('announcementsDescription' as TranslationKey)}
           gradient="from-indigo-600 via-purple-600 to-indigo-700"
         >
           {canCreate && (
@@ -189,7 +191,7 @@ export default function AnnouncementsPage() {
               className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Announcement
+              {t('createAnnouncement' as TranslationKey)}
             </Button>
           )}
         </PageHeader>
@@ -200,7 +202,7 @@ export default function AnnouncementsPage() {
             <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                  Total
+                  {t('totalAnnouncements' as TranslationKey)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -210,7 +212,7 @@ export default function AnnouncementsPage() {
             <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                  Published
+                  {t('publishedAnnouncements' as TranslationKey)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -220,7 +222,7 @@ export default function AnnouncementsPage() {
             <Card className="card-hover glass-strong">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                  Drafts
+                  {t('draftAnnouncements' as TranslationKey)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -231,7 +233,7 @@ export default function AnnouncementsPage() {
               <Card className="card-hover glass-strong">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                    My Announcements
+                    {t('myAnnouncements' as TranslationKey)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -247,7 +249,7 @@ export default function AnnouncementsPage() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg font-display text-gradient">
               <Filter className="h-5 w-5 text-indigo-600" />
-              Search & Filter
+              {t('searchAndFilter' as TranslationKey)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -256,7 +258,7 @@ export default function AnnouncementsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search announcements..."
+                    placeholder={t('searchAnnouncements' as TranslationKey)}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 font-sans input-modern"
@@ -270,9 +272,9 @@ export default function AnnouncementsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="all">{t('all' as TranslationKey)}</SelectItem>
+                      <SelectItem value="published">{t('published' as TranslationKey)}</SelectItem>
+                      <SelectItem value="draft">{t('draft' as TranslationKey)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -284,14 +286,14 @@ export default function AnnouncementsPage() {
         {/* Announcements List */}
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>
-            <CardTitle>Announcements</CardTitle>
+            <CardTitle>{t('announcements' as TranslationKey)}</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredAnnouncements.length === 0 ? (
               <div className="text-center py-12">
                 <Megaphone className="h-16 w-16 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-600 dark:text-slate-400 font-sans">
-                  {searchQuery ? 'No announcements found matching your search' : 'No announcements yet'}
+                  {searchQuery ? t('noAnnouncementsFound' as TranslationKey) : t('noAnnouncementsYet' as TranslationKey)}
                 </p>
               </div>
             ) : (
@@ -334,9 +336,9 @@ export default function AnnouncementsPage() {
                             <div className="flex items-center gap-2">
                               <Badge className={cn('font-semibold', ann.is_published ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400')}>
                                 {ann.is_published ? (
-                                  <><Eye className="h-3 w-3 mr-1" /> Published</>
+                                  <><Eye className="h-3 w-3 mr-1" /> {t('published' as TranslationKey)}</>
                                 ) : (
-                                  <><EyeOff className="h-3 w-3 mr-1" /> Draft</>
+                                  <><EyeOff className="h-3 w-3 mr-1" /> {t('draft' as TranslationKey)}</>
                                 )}
                               </Badge>
                             </div>
@@ -363,7 +365,7 @@ export default function AnnouncementsPage() {
                                   }}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Edit
+                                  {t('edit' as TranslationKey)}
                                 </Button>
                               )}
                               {canDelete && (
@@ -378,7 +380,7 @@ export default function AnnouncementsPage() {
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
+                                  {t('delete' as TranslationKey)}
                                 </Button>
                               )}
                             </div>
@@ -398,33 +400,33 @@ export default function AnnouncementsPage() {
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">
-                {selectedAnnouncement ? 'Edit Announcement' : 'Create Announcement'}
+                {selectedAnnouncement ? t('editAnnouncement' as TranslationKey) : t('createAnnouncement' as TranslationKey)}
               </DialogTitle>
               <DialogDescription className="font-sans">
-                {selectedAnnouncement ? 'Update announcement details' : 'Share important information with users'}
+                {selectedAnnouncement ? t('updateAnnouncementDetails' as TranslationKey) : t('shareImportantInformation' as TranslationKey)}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <label className="text-sm font-medium font-sans">Title</label>
+                <label className="text-sm font-medium font-sans">{t('title' as TranslationKey)}</label>
                 <Input 
                   value={editTitle} 
                   onChange={(e) => setEditTitle(e.target.value)} 
-                  placeholder="Enter announcement title"
+                  placeholder={t('enterAnnouncementTitle' as TranslationKey)}
                   className="mt-1 font-sans"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">Content</label>
+                <label className="text-sm font-medium font-sans">{t('body' as TranslationKey)}</label>
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="Enter announcement content..."
+                  placeholder={t('enterAnnouncementContent' as TranslationKey)}
                   className="mt-1 w-full min-h-[120px] px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 font-sans"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium font-sans">Target Roles</label>
+                <label className="text-sm font-medium font-sans">{t('targetRoles' as TranslationKey)}</label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {(['admin', 'teacher', 'student', 'supervisor'] as const).map(role => (
                     <Badge
@@ -456,13 +458,13 @@ export default function AnnouncementsPage() {
                     onChange={(e) => setEditIsPublished(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300"
                   />
-                  <label className="text-sm font-medium font-sans">Publish immediately</label>
+                  <label className="text-sm font-medium font-sans">{t('publishImmediately' as TranslationKey)}</label>
                 </div>
               )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                Cancel
+                {t('cancel' as TranslationKey)}
               </Button>
               <Button
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
@@ -483,26 +485,26 @@ export default function AnnouncementsPage() {
                         .update(payload)
                         .eq('id', selectedAnnouncement.id);
                       if (error) throw error;
-                      toast.success('Announcement updated');
+                      toast.success(t('announcementUpdated' as TranslationKey));
                     } else {
                       const { error } = await supabase
                         .from('announcements')
                         .insert([payload]);
                       if (error) throw error;
-                      toast.success('Announcement created');
+                      toast.success(t('announcementCreated' as TranslationKey));
                     }
                     await fetchAnnouncements();
                     setIsDialogOpen(false);
                     setSelectedAnnouncement(null);
                   } catch (error: any) {
                     console.error(error);
-                    toast.error('Failed to save announcement');
+                    toast.error(t('failedToSaveAnnouncement' as TranslationKey));
                   } finally {
                     setSavingEdit(false);
                   }
                 }}
               >
-                {savingEdit ? (selectedAnnouncement ? 'Saving...' : 'Creating...') : (selectedAnnouncement ? 'Save Changes' : 'Create Announcement')}
+                {savingEdit ? (selectedAnnouncement ? t('saving' as TranslationKey) : t('creating' as TranslationKey)) : (selectedAnnouncement ? t('saveChanges' as TranslationKey) : t('createAnnouncement' as TranslationKey))}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -512,9 +514,9 @@ export default function AnnouncementsPage() {
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Confirm Deletion</DialogTitle>
+              <DialogTitle className="text-2xl font-display">{t('confirmDeletion' as TranslationKey)}</DialogTitle>
               <DialogDescription className="font-sans">
-                Are you sure you want to delete this announcement? This action cannot be undone.
+                {t('deleteAnnouncementConfirm' as TranslationKey)}
               </DialogDescription>
             </DialogHeader>
             {selectedAnnouncement && (
@@ -527,7 +529,7 @@ export default function AnnouncementsPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="font-sans">
-                Cancel
+                {t('cancel' as TranslationKey)}
               </Button>
               <Button
                 variant="destructive"
@@ -539,18 +541,18 @@ export default function AnnouncementsPage() {
                       .delete()
                       .eq('id', selectedAnnouncement.id);
                     if (error) throw error;
-                    toast.success('Announcement deleted');
+                    toast.success(t('announcementDeleted' as TranslationKey));
                     await fetchAnnouncements();
                     setDeleteConfirmOpen(false);
                     setSelectedAnnouncement(null);
                   } catch (error: any) {
                     console.error(error);
-                    toast.error('Failed to delete announcement');
+                    toast.error(t('failedToDeleteAnnouncement' as TranslationKey));
                   }
                 }}
                 className="font-sans"
               >
-                Delete
+                {t('delete' as TranslationKey)}
               </Button>
             </DialogFooter>
           </DialogContent>

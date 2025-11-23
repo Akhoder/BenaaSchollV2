@@ -3,15 +3,16 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { usePagination } from '@/hooks/usePagination';
+import { useDebounce } from '@/hooks/useDebounce';
 import { filterBySearch } from '@/lib/tableUtils';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Select,
   SelectContent,
@@ -19,6 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Search,
   FileText,
@@ -37,6 +45,7 @@ import {
   AlertTriangle,
   Play,
   CheckCircle,
+  MoreVertical,
 } from 'lucide-react';
 import { 
   supabase, 
@@ -65,6 +74,7 @@ export default function QuizzesManagePage() {
   const { profile, loading: authLoading, isAuthorized } = useAuthCheck({
     requiredRole: ['admin', 'teacher', 'supervisor'],
   });
+  const { t } = useLanguage();
   const router = useRouter();
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -73,6 +83,7 @@ export default function QuizzesManagePage() {
   const [publishing, setPublishing] = useState<string | null>(null);
   const [notifying, setNotifying] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'subject' | 'lesson'>('all');
@@ -83,26 +94,37 @@ export default function QuizzesManagePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedQuizForAction, setSelectedQuizForAction] = useState<any | null>(null);
 
-  // Load quizzes and subjects
+  // Load quizzes and subjects in parallel for better performance
   const loadData = useCallback(async () => {
     if (!isAuthorized) return;
     
     try {
       setLoading(true);
-      const { data, error } = await fetchStaffQuizzes();
-      if (error) {
-        console.error('Error fetching quizzes:', error);
-        toast.error(getErrorMessage(error));
+      const [quizzesResult, subjectsResult] = await Promise.all([
+        fetchStaffQuizzes(),
+        supabase
+          .from('class_subjects')
+          .select('id, subject_name')
+          .order('subject_name')
+      ]);
+
+      if (quizzesResult.error) {
+        console.error('Error fetching quizzes:', quizzesResult.error);
+        toast.error(getErrorMessage(quizzesResult.error));
         return;
       }
-      setQuizzes(data || []);
-
-      // Load subjects for filter
-      const { data: subs } = await supabase
-        .from('class_subjects')
-        .select('id, subject_name')
-        .order('subject_name');
-      setSubjects(subs || []);
+      
+      const quizzesData = quizzesResult.data || [];
+      const subjectsData = subjectsResult.data || [];
+      
+      // Debug: Log to check data structure
+      if (quizzesData.length > 0) {
+        console.log('Sample quiz data:', quizzesData[0]);
+        console.log('Subjects data:', subjectsData);
+      }
+      
+      setQuizzes(quizzesData);
+      setSubjects(subjectsData);
     } catch (err) {
       console.error('Unexpected error:', err);
       toast.error(getErrorMessage(err));
@@ -117,13 +139,26 @@ export default function QuizzesManagePage() {
     }
   }, [isAuthorized, loadData]);
 
+  // Helper functions to avoid repetition
+  const isQuizActive = useCallback((quiz: any) => {
+    return !quiz.end_at || new Date(quiz.end_at) > new Date();
+  }, []);
+
+  const isSubjectQuiz = useCallback((quiz: any) => {
+    return quiz.subject_id && !quiz.lesson_id;
+  }, []);
+
+  const isLessonQuiz = useCallback((quiz: any) => {
+    return !!quiz.lesson_id;
+  }, []);
+
   // Filter quizzes
   const filteredQuizzes = useMemo(() => {
     let filtered = quizzes;
 
-    // Search filter
-    if (searchQuery.trim()) {
-      filtered = filterBySearch(filtered, searchQuery, (quiz) => [
+    // Search filter (using debounced query)
+    if (debouncedSearchQuery.trim()) {
+      filtered = filterBySearch(filtered, debouncedSearchQuery, (quiz) => [
         quiz.title || '',
         quiz.description || '',
         quiz.subject?.subject_name || '',
@@ -134,7 +169,7 @@ export default function QuizzesManagePage() {
     // Status filter
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter((q) => {
-        const active = !q.end_at || new Date(q.end_at) > new Date();
+        const active = isQuizActive(q);
         return statusFilter === 'OPEN' ? active : !active;
       });
     }
@@ -147,14 +182,14 @@ export default function QuizzesManagePage() {
     // Type filter (subject vs lesson)
     if (typeFilter !== 'all') {
       filtered = filtered.filter((q) => {
-        if (typeFilter === 'subject') return q.subject_id && !q.lesson_id;
-        if (typeFilter === 'lesson') return q.lesson_id;
+        if (typeFilter === 'subject') return isSubjectQuiz(q);
+        if (typeFilter === 'lesson') return isLessonQuiz(q);
         return true;
       });
     }
 
     return filtered;
-  }, [quizzes, searchQuery, statusFilter, subjectFilter, typeFilter]);
+  }, [quizzes, debouncedSearchQuery, statusFilter, subjectFilter, typeFilter, isQuizActive, isSubjectQuiz, isLessonQuiz]);
 
   // Pagination
   const {
@@ -208,15 +243,15 @@ export default function QuizzesManagePage() {
       a.download = `quiz_${quizId}_attempts.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('CSV exported successfully');
+      toast.success(t('csvExportedSuccessfully'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
       setDownloading(null);
     }
-  }, []);
+  }, [t]);
 
-  // Publish quiz
+  // Publish quiz - optimized with batch processing
   const publish = useCallback(async (quiz: any) => {
     try {
       setPublishing(quiz.id);
@@ -226,29 +261,42 @@ export default function QuizzesManagePage() {
           toast.error(getErrorMessage(error));
           return;
         }
+        
+        // Process notifications in batches for better performance
+        const batchSize = 10;
+        const studentsList = students || [];
         let successCount = 0;
         let errorCount = 0;
-        for (const s of (students || [])) {
-          const { error: notifError } = await createNotification({
-            recipient_id: s.id,
-            title: `New quiz: ${quiz.title}`,
-            body: quiz.description || 'A new quiz is available.',
-            link_url: `/dashboard/quizzes/${quiz.id}/take`,
+
+        for (let i = 0; i < studentsList.length; i += batchSize) {
+          const batch = studentsList.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map((s: any) =>
+              createNotification({
+                recipient_id: s.id,
+                title: t('newQuiz').replace('{title}', quiz.title),
+                body: quiz.description || t('newQuizAvailable'),
+                link_url: `/dashboard/quizzes/${quiz.id}/take`,
+              })
+            )
+          );
+
+          results.forEach((result) => {
+            if (result.status === 'fulfilled' && !result.value.error) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
           });
-          if (notifError) {
-            console.error('Error creating notification:', notifError);
-            errorCount++;
-          } else {
-            successCount++;
-          }
         }
+
         if (errorCount > 0) {
-          toast.error(`Failed to send ${errorCount} notification(s). You may not have permission to create notifications.`);
+          toast.error(t('failedToSendNotifications').replace('{count}', errorCount.toString()));
         } else {
-          toast.success(`Published notifications to ${successCount} students`);
+          toast.success(t('publishedNotificationsTo').replace('{count}', successCount.toString()));
         }
       } else {
-        toast.error('Quiz must be linked to a subject to publish');
+        toast.error(t('quizMustBeLinkedToSubjectToPublish'));
       }
     } catch (err) {
       console.error('Error publishing quiz:', err);
@@ -256,7 +304,7 @@ export default function QuizzesManagePage() {
     } finally {
       setPublishing(null);
     }
-  }, []);
+  }, [t]);
 
   // Close quiz
   const handleCloseQuizClick = useCallback((quiz: any) => {
@@ -273,14 +321,14 @@ export default function QuizzesManagePage() {
         toast.error(getErrorMessage(error));
         return;
       }
-      toast.success('Quiz closed successfully');
+      toast.success(t('quizClosedSuccessfully'));
       setCloseDialogOpen(false);
       setSelectedQuizForAction(null);
       await loadData();
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
-  }, [selectedQuizForAction, loadData]);
+  }, [selectedQuizForAction, loadData, t]);
 
   // Open quiz
   const handleOpenQuizClick = useCallback((quiz: any) => {
@@ -298,14 +346,14 @@ export default function QuizzesManagePage() {
         toast.error(getErrorMessage(error));
         return;
       }
-      toast.success('Quiz opened successfully');
+      toast.success(t('quizOpenedSuccessfully'));
       setOpenDialogOpen(false);
       setSelectedQuizForAction(null);
       await loadData();
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
-  }, [selectedQuizForAction, loadData]);
+  }, [selectedQuizForAction, loadData, t]);
 
   // Delete quiz
   const handleDeleteQuizClick = useCallback((quiz: any) => {
@@ -322,23 +370,23 @@ export default function QuizzesManagePage() {
         toast.error(getErrorMessage(error));
         return;
       }
-      toast.success('Quiz deleted successfully');
+      toast.success(t('quizDeletedSuccessfully'));
       setDeleteDialogOpen(false);
       setSelectedQuizForAction(null);
       await loadData();
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
-  }, [selectedQuizForAction, loadData]);
+  }, [selectedQuizForAction, loadData, t]);
 
-  // Notify results
+  // Notify results - optimized with batch processing
   const notifyResults = useCallback(async (quiz: any) => {
     try {
       setNotifying(quiz.id);
       const isAfterClose = quiz.show_results_policy === 'after_close';
       const ended = quiz.end_at && new Date(quiz.end_at) < new Date();
       if (!isAfterClose || !ended) {
-        toast.error('Results not available yet');
+        toast.error(t('resultsNotAvailableYet'));
         return;
       }
       if (quiz.subject_id) {
@@ -347,29 +395,42 @@ export default function QuizzesManagePage() {
           toast.error(getErrorMessage(error));
           return;
         }
+        
+        // Process notifications in batches for better performance
+        const batchSize = 10;
+        const studentsList = students || [];
         let successCount = 0;
         let errorCount = 0;
-        for (const s of (students || [])) {
-          const { error: notifError } = await createNotification({
-            recipient_id: s.id,
-            title: `Results available: ${quiz.title}`,
-            body: 'Quiz results are now available.',
-            link_url: `/dashboard/quizzes/${quiz.id}/result`,
+
+        for (let i = 0; i < studentsList.length; i += batchSize) {
+          const batch = studentsList.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map((s: any) =>
+              createNotification({
+                recipient_id: s.id,
+                title: t('resultsAvailable').replace('{title}', quiz.title),
+                body: t('quizResultsAvailable'),
+                link_url: `/dashboard/quizzes/${quiz.id}/result`,
+              })
+            )
+          );
+
+          results.forEach((result) => {
+            if (result.status === 'fulfilled' && !result.value.error) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
           });
-          if (notifError) {
-            console.error('Error creating notification:', notifError);
-            errorCount++;
-          } else {
-            successCount++;
-          }
         }
+
         if (errorCount > 0) {
-          toast.error(`Failed to send ${errorCount} notification(s). You may not have permission to create notifications.`);
+          toast.error(t('failedToSendNotifications').replace('{count}', errorCount.toString()));
         } else {
-          toast.success(`Results notifications sent to ${successCount} students`);
+          toast.success(t('resultsNotificationsSentTo').replace('{count}', successCount.toString()));
         }
       } else {
-        toast.error('Quiz must be linked to a subject');
+        toast.error(t('quizMustBeLinkedToSubject'));
       }
     } catch (err) {
       console.error('Error notifying results:', err);
@@ -377,13 +438,13 @@ export default function QuizzesManagePage() {
     } finally {
       setNotifying(null);
     }
-  }, []);
+  }, [t]);
 
   // Stats
   const stats = useMemo(() => {
-    const openCount = quizzes.filter((q) => !q.end_at || new Date(q.end_at) > new Date()).length;
-    const subjectCount = quizzes.filter((q) => q.subject_id && !q.lesson_id).length;
-    const lessonCount = quizzes.filter((q) => q.lesson_id).length;
+    const openCount = quizzes.filter(isQuizActive).length;
+    const subjectCount = quizzes.filter(isSubjectQuiz).length;
+    const lessonCount = quizzes.filter(isLessonQuiz).length;
     return {
       total: quizzes.length,
       open: openCount,
@@ -391,7 +452,7 @@ export default function QuizzesManagePage() {
       subject: subjectCount,
       lesson: lessonCount,
     };
-  }, [quizzes]);
+  }, [quizzes, isQuizActive, isSubjectQuiz, isLessonQuiz]);
 
   if (authLoading || loading) {
     return (
@@ -399,7 +460,7 @@ export default function QuizzesManagePage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400">Loading quizzes...</p>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">{t('loadingQuizzes')}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -415,65 +476,69 @@ export default function QuizzesManagePage() {
       <div className="space-y-6 animate-fade-in">
         <PageHeader
           icon={FileText}
-          title="Quizzes Management"
-          description="Manage and track all quizzes in the system"
-          gradient="from-purple-600 via-blue-600 to-purple-700"
+          title={t('quizzesManagement')}
+          description={t('manageAndTrackQuizzes')}
         >
           <Button
             onClick={() => router.push('/dashboard/quizzes/new')}
             className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Create Quiz
+            {t('createQuiz')}
           </Button>
         </PageHeader>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
-          <Card className="card-interactive">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                Total Quizzes
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                {t('totalQuizzes')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display">{stats.total}</div>
+              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card className="card-interactive">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                Open
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                {t('open')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-success">{stats.open}</div>
+              <div className="text-3xl font-bold font-display text-emerald-600">{stats.open}</div>
             </CardContent>
           </Card>
-          <Card className="card-interactive">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                Closed
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <X className="h-4 w-4" />
+                {t('closed')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-slate-600">{stats.closed}</div>
             </CardContent>
           </Card>
-          <Card className="card-interactive">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                Subject Quizzes
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                {t('subjectQuizzes')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-info">{stats.subject}</div>
+              <div className="text-3xl font-bold font-display text-blue-600">{stats.subject}</div>
             </CardContent>
           </Card>
-          <Card className="card-interactive">
+          <Card className="card-hover glass-strong">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                Lesson Quizzes
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                {t('lessonQuizzes')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -483,19 +548,19 @@ export default function QuizzesManagePage() {
         </div>
 
         {/* Filters */}
-        <Card className="card-interactive">
+        <Card className="card-hover glass-strong">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-gradient">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Search className="h-5 w-5 text-muted-foreground" />
-              Filters & Search
+              {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
-              <div className="relative">
+              <div className="relative md:col-span-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
-                  placeholder="Search quizzes..."
+                  placeholder={t('searchQuizzes')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 input-modern"
@@ -503,20 +568,20 @@ export default function QuizzesManagePage() {
               </div>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Status</SelectItem>
-                  <SelectItem value="OPEN">Open</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
+                  <SelectItem value="ALL">{t('allStatus')}</SelectItem>
+                  <SelectItem value="OPEN">{t('open')}</SelectItem>
+                  <SelectItem value="CLOSED">{t('closed')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={subjectFilter} onValueChange={setSubjectFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Subject" />
+                  <SelectValue placeholder={t('subjectLabel')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Subjects</SelectItem>
+                  <SelectItem value="all">{t('allSubjects')}</SelectItem>
                   {subjects.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.subject_name}</SelectItem>
                   ))}
@@ -524,12 +589,12 @@ export default function QuizzesManagePage() {
               </Select>
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Type" />
+                  <SelectValue placeholder={t('type')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="subject">Subject Only</SelectItem>
-                  <SelectItem value="lesson">Lesson Only</SelectItem>
+                  <SelectItem value="all">{t('allTypes')}</SelectItem>
+                  <SelectItem value="subject">{t('subjectOnly')}</SelectItem>
+                  <SelectItem value="lesson">{t('lessonOnly')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -537,11 +602,21 @@ export default function QuizzesManagePage() {
         </Card>
 
         {/* Quizzes List */}
-        <Card className="card-interactive animate-fade-in-up delay-200">
+        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
           <CardHeader>
-            <CardTitle className="font-display text-gradient">
-              Quizzes ({filteredQuizzes.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-display">
+                {t('quizzes')} ({filteredQuizzes.length})
+              </CardTitle>
+              {filteredQuizzes.length > 0 && (
+                <Badge variant="outline" className="text-sm">
+                  {t('showingQuizzes')
+                    .replace('{start}', (startIndex + 1).toString())
+                    .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
+                    .replace('{total}', filteredQuizzes.length.toString())}
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {filteredQuizzes.length === 0 ? (
@@ -549,187 +624,340 @@ export default function QuizzesManagePage() {
                 <div className="relative inline-block mb-4">
                   <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Quizzes Found</h3>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noQuizzesFound')}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                  {searchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'No quizzes have been created yet'}
+                  {debouncedSearchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
+                    ? t('tryAdjustingFilters')
+                    : t('noQuizzesCreatedYet')}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {paginatedQuizzes.map((quiz: any) => {
-                  const active = !quiz.end_at || new Date(quiz.end_at) > new Date();
-                  const isSubjectQuiz = quiz.subject_id && !quiz.lesson_id;
-                  const isLessonQuiz = quiz.lesson_id;
+                  const active = isQuizActive(quiz);
+                  const isSubQuiz = isSubjectQuiz(quiz);
+                  const isLessQuiz = isLessonQuiz(quiz);
 
                   return (
-                    <div
+                    <Card
                       key={quiz.id}
-                      className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow"
+                      className={`card-hover glass-strong border-2 transition-all duration-300 ${
+                        isLessQuiz
+                          ? 'border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600'
+                          : isSubQuiz
+                          ? 'border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600'
+                          : active
+                          ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{quiz.title}</h3>
-                            <Badge
-                              className={
-                                active
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                                  : 'bg-slate-200 dark:bg-slate-700'
-                              }
-                            >
-                              {active ? 'Open' : 'Closed'}
-                            </Badge>
-                            {isSubjectQuiz && (
-                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                <BookOpen className="h-3 w-3 mr-1" />
-                                Subject
-                              </Badge>
-                            )}
-                            {isLessonQuiz && (
-                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                                <GraduationCap className="h-3 w-3 mr-1" />
-                                Lesson
-                              </Badge>
-                            )}
-                          </div>
-
-                          {quiz.description && (
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                              {quiz.description}
-                            </p>
-                          )}
-
-                          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                            {quiz.subject && (
-                              <div className="flex items-center gap-2">
-                                <BookOpen className="h-4 w-4 text-slate-400" />
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  <strong>Subject:</strong> {quiz.subject.subject_name}
-                                </span>
+                      <CardContent className="p-0">
+                        {/* Subject & Lesson Info Section */}
+                        {(quiz.subject_id || quiz.lesson_id || quiz.lesson?.subject_id) && (
+                          <div className={`px-6 pt-4 pb-3 border-b ${
+                            isLessQuiz
+                              ? 'bg-purple-50/30 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'
+                              : isSubQuiz
+                              ? 'bg-blue-50/30 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                              : 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700'
+                          }`}>
+                            <div className="flex items-center gap-4 flex-wrap">
+                              {(quiz.subject_id || quiz.lesson?.subject_id) && (
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                                    <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{t('subjectLabel')}</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                      {(() => {
+                                        // Try to get subject name from multiple sources
+                                        // 1. Direct subject relation
+                                        if (quiz.subject?.subject_name) {
+                                          return quiz.subject.subject_name;
+                                        }
+                                        // 2. Subject from lesson
+                                        if (quiz.lesson?.subject?.subject_name) {
+                                          return quiz.lesson.subject.subject_name;
+                                        }
+                                        // 3. Find by subject_id directly
+                                        if (quiz.subject_id) {
+                                          const foundSubject = subjects.find(s => s.id === quiz.subject_id);
+                                          if (foundSubject?.subject_name) {
+                                            return foundSubject.subject_name;
+                                          }
+                                        }
+                                        // 4. Find by lesson's subject_id
+                                        if (quiz.lesson?.subject_id) {
+                                          const foundSubject = subjects.find(s => s.id === quiz.lesson.subject_id);
+                                          if (foundSubject?.subject_name) {
+                                            return foundSubject.subject_name;
+                                          }
+                                        }
+                                        return '—';
+                                      })()}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              {quiz.lesson && (
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30">
+                                    <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">{t('lessonLabel')}</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                      {quiz.lesson.title}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="ml-auto">
+                                {isLessQuiz && (
+                                  <Badge className="bg-purple-500 text-white border-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700 font-medium">
+                                    <GraduationCap className="h-3 w-3 mr-1.5" />
+                                    {t('lessonQuizzes')}
+                                  </Badge>
+                                )}
+                                {isSubQuiz && (
+                                  <Badge className="bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-700 font-medium">
+                                    <BookOpen className="h-3 w-3 mr-1.5" />
+                                    {t('subjectQuizzes')}
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                            {quiz.lesson && (
-                              <div className="flex items-center gap-2">
-                                <GraduationCap className="h-4 w-4 text-slate-400" />
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  <strong>Lesson:</strong> {quiz.lesson.title}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-slate-400" />
-                              <span className="text-slate-600 dark:text-slate-400">
-                                <strong>Attempts:</strong> {quiz.attempts_allowed || 1}
-                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-slate-400" />
-                              <span className="text-slate-600 dark:text-slate-400">
-                                <strong>Created:</strong> {formatDateTime(quiz.created_at)}
-                              </span>
+                          </div>
+                        )}
+
+                        {/* Header Section */}
+                        <div className={`relative p-6 pb-4 ${
+                          active
+                            ? 'bg-slate-50/50 dark:bg-slate-900/30'
+                            : 'bg-slate-50/30 dark:bg-slate-900/20'
+                        }`}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+                                  active
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                    : 'bg-slate-200 dark:bg-slate-700'
+                                }`}>
+                                  <FileText className={`h-5 w-5 ${
+                                    active
+                                      ? 'text-emerald-600 dark:text-emerald-400'
+                                      : 'text-slate-500 dark:text-slate-400'
+                                  }`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-xl text-foreground mb-2 leading-tight">
+                                    {quiz.title}
+                                  </h3>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge
+                                      variant={active ? 'default' : 'secondary'}
+                                      className={`font-medium ${
+                                        active
+                                          ? 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700'
+                                          : 'bg-slate-500 text-white border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+                                      }`}
+                                    >
+                                      {active ? (
+                                        <>
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          {t('open')}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <X className="h-3 w-3 mr-1" />
+                                          {t('closed')}
+                                        </>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {quiz.description && (
+                                <p className="text-sm text-slate-700 dark:text-slate-300 mb-0 line-clamp-2 leading-relaxed pl-14">
+                                  {quiz.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  {t('edit')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}>
+                                  <Award className="h-4 w-4 mr-2" />
+                                  {t('gradeAction')}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {active ? (
+                                  <DropdownMenuItem onClick={() => handleCloseQuizClick(quiz)}>
+                                    <X className="h-4 w-4 mr-2" />
+                                    {t('close')}
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem onClick={() => handleOpenQuizClick(quiz)}>
+                                    <Play className="h-4 w-4 mr-2" />
+                                    {t('openAction')}
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                  onClick={() => exportCSV(quiz.id)}
+                                  disabled={downloading === quiz.id}
+                                >
+                                  {downloading === quiz.id ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Download className="h-4 w-4 mr-2" />
+                                  )}
+                                  {t('export')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => publish(quiz)}
+                                  disabled={publishing === quiz.id}
+                                >
+                                  {publishing === quiz.id ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4 mr-2" />
+                                  )}
+                                  {t('publish')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => notifyResults(quiz)}
+                                  disabled={notifying === quiz.id}
+                                >
+                                  {notifying === quiz.id ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4 mr-2" />
+                                  )}
+                                  {t('notify')}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteQuizClick(quiz)}
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t('delete')}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-6 pt-4">
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                              <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                                <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('attempts')}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  {quiz.attempts_allowed || 1}
+                                </p>
+                              </div>
+                            </div>
+                            {quiz.time_limit_minutes && (
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30">
+                                <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
+                                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-0.5">{t('timeLimit')}</p>
+                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {quiz.time_limit_minutes} {t('minutes')}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                              <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                                <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('created')}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  {formatDateTime(quiz.created_at)}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
                           {(quiz.start_at || quiz.end_at) && (
-                            <div className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                              <Calendar className="h-4 w-4" />
-                              <span>
-                                {quiz.start_at ? formatDateTime(quiz.start_at) : '—'} →{' '}
-                                {quiz.end_at ? formatDateTime(quiz.end_at) : '—'}
-                              </span>
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30 mb-4">
+                              <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('timeRange')}</p>
+                                <p className="text-sm text-slate-900 dark:text-slate-100">
+                                  {quiz.start_at ? formatDateTime(quiz.start_at) : '—'} →{' '}
+                                  {quiz.end_at ? formatDateTime(quiz.end_at) : '—'}
+                                </p>
+                              </div>
                             </div>
                           )}
-                        </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}
-                          >
-                            <Award className="h-4 w-4 mr-1" />
-                            Grade
-                          </Button>
-                          {active ? (
+                          {/* Actions Bar */}
+                          <div className="flex items-center gap-2 pt-4 border-t border-slate-200 dark:border-slate-800 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleCloseQuizClick(quiz)}
+                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}
+                              className="flex-1 sm:flex-initial"
                             >
-                              <X className="h-4 w-4 mr-1" />
-                              Close
+                              <Edit className="h-4 w-4 mr-1.5" />
+                              {t('edit')}
                             </Button>
-                          ) : (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleOpenQuizClick(quiz)}
-                              className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                              onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}
+                              className="flex-1 sm:flex-initial"
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              Open
+                              <Award className="h-4 w-4 mr-1.5" />
+                              {t('gradeAction')}
                             </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => exportCSV(quiz.id)}
-                            disabled={downloading === quiz.id}
-                          >
-                            {downloading === quiz.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            {active ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCloseQuizClick(quiz)}
+                                className="flex-1 sm:flex-initial"
+                              >
+                                <X className="h-4 w-4 mr-1.5" />
+                                {t('close')}
+                              </Button>
                             ) : (
-                              <Download className="h-4 w-4 mr-1" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenQuizClick(quiz)}
+                                className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 flex-1 sm:flex-initial"
+                              >
+                                <Play className="h-4 w-4 mr-1.5" />
+                                {t('openAction')}
+                              </Button>
                             )}
-                            Export
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => publish(quiz)}
-                            disabled={publishing === quiz.id}
-                          >
-                            {publishing === quiz.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                              <Send className="h-4 w-4 mr-1" />
-                            )}
-                            Publish
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => notifyResults(quiz)}
-                            disabled={notifying === quiz.id}
-                          >
-                            {notifying === quiz.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                              <Send className="h-4 w-4 mr-1" />
-                            )}
-                            Notify
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteQuizClick(quiz)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -740,8 +968,10 @@ export default function QuizzesManagePage() {
               <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredQuizzes.length)} of{' '}
-                    {filteredQuizzes.length} quizzes
+                    {t('showingQuizzes')
+                      .replace('{start}', (startIndex + 1).toString())
+                      .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
+                      .replace('{total}', filteredQuizzes.length.toString())}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -750,7 +980,7 @@ export default function QuizzesManagePage() {
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                     >
-                      Previous
+                      {t('previous')}
                     </Button>
                     <Button
                       variant="outline"
@@ -758,7 +988,7 @@ export default function QuizzesManagePage() {
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                     >
-                      Next
+                      {t('next')}
                     </Button>
                   </div>
                 </div>
@@ -773,10 +1003,10 @@ export default function QuizzesManagePage() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
-                Close Quiz
+                {t('closeQuiz')}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to close this quiz? The end time will be set to the current time.
+                {t('closeQuizConfirm')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {selectedQuizForAction && (
@@ -784,20 +1014,20 @@ export default function QuizzesManagePage() {
                 <p className="font-semibold text-sm">{selectedQuizForAction.title}</p>
                 {selectedQuizForAction.subject && (
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Subject: {selectedQuizForAction.subject.subject_name}
+                    {t('subjectLabel')}: {selectedQuizForAction.subject.subject_name}
                   </p>
                 )}
                 {selectedQuizForAction.lesson && (
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Lesson: {selectedQuizForAction.lesson.title}
+                    {t('lessonLabel')}: {selectedQuizForAction.lesson.title}
                   </p>
                 )}
               </div>
             )}
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={closeNow} className="bg-amber-600 hover:bg-amber-700">
-                Close Quiz
+                {t('closeQuiz')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -809,10 +1039,10 @@ export default function QuizzesManagePage() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-emerald-600" />
-                Open Quiz
+                {t('openQuiz')}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to reopen this quiz? The end time will be removed, making the quiz available again.
+                {t('openQuizConfirm')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {selectedQuizForAction && (
@@ -820,25 +1050,25 @@ export default function QuizzesManagePage() {
                 <p className="font-semibold text-sm text-emerald-900 dark:text-emerald-200">{selectedQuizForAction.title}</p>
                 {selectedQuizForAction.subject && (
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
-                    Subject: {selectedQuizForAction.subject.subject_name}
+                    {t('subjectLabel')}: {selectedQuizForAction.subject.subject_name}
                   </p>
                 )}
                 {selectedQuizForAction.lesson && (
                   <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                    Lesson: {selectedQuizForAction.lesson.title}
+                    {t('lessonLabel')}: {selectedQuizForAction.lesson.title}
                   </p>
                 )}
                 {selectedQuizForAction.end_at && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                    Current end time: {formatDateTime(selectedQuizForAction.end_at)}
+                    {t('currentEndTime').replace('{time}', formatDateTime(selectedQuizForAction.end_at))}
                   </p>
                 )}
               </div>
             )}
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={openNow} className="bg-emerald-600 hover:bg-emerald-700">
-                Open Quiz
+                {t('openQuiz')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -850,10 +1080,10 @@ export default function QuizzesManagePage() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
-                Delete Quiz
+                {t('deleteQuiz')}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this quiz? This action cannot be undone. All quiz data, questions, options, and attempts will be permanently deleted.
+                {t('deleteQuizConfirm')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {selectedQuizForAction && (
@@ -861,20 +1091,20 @@ export default function QuizzesManagePage() {
                 <p className="font-semibold text-sm text-red-900 dark:text-red-200">{selectedQuizForAction.title}</p>
                 {selectedQuizForAction.subject && (
                   <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                    Subject: {selectedQuizForAction.subject.subject_name}
+                    {t('subjectLabel')}: {selectedQuizForAction.subject.subject_name}
                   </p>
                 )}
                 {selectedQuizForAction.lesson && (
                   <p className="text-xs text-red-700 dark:text-red-300">
-                    Lesson: {selectedQuizForAction.lesson.title}
+                    {t('lessonLabel')}: {selectedQuizForAction.lesson.title}
                   </p>
                 )}
               </div>
             )}
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setSelectedQuizForAction(null)}>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={removeQuiz} className="bg-red-600 hover:bg-red-700">
-                Delete Permanently
+                {t('deletePermanently')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

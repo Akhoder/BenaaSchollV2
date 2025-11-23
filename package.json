@@ -2,6 +2,10 @@
   "name": "nextjs",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev -p 3005",
     "dev:alt": "next dev -p 3006",
@@ -9,8 +13,10 @@
     "dev:auto": "start-dev.bat",
     "build": "next build",
     "start": "next start",
+    "start:port": "next start -p",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "add-teachers": "tsx scripts/add-teachers.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

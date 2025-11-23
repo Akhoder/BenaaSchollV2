@@ -9,3 +9,5 @@ export async function generateStaticParams() {
 export default function ClassViewPage() {
   return <ClassViewClient />;
 }
+
+      

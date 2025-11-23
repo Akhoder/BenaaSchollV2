@@ -8,11 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  Sparkles, LogIn, Mail, Lock, Eye, EyeOff, CheckCircle
+  Sparkles, LogIn, Mail, Lock, Eye, EyeOff, CheckCircle, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { validateEmail, validatePassword, getFieldError } from '@/lib/formValidation';
+import { SecurityIndicator, SecurityBanner } from '@/components/SecurityIndicators';
+import { OptimizedImage } from '@/components/OptimizedImage';
+import { cn } from '@/lib/utils';
 
 export default function UltraModernLoginPage() {
   const router = useRouter();
@@ -23,19 +27,46 @@ export default function UltraModernLoginPage() {
     email: '',
     password: '',
   });
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Real-time validation
+  const emailError = getFieldError(formData.email, touched.email, validateEmail);
+  const passwordError = getFieldError(formData.password, touched.password, validatePassword);
+
+  const handleFieldChange = (field: 'email' | 'password', value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Mark as touched when user starts typing
+    if (!touched[field]) {
+      setTouched(prev => ({ ...prev, [field]: true }));
+    }
+  };
+
+  const handleBlur = (field: 'email' | 'password') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.email.trim()) {
-      toast.error('البريد الإلكتروني مطلوب');
+    // Mark all fields as touched
+    setTouched({ email: true, password: true });
+
+    // Validate
+    const emailValidation = validateEmail(formData.email);
+    const passwordValidation = validatePassword(formData.password);
+
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'البريد الإلكتروني مطلوب');
       return;
     }
 
-    if (!formData.password) {
-      toast.error('كلمة المرور مطلوبة');
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.error || 'كلمة المرور مطلوبة');
       return;
     }
 
@@ -84,9 +115,12 @@ export default function UltraModernLoginPage() {
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-3xl blur-2xl opacity-40" />
                   <div className="relative glass-card p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
-                    <img 
-                      src="/icons/logo.jpg" 
-                      alt="مدرسة البناء العلمي" 
+                    <OptimizedImage
+                      src="/icons/logo.jpg"
+                      alt="مدرسة البناء العلمي"
+                      width={64}
+                      height={64}
+                      priority 
                       className="w-32 h-32 object-contain"
                     />
                   </div>
@@ -100,7 +134,16 @@ export default function UltraModernLoginPage() {
               <p className="text-lg text-muted-foreground">
                 سجل دخولك للمتابعة
               </p>
+              
+              {/* Security Indicator */}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <SecurityIndicator variant="https" />
+                <SecurityIndicator variant="secure" />
+              </div>
             </div>
+
+            {/* Security Banner */}
+            <SecurityBanner />
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -110,18 +153,33 @@ export default function UltraModernLoginPage() {
                   البريد الإلكتروني
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Mail className={cn(
+                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                    emailError ? "text-error" : "text-muted-foreground"
+                  )} />
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="input-ultra pr-12"
+                    onChange={(e) => handleFieldChange('email', e.target.value)}
+                    onBlur={() => handleBlur('email')}
+                    className={cn(
+                      "input-ultra pr-12",
+                      emailError && "border-error focus:border-error focus:ring-error/20"
+                    )}
                     placeholder="example@email.com"
                     disabled={loading}
                     dir="ltr"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "email-error" : undefined}
                   />
                 </div>
+                {emailError && (
+                  <div id="email-error" className="flex items-center gap-2 text-sm text-error animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{emailError}</span>
+                  </div>
+                )}
               </div>
 
               {/* Password */}
@@ -130,20 +188,30 @@ export default function UltraModernLoginPage() {
                   كلمة المرور
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className={cn(
+                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                    passwordError ? "text-error" : "text-muted-foreground"
+                  )} />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-ultra pr-12 pl-12"
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    onBlur={() => handleBlur('password')}
+                    className={cn(
+                      "input-ultra pr-12 pl-12",
+                      passwordError && "border-error focus:border-error focus:ring-error/20"
+                    )}
                     placeholder="••••••••"
                     disabled={loading}
+                    aria-invalid={!!passwordError}
+                    aria-describedby={passwordError ? "password-error" : undefined}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -152,6 +220,12 @@ export default function UltraModernLoginPage() {
                     )}
                   </button>
                 </div>
+                {passwordError && (
+                  <div id="password-error" className="flex items-center gap-2 text-sm text-error animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
