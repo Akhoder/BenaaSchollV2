@@ -8,7 +8,7 @@ import type { TranslationKey } from '@/lib/translations';
 import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { DashboardStatsSkeleton, CardGridSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { LoadingButton } from '@/components/ProgressIndicator';
@@ -399,11 +399,12 @@ export default function ClassesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-fade-in">
-          <PageHeaderSkeleton />
-          <DashboardStatsSkeleton />
-          <CardGridSkeleton count={3} />
-        </div>
+        <PageLoading
+          text={t('loadingClasses')}
+          statsCount={4}
+          contentType={viewMode === 'grid' ? 'grid' : 'table'}
+          contentRows={5}
+        />
       </DashboardLayout>
     );
   }
@@ -417,39 +418,40 @@ export default function ClassesPage() {
     return (
       <DashboardLayout>
         <div className="space-y-6 animate-fade-in">
-          <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-lg">
+          {/* ✨ Enhanced Header - Islamic Design */}
+          <div className="bg-gradient-to-l from-primary to-accent rounded-2xl p-6 text-white shadow-xl shadow-primary/20">
             <h1 className="text-3xl font-display font-bold tracking-tight">
               {t('classManagement')}
             </h1>
-            <p className="text-blue-100 mt-1 text-lg font-medium font-sans">
+            <p className="text-white/80 mt-1 text-lg font-medium font-sans">
               {t('manageClassesAndEnrollments' as TranslationKey)}
             </p>
           </div>
 
-          <Card className="border-slate-200 dark:border-slate-800">
+          <Card className="glass-card border-primary/10">
             <CardContent className="p-8 text-center">
               <div className="mb-6">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <School className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                <h3 className="text-xl font-semibold text-foreground mb-2">
                   {t('databaseSetupRequired')}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">
+                <p className="text-muted-foreground mb-6">
                   {t('classesTableNeedsToBeCreated')}
                 </p>
               </div>
 
-              <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 text-left mb-6">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">
+              <div className="bg-primary/5 dark:bg-primary/10 rounded-xl p-6 text-right mb-6 border border-primary/10">
+                <h4 className="font-semibold text-foreground mb-4">
                   {t('stepsToFix' as TranslationKey)}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
                   <li>{t('openSupabaseDashboard' as TranslationKey)}</li>
                   <li>{t('goToSqlEditor' as TranslationKey)}</li>
                   <li>
                     {t('copyMigrationCodeFrom' as TranslationKey)} 
-                    <code className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">supabase/migrations/20251028030000_disable_rls_temporary.sql</code>
+                    <code className="bg-primary/10 dark:bg-primary/20 px-2 py-1 rounded text-primary">supabase/migrations/20251028030000_disable_rls_temporary.sql</code>
                   </li>
                   <li>{t('pasteAndRunSql' as TranslationKey)}</li>
                   <li>{t('refreshThisPage' as TranslationKey)}</li>
@@ -459,7 +461,7 @@ export default function ClassesPage() {
               <div className="flex gap-4 justify-center">
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-accent-dark text-white shadow-lg"
                 >
                   {t('refreshPage' as TranslationKey)}
                 </Button>
@@ -545,15 +547,15 @@ export default function ClassesPage() {
           )}
         </PageHeader>
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-          <Card className="card-interactive">
+          <Card className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 {t('totalClasses')}
               </CardTitle>
-              <div className="p-2 bg-primary rounded-lg">
-                <School className="h-4 w-4 text-white" />
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <School className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
@@ -562,13 +564,13 @@ export default function ClassesPage() {
             </CardContent>
           </Card>
 
-          <Card className="card-interactive">
+          <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 {t('activeClasses')}
               </CardTitle>
-              <div className="p-2 bg-success rounded-lg">
-                <Calendar className="h-4 w-4 text-white" />
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg">
+                <Calendar className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
@@ -577,65 +579,70 @@ export default function ClassesPage() {
             </CardContent>
           </Card>
 
-          <Card className="card-interactive">
+          <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 {t('completed')}
               </CardTitle>
-              <div className="p-2 bg-amber-500 rounded-lg">
-                <BookOpen className="h-4 w-4 text-white" />
+              <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20">
+                <BookOpen className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-amber-600">{stats.completed}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('finishedClasses')}</p>
+              <div className="text-3xl font-bold font-display text-secondary">{stats.completed}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('finishedClasses')}</p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover glass-strong">
+          <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
+              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                 {t('totalStudents')}
               </CardTitle>
-              <div className="p-2 bg-purple-600 rounded-lg">
-                <Users className="h-4 w-4 text-white" />
+              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg">
+                <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-purple-600">{stats.totalStudents}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('enrolledStudents')}</p>
+              <div className="text-3xl font-bold font-display text-accent">{stats.totalStudents}</div>
+              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('enrolledStudents')}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Search */}
-        <Card className="card-elegant">
+        {/* ✨ Search - Islamic Design */}
+        <Card className="glass-card border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-slate-500" />
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Filter className="h-4 w-4 text-primary" />
+              </div>
               <CardTitle className="font-display text-foreground">{t('searchClasses')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('searchByClassNameCodeOrTeacher')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 font-sans input-modern"
+                className="pl-10 rtl:pl-3 rtl:pr-10 h-11 font-sans input-modern border-primary/20 focus:border-primary"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Classes List */}
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
+        {/* ✨ Classes List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-display">
-                <School className="h-5 w-5 text-blue-600" />
-                {t('classes')} ({filteredClasses.length})
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <School className="h-5 w-5 text-primary" />
+                </div>
+                {t('classes')} 
+                <Badge variant="gold" className="mr-2">{filteredClasses.length}</Badge>
               </CardTitle>
             </div>
           </CardHeader>
@@ -650,16 +657,16 @@ export default function ClassesPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold font-sans">{t('class')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('code')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('level')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('students')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('duration')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('status')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('published')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                      <TableHead className="font-semibold font-sans text-foreground">{t('class')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('code')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('level')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('students')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('duration')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('status')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('published')}</TableHead>
                       {profile?.role === 'admin' && (
-                        <TableHead className="text-right font-semibold font-sans">{t('actions')}</TableHead>
+                        <TableHead className="text-right font-semibold font-sans text-foreground">{t('actions')}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -667,49 +674,49 @@ export default function ClassesPage() {
                     {paginatedClasses.map((cls) => (
                       <TableRow
                         key={cls.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                        className="hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors border-b border-border/50"
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-blue-500/20">
+                            <Avatar className="h-10 w-10 ring-2 ring-secondary/30 shadow-sm">
                               <AvatarImage src={cls.image_url} />
-                              <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
                                 {(cls.class_name || '?').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-semibold font-sans">{cls.class_name}</div>
-                              <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                              <div className="font-semibold font-sans text-foreground">{cls.class_name}</div>
+                              <div className="text-sm text-muted-foreground font-sans">
                                 {`${t('level' as TranslationKey)} ${cls.level}`}
                               </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
                             {cls.class_code}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-blue-600 text-white font-semibold">
+                          <Badge variant="islamic" className="font-semibold">
                             {`${t('level' as TranslationKey)} ${cls.level}`}
                           </Badge>
                         </TableCell>
                         
                         <TableCell>
-                          <div className="flex items-center gap-2 text-sm font-sans">
-                            <Users className="h-4 w-4 text-slate-400" />
+                          <div className="flex items-center gap-2 text-sm font-sans text-foreground">
+                            <Users className="h-4 w-4 text-accent" />
                             {cls.student_count || 0}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm font-sans">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3 text-slate-400" />
+                            <div className="flex items-center gap-1 text-foreground">
+                              <Calendar className="h-3 w-3 text-secondary" />
                               {new Date(cls.start_date).toLocaleDateString(dateLocale)}
                             </div>
                             {cls.end_date && (
-                              <div className="text-xs text-slate-500">
+                              <div className="text-xs text-muted-foreground">
                                 {t('to')} {new Date(cls.end_date).toLocaleDateString(dateLocale)}
                               </div>
                             )}
@@ -717,13 +724,7 @@ export default function ClassesPage() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={cls.end_date && new Date(cls.end_date) <= new Date() ? 'secondary' : 'default'}
-                            className={cn(
-                              'font-semibold',
-                              cls.end_date && new Date(cls.end_date) <= new Date()
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                            )}
+                            variant={cls.end_date && new Date(cls.end_date) <= new Date() ? 'gold' : 'success'}
                           >
                             {cls.end_date && new Date(cls.end_date) <= new Date() ? t('completed') : t('active')}
                           </Badge>
@@ -801,9 +802,9 @@ export default function ClassesPage() {
           
           {/* ✅ PAGINATION: Add pagination UI */}
           {filteredClasses.length > itemsPerPage && (
-            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+            <div className="border-t border-primary/10 p-4 bg-gradient-to-l from-primary/5 to-transparent">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+                <div className="text-sm text-muted-foreground">
                   {t('showing')} {startIndex + 1} {t('to')} {Math.min(endIndex, filteredClasses.length || 0)} {t('of')} {filteredClasses.length || 0} {t('classesCount')}
                 </div>
                 <Pagination>
@@ -870,14 +871,17 @@ export default function ClassesPage() {
           )}
         </Card>
 
-        {/* Create/Edit Class Dialog */}
+        {/* ✨ Create/Edit Class Dialog - Islamic Design */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-primary/20">
+            <DialogHeader className="border-b border-primary/10 pb-4">
+              <DialogTitle className="text-2xl font-display text-primary flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <School className="h-5 w-5 text-white" />
+                </div>
                 {isViewing ? t('viewClass') : selectedClass ? t('editClass') : t('createNewClass')}
               </DialogTitle>
-              <DialogDescription className="font-sans">
+              <DialogDescription className="font-sans text-muted-foreground">
                 {isViewing
                   ? t('viewClassInformation')
                   : selectedClass
@@ -888,12 +892,12 @@ export default function ClassesPage() {
             
             <div className="space-y-6 py-4">
               {/* Class Code (Auto Generated) */}
-              <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
-                <Label className="text-sm font-medium font-sans">{t('classCodeAutoGenerated')}</Label>
-                <div className="mt-2 p-3 bg-white dark:bg-slate-800 border rounded-md font-mono text-sm">
+              <div className="bg-gradient-to-l from-primary/5 to-secondary/5 p-4 rounded-xl border border-primary/10">
+                <Label className="text-sm font-medium font-sans text-foreground">{t('classCodeAutoGenerated')}</Label>
+                <div className="mt-2 p-3 bg-card border border-primary/20 rounded-lg font-mono text-sm text-primary">
                   {selectedClass ? selectedClass.class_code : generateClassCode()}
                 </div>
-                <p className="text-xs text-slate-500 mt-1 font-sans">
+                <p className="text-xs text-muted-foreground mt-1 font-sans">
                   {t('classCodeAutoGeneratedDesc')}
                 </p>
               </div>

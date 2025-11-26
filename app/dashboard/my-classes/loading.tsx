@@ -1,15 +1,17 @@
 'use client';
 
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { PageHeaderSkeleton, CardGridSkeleton } from '@/components/SkeletonLoaders';
+import { PageLoading } from '@/components/LoadingSpinner';
 
 export default function MyClassesLoading() {
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
-        <PageHeaderSkeleton />
-        <CardGridSkeleton count={4} />
-      </div>
+      <PageLoading
+        text="جاري تحميل فصولي..."
+        showStats={false}
+        contentType="grid"
+        contentRows={4}
+      />
     </DashboardLayout>
   );
 }

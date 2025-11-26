@@ -26,12 +26,11 @@ import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatCard } from '@/components/StatCard';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
-import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { DashboardStatsSkeleton, CardGridSkeleton, ListSkeleton } from '@/components/SkeletonLoaders';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { 
   Users, School, BookOpen, Calendar, TrendingUp, Clock, Award, 
@@ -2354,10 +2353,13 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-fade-in">
-          <DashboardStatsSkeleton />
-          <CardGridSkeleton count={3} />
-        </div>
+        <PageLoading
+          text={t('loadingDashboard')}
+          showStats={true}
+          statsCount={4}
+          contentType="grid"
+          contentRows={6}
+        />
       </DashboardLayout>
     );
   }

@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/lib/errorHandler';
 import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -205,24 +206,28 @@ export default function UsersPage() {
   }, [profile?.id, profile?.role]);
 
   // Helper functions
-  const getRoleBadgeColor = useCallback((role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-500 text-white border-red-600 dark:bg-red-600 dark:border-red-700';
-      case 'teacher':
-        return 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-700';
-      case 'student':
-        return 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:border-emerald-700';
-      case 'supervisor':
-        return 'bg-purple-500 text-white border-purple-600 dark:bg-purple-600 dark:border-purple-700';
-      default:
-        return 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
-    }
-  }, []);
-
   const getRoleLabel = useCallback((role: string) => {
     return t(role as 'admin' | 'teacher' | 'student' | 'supervisor');
   }, [t]);
+
+  const getRoleBadge = useCallback((role: string) => {
+    const badgeConfig: Record<string, { variant: 'destructive' | 'info' | 'success' | 'accent' | 'islamic'; icon: typeof Shield }> = {
+      admin: { variant: 'destructive', icon: Shield },
+      teacher: { variant: 'info', icon: User },
+      student: { variant: 'success', icon: Users },
+      supervisor: { variant: 'accent', icon: Shield },
+    };
+    
+    const config = badgeConfig[role] || { variant: 'islamic' as const, icon: User };
+    const Icon = config.icon;
+    
+    return (
+      <Badge variant={config.variant} className="gap-1.5 font-semibold">
+        <Icon className="h-3 w-3" />
+        {getRoleLabel(role)}
+      </Badge>
+    );
+  }, [getRoleLabel]);
 
   // Filtered users
   const filteredUsers = useMemo(() => {
@@ -506,12 +511,12 @@ export default function UsersPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400">{t('loadingUsers')}</p>
-          </div>
-        </div>
+        <PageLoading
+          text={t('loadingUsers')}
+          statsCount={5}
+          contentType="table"
+          contentRows={10}
+        />
       </DashboardLayout>
     );
   }
@@ -537,86 +542,124 @@ export default function UsersPage() {
           </Button>
         </PageHeader>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Users className="h-4 w-4" />
+        {/* ✨ Stats Cards - Islamic Design */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
+          {/* Total Users */}
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalUsers')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Users className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display">{stats.total}</div>
+              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('allUsers')}
+              </p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+
+          {/* Admins */}
+          <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('admin')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-red-600">{stats.admins}</div>
+              <div className="text-3xl font-bold text-error font-display">{stats.admins}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('administrators')}
+              </p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <User className="h-4 w-4" />
+
+          {/* Teachers */}
+          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('teacher')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <User className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.teachers}</div>
+              <div className="text-3xl font-bold text-info font-display">{stats.teachers}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('teachers')}
+              </p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Users className="h-4 w-4" />
+
+          {/* Students */}
+          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('student')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Users className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.students}</div>
+              <div className="text-3xl font-bold text-success font-display">{stats.students}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('students')}
+              </p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+
+          {/* Supervisors */}
+          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('supervisor')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-purple-600">{stats.supervisors}</div>
+              <div className="text-3xl font-bold text-accent font-display">{stats.supervisors}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('supervisors')}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="card-hover glass-strong">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Filter className="h-5 w-5 text-slate-500" />
+        {/* ✨ Search and Filter Card - Islamic Design */}
+        <Card className="glass-card border-primary/10">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3 text-primary">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
               {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="flex flex-col gap-4 md:flex-row">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <div className="flex-1 relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-primary/10 rounded-lg group-focus-within:bg-primary/20 transition-colors">
+                  <Search className="h-4 w-4 text-primary" />
+                </div>
                 <Input
                   placeholder={t('searchByNameOrEmail')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-11 input-modern"
+                  className="pl-14 h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm"
                 />
               </div>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full md:w-[180px] h-11">
+                <SelectTrigger className="w-full md:w-[200px] h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                   <SelectValue placeholder={t('filterByRole')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -631,109 +674,142 @@ export default function UsersPage() {
           </CardContent>
         </Card>
 
-        {/* Users Table */}
-        <Card className="card-hover glass-strong">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
-              {t('users')} ({filteredUsers.length})
+        {/* ✨ Users Table - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-primary font-display">{t('users')} ({filteredUsers.length})</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600" />
-                <p className="mt-4 text-slate-500 dark:text-slate-400">
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <Users className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
                   {t('noUsersFound')}
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {t('tryAdjustingFilters')}
                 </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold">{t('user')}</TableHead>
-                      <TableHead className="font-semibold">{t('role')}</TableHead>
-                      <TableHead className="font-semibold">{t('email')}</TableHead>
-                      <TableHead className="font-semibold">{t('phone')}</TableHead>
-                      <TableHead className="font-semibold">{t('created')}</TableHead>
-                      <TableHead className="text-right font-semibold">{t('actions')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10 hover:bg-gradient-to-l hover:from-primary/10 hover:to-secondary/10">
+                      <TableHead className="font-bold text-foreground">{t('user')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('role')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('email')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('phone')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('created')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedUsers.map((user) => (
+                    {paginatedUsers.map((user, index) => (
                       <TableRow
                         key={user.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                        className="hover:bg-primary/5 border-b border-border/50 transition-all duration-200 animate-fade-in-up group"
+                        style={{ animationDelay: `${index * 30}ms` }}
                       >
+                        {/* User with Avatar */}
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-blue-500/20">
+                            <Avatar className="h-10 w-10 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all">
                               <AvatarImage src={user.avatar_url} />
-                              <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
                                 {user.full_name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-semibold font-sans">{user.full_name}</div>
-                              <div className="text-sm text-slate-500 dark:text-slate-400">
+                              <div className="font-semibold text-foreground">{user.full_name}</div>
+                              <div className="text-xs text-muted-foreground font-mono">
                                 ID: {user.id.slice(0, 8)}...
                               </div>
                             </div>
                           </div>
                         </TableCell>
+
+                        {/* Role Badge */}
                         <TableCell>
-                          <Badge className={cn('font-semibold', getRoleBadgeColor(user.role))}>
-                            {getRoleLabel(user.role)}
-                          </Badge>
+                          {getRoleBadge(user.role)}
                         </TableCell>
+
+                        {/* Email */}
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-4 w-4 text-slate-400" />
-                            {user.email}
+                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                              <Mail className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-foreground">{user.email}</span>
                           </div>
                         </TableCell>
+
+                        {/* Phone */}
                         <TableCell>
                           {user.phone ? (
                             <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-4 w-4 text-slate-400" />
-                              {user.phone}
+                              <div className="p-1.5 bg-accent/10 rounded-lg">
+                                <Phone className="h-4 w-4 text-accent" />
+                              </div>
+                              <span className="text-foreground">{user.phone}</span>
                             </div>
                           ) : (
-                            <span className="text-slate-400 dark:text-slate-600">-</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
+
+                        {/* Created Date */}
                         <TableCell>
-                          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
                             {new Date(user.created_at).toLocaleDateString(dateLocale)}
                           </div>
                         </TableCell>
+
+                        {/* Actions */}
                         <TableCell>
-                          <div className="flex items-center gap-2 justify-end">
+                          <div className="flex items-center gap-2 justify-center">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                              className="hover:bg-primary/10 hover:text-primary transition-all"
                               onClick={() => openEditDialog(user)}
                             >
-                              <Edit className="h-4 w-4 text-blue-600" />
+                              <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                              className="hover:bg-secondary/10 hover:text-secondary transition-all"
                               onClick={() => {
                                 setSelectedUser(user);
                                 setPwOpen(true);
                               }}
                             >
-                              <Shield className="h-4 w-4 text-amber-600" />
+                              <Shield className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="hover:bg-red-50 dark:hover:bg-red-950/20"
+                              className="hover:bg-error/10 hover:text-error transition-all"
                               onClick={() => {
                                 setSelectedUser(user);
                                 setDeleteConfirmOpen(true);

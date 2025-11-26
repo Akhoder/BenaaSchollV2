@@ -3,14 +3,14 @@
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageLoading } from '@/components/LoadingSpinner';
 
-export default function GradesLoading() {
+export default function AnalyticsLoading() {
   return (
     <DashboardLayout>
       <PageLoading
-        text="جاري تحميل الدرجات..."
+        text="جاري تحميل التحليلات..."
         statsCount={4}
-        contentType="list"
-        contentRows={5}
+        contentType="table"
+        contentRows={6}
       />
     </DashboardLayout>
   );

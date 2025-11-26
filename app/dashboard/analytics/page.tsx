@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, Award, Users, School, BarChart3, Target, Lightbulb } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, Award, Users, School, BarChart3, Target, Lightbulb, BookOpen, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
@@ -181,11 +183,11 @@ export default function AnalyticsPage() {
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'improving':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-success" />;
       case 'declining':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-error" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -206,9 +208,9 @@ export default function AnalyticsPage() {
   };
 
   const getRiskBadge = (risk: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      low: 'default',
-      medium: 'secondary',
+    const variants: Record<string, 'success' | 'warning' | 'destructive'> = {
+      low: 'success',
+      medium: 'warning',
       high: 'destructive',
     };
     
@@ -218,8 +220,15 @@ export default function AnalyticsPage() {
       high: { ar: 'عالي', en: 'High' },
     };
 
+    const icons: Record<string, React.ReactNode> = {
+      low: <CheckCircle2 className="h-3 w-3" />,
+      medium: <AlertTriangle className="h-3 w-3" />,
+      high: <AlertTriangle className="h-3 w-3" />,
+    };
+
     return (
-      <Badge variant={variants[risk] || 'secondary'}>
+      <Badge variant={variants[risk] || 'warning'} className="gap-1.5">
+        {icons[risk]}
         {labels[risk]?.[language] || risk}
       </Badge>
     );
@@ -228,9 +237,12 @@ export default function AnalyticsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <PageLoading
+          text={language === 'ar' ? 'جاري تحميل التحليلات...' : 'Loading analytics...'}
+          statsCount={4}
+          contentType="table"
+          contentRows={6}
+        />
       </DashboardLayout>
     );
   }
@@ -250,175 +262,267 @@ export default function AnalyticsPage() {
             : 'Intelligent analysis of student performance and grade predictions'}
         />
 
-        {/* Overview Stats */}
+        {/* ✨ Overview Stats - Islamic Design */}
         {overviewData && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-16 -mt-16" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in-up">
+            {/* Total Students */}
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {language === 'ar' ? 'إجمالي الطلاب' : 'Total Students'}
                 </CardTitle>
-                <Users className="h-5 w-5 text-primary" />
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{overviewData.totalStudents}</div>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary font-display">
+                  {overviewData.totalStudents}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === 'ar' ? 'في جميع الفصول' : 'Across all classes'}
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-2xl -mr-16 -mt-16" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            {/* Average Grade */}
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {language === 'ar' ? 'المعدل العام' : 'Average Grade'}
                 </CardTitle>
-                <Target className="h-5 w-5 text-green-600" />
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Target className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{overviewData.averageGrade}%</div>
+              <CardContent>
+                <div className="text-3xl font-bold text-success font-display">
+                  {overviewData.averageGrade}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === 'ar' ? 'للطلاب الحاليين' : 'Current students'}
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl -mr-16 -mt-16" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            {/* At Risk Students */}
+            <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {language === 'ar' ? 'معرضون للخطر' : 'At Risk'}
                 </CardTitle>
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <AlertTriangle className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{overviewData.atRiskStudents}</div>
+              <CardContent>
+                <div className="text-3xl font-bold text-error font-display">
+                  {overviewData.atRiskStudents}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === 'ar' ? 'بحاجة للمتابعة' : 'Need attention'}
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl -mr-16 -mt-16" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            {/* Top Performers */}
+            <Card className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {language === 'ar' ? 'متفوقون' : 'Top Performers'}
                 </CardTitle>
-                <Award className="h-5 w-5 text-yellow-600" />
+                <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Award className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{overviewData.topPerformers}</div>
+              <CardContent>
+                <div className="text-3xl font-bold text-secondary font-display">
+                  {overviewData.topPerformers}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === 'ar' ? 'طلاب متميزون' : 'Excellent students'}
+                </p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Class Selector */}
+        {/* ✨ Class Selector - Islamic Design */}
         {overviewData && overviewData.classes.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <School className="h-5 w-5" />
+          <Card className="glass-card border-primary/10">
+            <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+              <CardTitle className="flex items-center gap-3 text-primary">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <School className="h-5 w-5 text-white" />
+                </div>
                 {language === 'ar' ? 'اختر الفصل' : 'Select Class'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger className="w-full md:w-[300px]">
-                  <SelectValue placeholder={language === 'ar' ? 'اختر الفصل' : 'Select class'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {language === 'ar' ? 'جميع الفصول' : 'All Classes'}
-                  </SelectItem>
-                  {overviewData.classes.map((cls) => (
-                    <SelectItem key={cls.classId} value={cls.classId}>
-                      {cls.className}
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <SelectTrigger className="w-full md:w-[320px] h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
+                    <SelectValue placeholder={language === 'ar' ? 'اختر الفصل' : 'Select class'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <School className="h-4 w-4 text-primary" />
+                        <span>{language === 'ar' ? 'جميع الفصول' : 'All Classes'}</span>
+                      </div>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {overviewData.classes.map((cls) => (
+                      <SelectItem key={cls.classId} value={cls.classId}>
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-accent" />
+                          <span>{cls.className}</span>
+                          <Badge variant="islamic" className="ml-2 text-xs">
+                            {cls.totalStudents}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedClass !== 'all' && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setSelectedClass('all')}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Class Analytics */}
+        {/* ✨ Class Analytics - Islamic Design */}
         {classData && (
-          <Card className="border-2">
-            <CardHeader className="border-b bg-muted/50">
+          <Card className="glass-card border-primary/10 overflow-hidden">
+            <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
               <CardTitle className="flex items-center gap-3 text-xl">
-                <School className="h-5 w-5 text-primary" />
-                {classData.className}
-                <Badge variant="secondary" className="ml-auto">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <School className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-primary font-display">{classData.className}</span>
+                <Badge variant="islamic" className="ml-auto">
                   {classData.totalStudents} {language === 'ar' ? 'طالب' : 'students'}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
+              {/* Class Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground mb-1">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
                     {language === 'ar' ? 'المعدل العام' : 'Average Grade'}
                   </p>
-                  <p className="text-2xl font-bold">{classData.averageGrade}%</p>
+                  <p className="text-3xl font-bold text-primary font-display">{classData.averageGrade}%</p>
                 </div>
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950">
-                  <p className="text-sm text-muted-foreground mb-1">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-error/5 to-error/5 border border-error/20">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-error" />
                     {language === 'ar' ? 'معرضون للخطر' : 'At Risk'}
                   </p>
-                  <p className="text-2xl font-bold text-red-600">{classData.atRiskStudents}</p>
+                  <p className="text-3xl font-bold text-error font-display">{classData.atRiskStudents}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950">
-                  <p className="text-sm text-muted-foreground mb-1">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <Award className="h-4 w-4 text-success" />
                     {language === 'ar' ? 'متفوقون' : 'Top Performers'}
                   </p>
-                  <p className="text-2xl font-bold text-green-600">{classData.topPerformers}</p>
+                  <p className="text-3xl font-bold text-success font-display">{classData.topPerformers}</p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Students Table */}
+              <div className="overflow-x-auto rounded-xl border border-primary/10">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>{language === 'ar' ? 'اسم الطالب' : 'Student Name'}</TableHead>
-                      <TableHead>{language === 'ar' ? 'المعدل' : 'Average'}</TableHead>
-                      <TableHead>{language === 'ar' ? 'التنبؤ' : 'Predicted'}</TableHead>
-                      <TableHead>{language === 'ar' ? 'الاتجاه' : 'Trend'}</TableHead>
-                      <TableHead>{language === 'ar' ? 'مستوى الخطر' : 'Risk Level'}</TableHead>
-                      <TableHead>{language === 'ar' ? 'الحضور' : 'Attendance'}</TableHead>
-                      <TableHead className="text-right">{language === 'ar' ? 'الإجراءات' : 'Actions'}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10 hover:bg-gradient-to-l hover:from-primary/10 hover:to-secondary/10">
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'اسم الطالب' : 'Student Name'}</TableHead>
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'المعدل' : 'Average'}</TableHead>
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'التنبؤ' : 'Predicted'}</TableHead>
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'الاتجاه' : 'Trend'}</TableHead>
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'مستوى الخطر' : 'Risk Level'}</TableHead>
+                      <TableHead className="font-bold text-foreground">{language === 'ar' ? 'الحضور' : 'Attendance'}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">{language === 'ar' ? 'الإجراءات' : 'Actions'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {classData.students.map((student) => (
-                      <TableRow key={student.studentId} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{student.studentName}</TableCell>
-                        <TableCell>
-                          <span className={cn(
-                            'font-semibold',
-                            student.averageGrade >= 85 ? 'text-green-600' :
-                            student.averageGrade >= 70 ? 'text-blue-600' :
-                            student.averageGrade >= 60 ? 'text-yellow-600' :
-                            'text-red-600'
-                          )}>
-                            {student.averageGrade}%
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{student.predictedGrade}%</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {getTrendIcon(student.trend)}
-                            <span className="text-sm">{getTrendLabel(student.trend)}</span>
+                    {classData.students.map((student, index) => (
+                      <TableRow 
+                        key={student.studentId} 
+                        className="hover:bg-primary/5 border-b border-border/50 transition-all duration-200 animate-fade-in-up group"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        {/* Student Name with Avatar */}
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-semibold">
+                                {student.studentName.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold text-foreground">
+                              {student.studentName}
+                            </span>
                           </div>
                         </TableCell>
-                        <TableCell>{getRiskBadge(student.riskLevel)}</TableCell>
+
+                        {/* Average Grade */}
                         <TableCell>
-                          <span className={cn(
-                            'font-medium',
-                            student.attendanceRate >= 90 ? 'text-green-600' :
-                            student.attendanceRate >= 80 ? 'text-yellow-600' :
-                            'text-red-600'
-                          )}>
-                            {student.attendanceRate}%
-                          </span>
+                          <Badge 
+                            variant={
+                              student.averageGrade >= 85 ? 'success' :
+                              student.averageGrade >= 70 ? 'info' :
+                              student.averageGrade >= 60 ? 'warning' :
+                              'destructive'
+                            }
+                            className="font-semibold"
+                          >
+                            {student.averageGrade}%
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+
+                        {/* Predicted Grade */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            <span className="font-medium text-primary">{student.predictedGrade}%</span>
+                          </div>
+                        </TableCell>
+
+                        {/* Trend */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getTrendIcon(student.trend)}
+                            <span className="text-sm font-medium">{getTrendLabel(student.trend)}</span>
+                          </div>
+                        </TableCell>
+
+                        {/* Risk Level */}
+                        <TableCell>{getRiskBadge(student.riskLevel)}</TableCell>
+
+                        {/* Attendance */}
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              student.attendanceRate >= 90 ? 'success' :
+                              student.attendanceRate >= 80 ? 'warning' :
+                              'destructive'
+                            }
+                          >
+                            {student.attendanceRate}%
+                          </Badge>
+                        </TableCell>
+
+                        {/* Actions */}
+                        <TableCell className="text-center">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -426,6 +530,7 @@ export default function AnalyticsPage() {
                               setSelectedStudent(student.studentId);
                               router.push(`/dashboard/students/${student.studentId}`);
                             }}
+                            className="hover:bg-primary/10 hover:text-primary transition-all"
                           >
                             {language === 'ar' ? 'عرض' : 'View'}
                           </Button>
@@ -439,105 +544,155 @@ export default function AnalyticsPage() {
           </Card>
         )}
 
-        {/* Student Details */}
+        {/* ✨ Student Details - Islamic Design */}
         {studentData && (
-          <Card className="border-2">
-            <CardHeader className="border-b bg-muted/50">
+          <Card className="glass-card border-primary/10 overflow-hidden">
+            <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
               <CardTitle className="flex items-center gap-3 text-xl">
-                <Users className="h-5 w-5 text-primary" />
-                {studentData.studentName}
+                <Avatar className="h-10 w-10 ring-2 ring-secondary/40">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
+                    {studentData.studentName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-primary font-display">{studentData.studentName}</span>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setSelectedStudent(null);
                     setStudentData(null);
                   }}
-                  className="ml-auto"
+                  className="ml-auto border-primary/20 hover:bg-primary/10"
                 >
                   {language === 'ar' ? 'إغلاق' : 'Close'}
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'المعدل الحالي' : 'Current Average'}
-                    </p>
-                    <p className="text-3xl font-bold">{studentData.averageGrade}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'التنبؤ بالدرجة' : 'Predicted Grade'}
-                    </p>
-                    <p className="text-2xl font-bold text-primary">{studentData.predictedGrade}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'الاتجاه' : 'Trend'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {getTrendIcon(studentData.trend)}
-                      <span className="font-medium">{getTrendLabel(studentData.trend)}</span>
-                    </div>
+              {/* Student Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Current Average */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    {language === 'ar' ? 'المعدل الحالي' : 'Current Average'}
+                  </p>
+                  <p className="text-3xl font-bold text-primary font-display">{studentData.averageGrade}%</p>
+                </div>
+
+                {/* Predicted Grade */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-success/5 to-success/5 border border-success/20">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                    {language === 'ar' ? 'التنبؤ بالدرجة' : 'Predicted Grade'}
+                  </p>
+                  <p className="text-3xl font-bold text-success font-display">{studentData.predictedGrade}%</p>
+                </div>
+
+                {/* Attendance */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-secondary/5 to-secondary/5 border border-secondary/20">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-secondary" />
+                    {language === 'ar' ? 'معدل الحضور' : 'Attendance Rate'}
+                  </p>
+                  <p className="text-3xl font-bold text-secondary font-display">{studentData.attendanceRate}%</p>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Trend */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {language === 'ar' ? 'الاتجاه' : 'Trend'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {getTrendIcon(studentData.trend)}
+                    <span className="font-semibold text-foreground">{getTrendLabel(studentData.trend)}</span>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'مستوى الخطر' : 'Risk Level'}
-                    </p>
-                    <div>{getRiskBadge(studentData.riskLevel)}</div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'معدل الحضور' : 'Attendance Rate'}
-                    </p>
-                    <p className="text-2xl font-bold">{studentData.attendanceRate}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {language === 'ar' ? 'الواجبات' : 'Assignments'}
-                    </p>
-                    <p className="text-lg font-medium">
+
+                {/* Risk Level */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {language === 'ar' ? 'مستوى الخطر' : 'Risk Level'}
+                  </p>
+                  <div>{getRiskBadge(studentData.riskLevel)}</div>
+                </div>
+
+                {/* Assignments */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {language === 'ar' ? 'الواجبات' : 'Assignments'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="info" className="font-semibold">
                       {studentData.assignmentsCompleted} / {studentData.assignmentsTotal}
-                    </p>
+                    </Badge>
                   </div>
                 </div>
               </div>
 
               {studentData.recommendations.length > 0 && (
-                <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold">
-                      {language === 'ar' ? 'التوصيات' : 'Recommendations'}
-                    </h3>
+                <div className="mt-6 p-6 rounded-xl bg-gradient-to-br from-secondary/10 to-primary/10 border-2 border-secondary/30 relative overflow-hidden">
+                  {/* Decorative Background */}
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-secondary/20 rounded-full blur-2xl" />
+                  <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
+                  
+                  {/* Content */}
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg">
+                        <Lightbulb className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-lg text-foreground font-display">
+                        {language === 'ar' ? 'التوصيات' : 'Recommendations'}
+                      </h3>
+                    </div>
+                    <ul className="space-y-3">
+                      {studentData.recommendations.map((rec, index) => (
+                        <li key={index} className="flex items-start gap-3 text-sm">
+                          <div className="mt-1 p-1 bg-secondary/20 rounded-full">
+                            <CheckCircle2 className="h-3 w-3 text-secondary" />
+                          </div>
+                          <span className="text-foreground flex-1">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-2">
-                    {studentData.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
             </CardContent>
           </Card>
         )}
 
+        {/* ✨ Empty State - Islamic Design */}
         {!overviewData && !loading && (
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">
+          <Card className="glass-card border-primary/10">
+            <CardContent className="pt-16 pb-16 text-center">
+              {/* Empty State - Enhanced Design */}
+              <div className="relative inline-block mb-6">
+                {/* Decorative Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                
+                {/* Icon Container */}
+                <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                  <BarChart3 className="h-16 w-16 mx-auto text-primary animate-float" />
+                </div>
+              </div>
+              
+              {/* Text Content */}
+              <h3 className="text-xl font-bold text-foreground font-display mb-2">
+                {language === 'ar' ? 'لا توجد بيانات للعرض' : 'No data available'}
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
                 {language === 'ar' 
-                  ? 'لا توجد بيانات للعرض'
-                  : 'No data available'}
+                  ? 'ستظهر التحليلات التنبؤية هنا عند توفر البيانات'
+                  : 'Predictive analytics will appear here when data is available'}
               </p>
+              
+              {/* Decorative Line */}
+              <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
             </CardContent>
           </Card>
         )}

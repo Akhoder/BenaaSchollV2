@@ -1,11 +1,11 @@
 {
-  "name": "مدرسة البناء العلمي | Benaa School",
-  "short_name": "Benaa School",
-  "description": "نظام إدارة مدرسي متعدد اللغات مع التحكم في الوصول القائم على الأدوار | Multi-language school management system with role-based access control",
+  "name": "مدرسة البناء العلمي | Benaa Scientific School",
+  "short_name": "البناء العلمي",
+  "description": "مدرسة إسلامية لنشر العلوم الشرعية والتربوية | Islamic school for spreading religious and educational sciences",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#15803d",
+  "background_color": "#F8F5F0",
+  "theme_color": "#115E3C",
   "orientation": "any",
   "scope": "/",
   "icons": [
@@ -22,7 +22,7 @@
       "purpose": "any"
     }
   ],
-  "categories": ["education", "productivity", "business"],
+  "categories": ["education", "productivity", "religion"],
   "lang": "ar",
   "dir": "rtl",
   "screenshots": [],
@@ -50,4 +50,3 @@
     }
   ]
 }
-

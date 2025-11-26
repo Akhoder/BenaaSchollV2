@@ -277,10 +277,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Background Pattern */}
-      <div className="fixed inset-0 bg-pattern-dots opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 bg-pattern-dots opacity-20 pointer-events-none" />
       <div className="fixed inset-0 gradient-mesh pointer-events-none" />
       
-      <nav className="fixed top-0 z-50 w-full glass-card border-b border-border shadow-sm">
+      {/* ✨ Enhanced Header with Islamic Design */}
+      <nav className="fixed top-0 z-50 w-full bg-card/95 backdrop-blur-xl border-b-2 border-primary/10 shadow-lg shadow-primary/5">
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start gap-3">
@@ -297,12 +298,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SheetTrigger>
                 <SheetContent 
                   side={language === 'ar' ? 'right' : 'left'} 
-                  className="w-64 p-0 bg-white dark:bg-[hsl(142_25%_10%)] border-[hsl(var(--border))]"
+                  className="w-72 p-0 bg-card/98 dark:bg-card/95 backdrop-blur-xl border-primary/20"
                   aria-label={language === 'ar' ? 'القائمة الرئيسية' : 'Main menu'}
                 >
                   <div className="flex h-full flex-col gap-2 p-4">
-                    <div className="flex items-center gap-3 px-3 py-4 border-b border-[hsl(var(--border))]">
-                      <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg">
+                    {/* Logo Section with Golden Accent */}
+                    <div className="flex items-center gap-3 px-3 py-4 border-b-2 border-secondary/30 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl mb-2">
+                      <div className="overflow-hidden rounded-xl border-2 border-secondary/40 shadow-lg ring-2 ring-primary/10">
                         <OptimizedImage
                           src="/icons/logo.jpg"
                           alt={language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
@@ -313,10 +315,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-lg font-display font-bold text-[hsl(var(--primary))] leading-tight">
+                        <span className="text-lg font-display font-bold text-primary leading-tight">
                           {language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-secondary font-medium">
                           {language === 'ar' ? 'البداوي - طرابلس' : 'Al-Beddawi - Tripoli'}
                         </span>
                       </div>
@@ -332,21 +334,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Sheet>
 
               <Link href="/dashboard" prefetch={true} className="flex items-center gap-3 group">
-                <div className="overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <OptimizedImage
-                    src="/icons/logo.jpg"
-                    alt={language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10"
-                    priority
-                  />
+                <div className="relative">
+                  {/* Golden glow on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
+                  <div className="relative overflow-hidden rounded-xl border-2 border-secondary/30 shadow-lg group-hover:border-secondary/50 group-hover:scale-105 transition-all duration-300">
+                    <OptimizedImage
+                      src="/icons/logo.jpg"
+                      alt={language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10"
+                      priority
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-display font-bold hidden sm:inline-block text-[hsl(var(--primary))] leading-tight">
+                  <span className="text-xl font-display font-bold hidden sm:inline-block text-primary leading-tight group-hover:text-primary-dark transition-colors">
                     {language === 'ar' ? 'مدرسة البناء العلمي' : 'Madrasat Al-Binaa Al-Ilmi'}
                   </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline-block">
+                  <span className="text-xs text-secondary hidden sm:inline-block font-medium">
                     {language === 'ar' ? 'البداوي - طرابلس' : 'Al-Beddawi - Tripoli'}
                   </span>
                 </div>
@@ -376,16 +382,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 bg-[hsl(var(--primary-light))] dark:bg-[hsl(var(--primary-light))] px-2 sm:px-3 py-1.5 rounded-full border border-[hsl(var(--border))] hover:shadow-md transition">
-                    <Avatar className="h-8 w-8 ring-2 ring-[hsl(var(--primary))]/20">
+                  <button className="flex items-center gap-2 bg-gradient-to-r from-primary/10 to-secondary/10 px-2 sm:px-3 py-1.5 rounded-full border-2 border-secondary/30 hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/10 transition-all duration-300">
+                    <Avatar className="h-8 w-8 ring-2 ring-secondary/30">
                       <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
-                      <AvatarFallback className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white text-sm font-semibold">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-semibold">
                         {profile?.full_name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="hidden md:block text-sm text-left">
-                      <p className="font-semibold text-[hsl(var(--primary))] leading-tight">{profile?.full_name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</p>
+                    <div className="hidden md:block text-sm text-right rtl:text-right ltr:text-left">
+                      <p className="font-semibold text-primary leading-tight">{profile?.full_name}</p>
+                      <p className="text-xs text-secondary capitalize font-medium">{t(profile?.role || 'student')}</p>
                     </div>
                   </button>
                 </DropdownMenuTrigger>
@@ -429,16 +435,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </nav>
 
+      {/* ✨ Enhanced Sidebar with Islamic Design */}
       <aside 
         className={cn(
-          "fixed top-0 z-40 w-64 h-screen pt-20 transition-transform bg-white/95 dark:bg-[hsl(142_25%_10%)]/95 backdrop-blur-lg border-r border-[hsl(var(--border))] shadow-lg",
-          language === 'ar' ? 'right-0 translate-x-full lg:translate-x-0' : 'left-0 -translate-x-full lg:translate-x-0'
+          "fixed top-0 z-40 w-64 h-screen pt-20 transition-transform",
+          "bg-card/98 dark:bg-card/95 backdrop-blur-xl",
+          "border-primary/10 shadow-xl shadow-primary/5",
+          language === 'ar' ? 'right-0 translate-x-full lg:translate-x-0 border-l-2' : 'left-0 -translate-x-full lg:translate-x-0 border-r-2'
         )}
         aria-label={language === 'ar' ? 'القائمة الجانبية' : 'Sidebar navigation'}
       >
-        <div className="h-full px-3 pb-4 overflow-y-auto">
+        {/* Decorative top accent */}
+        <div className="absolute top-20 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
+        
+        <div className="h-full px-3 pb-4 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
           <nav 
-            className="space-y-1" 
+            className="space-y-1 pt-2" 
             dir={language === 'ar' ? 'rtl' : 'ltr'}
             aria-label={language === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'}
           >

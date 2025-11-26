@@ -59,6 +59,7 @@ import {
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/tableUtils';
 import { PageHeader } from '@/components/PageHeader';
+import { PageLoading } from '@/components/LoadingSpinner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -457,12 +458,12 @@ export default function QuizzesManagePage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400">{t('loadingQuizzes')}</p>
-          </div>
-        </div>
+        <PageLoading
+          text={t('loadingQuizzes')}
+          statsCount={5}
+          contentType="grid"
+          contentRows={6}
+        />
       </DashboardLayout>
     );
   }
@@ -488,82 +489,94 @@ export default function QuizzesManagePage() {
           </Button>
         </PageHeader>
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalQuizzes')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
+          <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('open')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.open}</div>
+              <div className="text-3xl font-bold font-display text-success">{stats.open}</div>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <X className="h-4 w-4" />
+          <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('closed')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20">
+                <X className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-slate-600">{stats.closed}</div>
+              <div className="text-3xl font-bold font-display text-secondary">{stats.closed}</div>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
+          <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('subjectQuizzes')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.subject}</div>
+              <div className="text-3xl font-bold font-display text-accent">{stats.subject}</div>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <GraduationCap className="h-4 w-4" />
+          <Card className="glass-card-hover border-info/10 hover:border-info/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('lessonQuizzes')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-info to-accent rounded-xl shadow-lg">
+                <GraduationCap className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-purple-600">{stats.lesson}</div>
+              <div className="text-3xl font-bold font-display text-info">{stats.lesson}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="card-hover glass-strong">
+        {/* ✨ Filters - Islamic Design */}
+        <Card className="glass-card border-primary/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Search className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="flex items-center gap-2 font-display text-foreground">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Search className="h-4 w-4 text-primary" />
+              </div>
               {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
               <div className="relative md:col-span-2">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t('searchQuizzes')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 input-modern"
+                  className="pl-10 rtl:pl-3 rtl:pr-10 input-modern border-primary/20 focus:border-primary"
                 />
               </div>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
@@ -601,15 +614,19 @@ export default function QuizzesManagePage() {
           </CardContent>
         </Card>
 
-        {/* Quizzes List */}
-        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
-          <CardHeader>
+        {/* ✨ Quizzes List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
             <div className="flex items-center justify-between">
-              <CardTitle className="font-display">
-                {t('quizzes')} ({filteredQuizzes.length})
+              <CardTitle className="font-display text-foreground flex items-center gap-2">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                {t('quizzes')} 
+                <Badge variant="gold" className="mr-2">{filteredQuizzes.length}</Badge>
               </CardTitle>
               {filteredQuizzes.length > 0 && (
-                <Badge variant="outline" className="text-sm">
+                <Badge variant="outline" className="text-sm border-primary/30 text-muted-foreground">
                   {t('showingQuizzes')
                     .replace('{start}', (startIndex + 1).toString())
                     .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
@@ -622,10 +639,12 @@ export default function QuizzesManagePage() {
             {filteredQuizzes.length === 0 ? (
               <div className="text-center py-12 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                  <div className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full">
+                    <FileText className="h-16 w-16 mx-auto text-primary/50 animate-float" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noQuizzesFound')}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                <h3 className="text-lg font-semibold text-foreground font-display mb-2">{t('noQuizzesFound')}</h3>
+                <p className="text-sm text-muted-foreground font-sans">
                   {debouncedSearchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
                     ? t('tryAdjustingFilters')
                     : t('noQuizzesCreatedYet')}
@@ -641,14 +660,14 @@ export default function QuizzesManagePage() {
                   return (
                     <Card
                       key={quiz.id}
-                      className={`card-hover glass-strong border-2 transition-all duration-300 ${
+                      className={`glass-card-hover border-2 transition-all duration-300 ${
                         isLessQuiz
-                          ? 'border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600'
+                          ? 'border-info/30 hover:border-info/50'
                           : isSubQuiz
-                          ? 'border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600'
+                          ? 'border-accent/30 hover:border-accent/50'
                           : active
-                          ? 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                          ? 'border-success/30 hover:border-success/50'
+                          : 'border-secondary/30 hover:border-secondary/50'
                       }`}
                     >
                       <CardContent className="p-0">
@@ -656,20 +675,20 @@ export default function QuizzesManagePage() {
                         {(quiz.subject_id || quiz.lesson_id || quiz.lesson?.subject_id) && (
                           <div className={`px-6 pt-4 pb-3 border-b ${
                             isLessQuiz
-                              ? 'bg-purple-50/30 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'
+                              ? 'bg-info/5 dark:bg-info/10 border-info/20'
                               : isSubQuiz
-                              ? 'bg-blue-50/30 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
-                              : 'bg-slate-50/30 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700'
+                              ? 'bg-accent/5 dark:bg-accent/10 border-accent/20'
+                              : 'bg-primary/5 dark:bg-primary/10 border-primary/20'
                           }`}>
                             <div className="flex items-center gap-4 flex-wrap">
                               {(quiz.subject_id || quiz.lesson?.subject_id) && (
                                 <div className="flex items-center gap-2">
-                                  <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/30">
-                                    <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  <div className="p-1.5 rounded-lg bg-accent/10">
+                                    <BookOpen className="h-4 w-4 text-accent" />
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{t('subjectLabel')}</p>
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    <p className="text-xs font-medium text-accent">{t('subjectLabel')}</p>
+                                    <p className="text-sm font-semibold text-foreground">
                                       {(() => {
                                         // Try to get subject name from multiple sources
                                         // 1. Direct subject relation
@@ -702,12 +721,12 @@ export default function QuizzesManagePage() {
                               )}
                               {quiz.lesson && (
                                 <div className="flex items-center gap-2">
-                                  <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30">
-                                    <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                  <div className="p-1.5 rounded-lg bg-info/10">
+                                    <GraduationCap className="h-4 w-4 text-info" />
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">{t('lessonLabel')}</p>
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    <p className="text-xs font-medium text-info">{t('lessonLabel')}</p>
+                                    <p className="text-sm font-semibold text-foreground">
                                       {quiz.lesson.title}
                                     </p>
                                   </div>
@@ -715,13 +734,13 @@ export default function QuizzesManagePage() {
                               )}
                               <div className="ml-auto">
                                 {isLessQuiz && (
-                                  <Badge className="bg-purple-500 text-white border-purple-600 dark:bg-purple-600 dark:text-white dark:border-purple-700 font-medium">
+                                  <Badge variant="info" className="font-medium">
                                     <GraduationCap className="h-3 w-3 mr-1.5" />
                                     {t('lessonQuizzes')}
                                   </Badge>
                                 )}
                                 {isSubQuiz && (
-                                  <Badge className="bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:text-white dark:border-blue-700 font-medium">
+                                  <Badge variant="accent" className="font-medium">
                                     <BookOpen className="h-3 w-3 mr-1.5" />
                                     {t('subjectQuizzes')}
                                   </Badge>
@@ -734,22 +753,18 @@ export default function QuizzesManagePage() {
                         {/* Header Section */}
                         <div className={`relative p-6 pb-4 ${
                           active
-                            ? 'bg-slate-50/50 dark:bg-slate-900/30'
-                            : 'bg-slate-50/30 dark:bg-slate-900/20'
+                            ? 'bg-primary/5 dark:bg-primary/10'
+                            : 'bg-muted/30 dark:bg-muted/10'
                         }`}>
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start gap-3 mb-3">
                                 <div className={`p-2.5 rounded-xl flex-shrink-0 ${
                                   active
-                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                    : 'bg-slate-200 dark:bg-slate-700'
+                                    ? 'bg-gradient-to-br from-success to-primary shadow-lg'
+                                    : 'bg-gradient-to-br from-secondary to-secondary/80 shadow-lg shadow-secondary/20'
                                 }`}>
-                                  <FileText className={`h-5 w-5 ${
-                                    active
-                                      ? 'text-emerald-600 dark:text-emerald-400'
-                                      : 'text-slate-500 dark:text-slate-400'
-                                  }`} />
+                                  <FileText className="h-5 w-5 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h3 className="font-bold text-xl text-foreground mb-2 leading-tight">
@@ -757,12 +772,8 @@ export default function QuizzesManagePage() {
                                   </h3>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <Badge
-                                      variant={active ? 'default' : 'secondary'}
-                                      className={`font-medium ${
-                                        active
-                                          ? 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:text-white dark:border-emerald-700'
-                                          : 'bg-slate-500 text-white border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
-                                      }`}
+                                      variant={active ? 'success' : 'gold'}
+                                      className="font-medium"
                                     >
                                       {active ? (
                                         <>
@@ -781,7 +792,7 @@ export default function QuizzesManagePage() {
                               </div>
 
                               {quiz.description && (
-                                <p className="text-sm text-slate-700 dark:text-slate-300 mb-0 line-clamp-2 leading-relaxed pl-14">
+                                <p className="text-sm text-muted-foreground mb-0 line-clamp-2 leading-relaxed pl-14">
                                   {quiz.description}
                                 </p>
                               )}

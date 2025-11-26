@@ -1,16 +1,17 @@
 'use client';
 
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { PageHeaderSkeleton, TableSkeleton, DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
+import { PageLoading } from '@/components/LoadingSpinner';
 
 export default function UsersLoading() {
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
-        <PageHeaderSkeleton />
-        <DashboardStatsSkeleton />
-        <TableSkeleton rows={10} />
-      </div>
+      <PageLoading
+        text="جاري تحميل المستخدمين..."
+        statsCount={5}
+        contentType="table"
+        contentRows={10}
+      />
     </DashboardLayout>
   );
 }

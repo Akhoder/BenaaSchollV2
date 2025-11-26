@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { DashboardLoadingSpinner } from '@/components/LoadingSpinner';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -336,9 +336,11 @@ export default function SubjectsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <DashboardLoadingSpinner
-          text={t('loading')}
-          subtext={t('loading')}
+        <PageLoading
+          text={t('loadingSubjects')}
+          statsCount={4}
+          contentType="table"
+          contentRows={5}
         />
       </DashboardLayout>
     );
@@ -367,74 +369,84 @@ export default function SubjectsPage() {
           )}
         </PageHeader>
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalSubjects')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
+          <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('publishedSubjects')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.published}</div>
+              <div className="text-3xl font-bold font-display text-success">{stats.published}</div>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
+          <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('unpublishedSubjects')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20">
+                <XCircle className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-orange-600">{stats.unpublished}</div>
+              <div className="text-3xl font-bold font-display text-secondary">{stats.unpublished}</div>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <UserX className="h-4 w-4" />
+          <Card className="glass-card-hover border-error/10 hover:border-error/30 transition-all duration-300">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('subjectsWithoutTeacher')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg">
+                <UserX className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-red-600">{stats.withoutTeacher}</div>
+              <div className="text-3xl font-bold font-display text-error">{stats.withoutTeacher}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Search & Filters */}
-        <Card className="card-interactive">
+        {/* ✨ Search & Filters - Islamic Design */}
+        <Card className="glass-card border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="font-display">{t('search')} & {t('filter')}</CardTitle>
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Filter className="h-4 w-4 text-primary" />
+              </div>
+              <CardTitle className="font-display text-foreground">{t('search')} & {t('filter')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t('searchBySubjectClassOrTeacher')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 h-11 font-sans input-modern"
+                  className="pl-10 rtl:pl-3 rtl:pr-10 h-11 font-sans input-modern border-primary/20 focus:border-primary"
                 />
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -502,12 +514,16 @@ export default function SubjectsPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-interactive animate-fade-in-up delay-200">
-          <CardHeader>
+        {/* ✨ Subjects List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-display">
-                <BookOpen className="h-5 w-5 text-primary" />
-                {t('subjects')} ({filtered.length})
+              <CardTitle className="flex items-center gap-2 font-display text-foreground">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                </div>
+                {t('subjects')} 
+                <Badge variant="gold" className="mr-2">{filtered.length}</Badge>
               </CardTitle>
             </div>
           </CardHeader>
@@ -515,10 +531,12 @@ export default function SubjectsPage() {
             {filtered.length === 0 ? (
               <div className="text-center py-12 animate-fade-in">
                 <div className="relative inline-block mb-4">
-                  <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                  <div className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full">
+                    <BookOpen className="h-16 w-16 mx-auto text-primary/50 animate-float" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noSubjectsFound')}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                <h3 className="text-lg font-semibold text-foreground font-display mb-2">{t('noSubjectsFound')}</h3>
+                <p className="text-sm text-muted-foreground font-sans">
                   {search ? t('tryAdjustingSearch') : t('noSubjectsAddedYet')}
                 </p>
               </div>
@@ -526,22 +544,22 @@ export default function SubjectsPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold font-sans w-16">{t('image') || 'Image'}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('subject')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('classes')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('teacher')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('published')}</TableHead>
-                      <TableHead className="text-right font-semibold font-sans">{t('actions')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                      <TableHead className="font-semibold font-sans w-16 text-foreground">{t('image') || 'Image'}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('subject')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('classes')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('teacher')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground">{t('published')}</TableHead>
+                      <TableHead className="text-right font-semibold font-sans text-foreground">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedSubjects.map((s) => (
-                      <TableRow key={s.id}>
+                      <TableRow key={s.id} className="hover:bg-primary/5 transition-colors border-b border-border/50">
                         <TableCell>
                           <Link href={`/dashboard/subjects/${s.id}/lessons`} className="block">
                             {s.image_url ? (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                              <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-secondary/30 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 hover:border-primary/50 transition-all shadow-sm">
                                 <img
                                   src={s.image_url}
                                   alt={s.subject_name}
@@ -552,8 +570,8 @@ export default function SubjectsPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-700 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                                <BookOpen className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center border-2 border-primary/20 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                                <BookOpen className="h-5 w-5 text-primary/60" />
                               </div>
                             )}
                           </Link>
@@ -567,30 +585,30 @@ export default function SubjectsPage() {
                               {s.subject_name}
                             </div>
                             {s.description && (
-                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                              <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
                                 {s.description}
                               </div>
                             )}
                           </Link>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-sans">{s.class_name || '—'}</Badge>
+                          <Badge variant="islamic" className="font-sans">{s.class_name || '—'}</Badge>
                         </TableCell>
                         <TableCell className="font-sans">
                           {s.teacher_name ? (
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2 text-foreground">
+                              <Users className="h-4 w-4 text-accent" />
                               <span>{s.teacher_name}</span>
                             </div>
                           ) : (
-                            <Badge variant="outline" className="text-muted-foreground">
+                            <Badge variant="outline" className="text-muted-foreground border-warning/50">
                               {t('unassigned')}
                             </Badge>
                           )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Badge variant={s.published ? 'default' : 'secondary'} className="font-sans">
+                            <Badge variant={s.published ? 'success' : 'gold'} className="font-sans">
                               {s.published ? t('published') : t('draft')}
                             </Badge>
                             <Switch
@@ -651,9 +669,9 @@ export default function SubjectsPage() {
           </CardContent>
           
           {filtered.length > itemsPerPage && (
-            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+            <div className="border-t border-primary/10 p-4 bg-gradient-to-l from-primary/5 to-transparent">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+                <div className="text-sm text-muted-foreground">
                   {t('showingResults')
                     .replace('{start}', String(startIndex + 1))
                     .replace('{end}', String(Math.min(endIndex, filtered.length)))
@@ -723,11 +741,17 @@ export default function SubjectsPage() {
           )}
         </Card>
 
+        {/* ✨ Create/Edit Subject Dialog - Islamic Design */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display">{selected ? t('editSubject') : t('addSubject')}</DialogTitle>
-              <DialogDescription className="font-sans">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-primary/20">
+            <DialogHeader className="border-b border-primary/10 pb-4">
+              <DialogTitle className="text-2xl font-display text-primary flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                {selected ? t('editSubject') : t('addSubject')}
+              </DialogTitle>
+              <DialogDescription className="font-sans text-muted-foreground">
                 {selected ? t('updateSubjectInfo') : t('createNewSubjectForClass')}
               </DialogDescription>
             </DialogHeader>

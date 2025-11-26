@@ -1,7 +1,5 @@
 /* ============================================
-   📝 GOOGLE FONTS - Removed @import for better performance
-   Fonts are now loaded via <link> tags in layout.tsx with preconnect
-   This prevents render-blocking and improves Lighthouse scores
+   📝 GOOGLE FONTS - Loaded via FontLoader.tsx
    ============================================ */
 
 @tailwind base;
@@ -9,15 +7,17 @@
 @tailwind utilities;
 
 /* ============================================
-   ✨ ULTRA MODERN DESIGN SYSTEM 2025
-   نظام تصميم عصري للغاية
+   ✨ مدرسة البناء العلمي - ISLAMIC SCHOLARLY DESIGN SYSTEM
+   نظام تصميم إسلامي أصيل ومعاصر
+   Authentic Islamic Design with Modern Touch
    ============================================ */
 
 @layer base {
   :root {
-    /* 📝 TYPOGRAPHY SCALE - Consistent font hierarchy */
-    --font-poppins: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    /* 📝 TYPOGRAPHY SCALE */
+    --font-amiri: 'Amiri', 'Noto Naskh Arabic', Georgia, serif;
+    --font-tajawal: 'Tajawal', 'Cairo', system-ui, sans-serif;
+    --font-scheherazade: 'Scheherazade New', 'Amiri', serif;
 
     /* Typography Scale (1.25 ratio) */
     --text-xs: 0.75rem;    /* 12px */
@@ -33,162 +33,192 @@
     --text-7xl: 4.5rem;    /* 72px */
 
     /* Spacing Scale (4px base) */
-    --space-1: 0.25rem;   /* 4px */
-    --space-2: 0.5rem;    /* 8px */
-    --space-3: 0.75rem;   /* 12px */
-    --space-4: 1rem;      /* 16px */
-    --space-5: 1.25rem;   /* 20px */
-    --space-6: 1.5rem;    /* 24px */
-    --space-8: 2rem;      /* 32px */
-    --space-10: 2.5rem;   /* 40px */
-    --space-12: 3rem;     /* 48px */
-    --space-16: 4rem;     /* 64px */
-    --space-20: 5rem;     /* 80px */
-    --space-24: 6rem;     /* 96px */
-    --space-32: 8rem;     /* 128px */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+    --space-32: 8rem;
 
     /* Border Radius Scale */
     --radius-none: 0;
-    --radius-sm: 0.125rem;   /* 2px */
-    --radius-md: 0.375rem;   /* 6px */
-    --radius-lg: 0.5rem;     /* 8px */
-    --radius-xl: 0.75rem;    /* 12px */
-    --radius-2xl: 1rem;      /* 16px */
-    --radius-3xl: 1.5rem;    /* 24px */
+    --radius-sm: 0.125rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-3xl: 1.5rem;
     --radius-full: 9999px;
     
-    /* 🎓 PRIMARY - Navy Blue (مستوحى من أكاديمية زاد) */
-    /* العلم والمعرفة والثقة */
-    --primary: 220 90% 35%;          /* #0B3D6B - Deep Navy Blue */
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 220 90% 95%;
-    --primary-dark: 220 90% 25%;
+    /* ============================================
+       🎨 ISLAMIC SCHOLARLY COLOR PALETTE
+       الألوان مستوحاة من التراث الإسلامي
+       ============================================ */
     
-    /* 🌱 ACCENT - Teal Green (البناء والنمو) */
-    /* النمو والتطور والإسلام */
-    --accent: 174 65% 45%;           /* #2A9D8F - Teal Green */
-    --accent-foreground: 0 0% 100%;
-    --accent-light: 174 65% 95%;
-    --accent-dark: 174 65% 35%;
+    /* 🌿 PRIMARY - Deep Emerald Green (الأخضر الزمردي العميق) */
+    /* رمز الإسلام والنمو والمعرفة والحياة */
+    --primary: 152 75% 28%;          /* #115E3C - Deep Islamic Emerald */
+    --primary-foreground: 45 40% 97%;
+    --primary-light: 152 60% 95%;    /* Light emerald wash */
+    --primary-dark: 152 80% 18%;     /* Darker for depth */
     
-    /* 🔥 SECONDARY - Warm Orange (الحماس والطاقة) */
-    /* الطاقة والتحفيز */
-    --secondary: 25 85% 55%;         /* #F4A460 - Warm Orange */
-    --secondary-foreground: 0 0% 100%;
-    --secondary-light: 25 85% 95%;
+    /* ✨ SECONDARY - Royal Gold (الذهبي الملكي) */
+    /* رمز النور والتنوير والتميز */
+    --secondary: 43 85% 50%;         /* #D4A017 - Royal Islamic Gold */
+    --secondary-foreground: 152 75% 15%;
+    --secondary-light: 43 80% 95%;   /* Light gold wash */
     
-    /* 🎯 SURFACE COLORS */
-    --background: 214 32% 94%;       /* #EEF1F6 - Professional Gray (احترافي ومريح) */
-    --foreground: 240 10% 4%;
-    --card: 0 0% 100%;               /* البطاقات تبقى بيضاء لتبرز */
-    --card-foreground: 240 10% 4%;
-    --muted: 214 32% 91%;            /* #DFE4EC - أغمق قليلاً للتمييز */
-    --muted-foreground: 240 4% 46%;
-    --border: 214 32% 85%;           /* #C5CDD9 - حدود أوضح */
-    --input: 0 0% 100%;              /* حقول بيضاء لتبرز */
-    --ring: 251 91% 65%;
+    /* 📚 ACCENT - Deep Indigo (النيلي العميق) */
+    /* رمز الحكمة والعمق والسكينة */
+    --accent: 225 65% 32%;           /* #2B4178 - Scholarly Indigo */
+    --accent-foreground: 45 40% 97%;
+    --accent-light: 225 60% 95%;     /* Light indigo wash */
+    --accent-dark: 225 70% 22%;      /* Deeper indigo */
     
-    /* ✅ STATUS COLORS */
-    --success: 142 76% 45%;
+    /* 🎯 SURFACE COLORS (ألوان السطح) */
+    --background: 40 35% 96%;        /* #F8F5F0 - Warm Ivory/Parchment */
+    --foreground: 225 40% 15%;       /* Deep ink color */
+    --card: 40 40% 99%;              /* #FDFCFA - Soft cream white */
+    --card-foreground: 225 40% 15%;
+    --muted: 40 25% 92%;             /* #EDE8E0 - Muted parchment */
+    --muted-foreground: 225 15% 45%;
+    --border: 40 30% 85%;            /* #D9D0C3 - Warm border */
+    --input: 40 40% 99%;
+    --ring: 152 75% 28%;
+    
+    /* Popover colors */
+    --popover: 40 40% 99%;
+    --popover-foreground: 225 40% 15%;
+    
+    /* Destructive */
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* ✅ STATUS COLORS (ألوان الحالة) */
+    --success: 152 70% 35%;          /* Islamic green based */
     --success-foreground: 0 0% 100%;
-    --success-light: 142 76% 95%;
+    --success-light: 152 60% 95%;
     
-    --warning: 38 92% 50%;
+    --warning: 38 92% 50%;           /* Warm amber */
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 92% 95%;
+    --warning-light: 38 90% 95%;
     
-    --error: 0 84% 60%;
+    --error: 0 72% 50%;              /* Soft red */
     --error-foreground: 0 0% 100%;
-    --error-light: 0 84% 95%;
+    --error-light: 0 70% 95%;
     
-    --info: 217 91% 60%;
+    --info: 225 65% 45%;             /* Indigo based */
     --info-foreground: 0 0% 100%;
-    --info-light: 217 91% 95%;
+    --info-light: 225 60% 95%;
     
-    /* 🎨 GRADIENT COLORS - ZAD ACADEMY INSPIRED */
-    --gradient-start: 220 90% 35%;     /* Navy Blue */
-    --gradient-middle: 174 65% 45%;    /* Teal Green */
-    --gradient-end: 158 64% 52%;       /* Success Green */
+    /* 🎨 GRADIENT COLORS - Islamic Inspired */
+    --gradient-start: 152 75% 28%;   /* Emerald */
+    --gradient-middle: 43 85% 50%;   /* Gold */
+    --gradient-end: 225 65% 32%;     /* Indigo */
+    
+    /* 📊 CHART COLORS */
+    --chart-1: 152 75% 35%;          /* Emerald */
+    --chart-2: 43 85% 55%;           /* Gold */
+    --chart-3: 225 65% 45%;          /* Indigo */
+    --chart-4: 174 60% 45%;          /* Teal */
+    --chart-5: 15 75% 55%;           /* Terracotta */
     
     --radius: 1rem;
+    
+    /* 🌟 DECORATIVE VARIABLES */
+    --ornament-color: 43 85% 50%;    /* Gold for ornaments */
+    --pattern-opacity: 0.04;
+    --glow-primary: 152 75% 28%;
+    --glow-secondary: 43 85% 50%;
   }
 
-  /* Enhanced Dark Mode with Better Contrast */
+  /* ============================================
+     🌙 DARK MODE - Scholarly Night Theme
+     الوضع الليلي المستوحى من المخطوطات
+     ============================================ */
   .dark {
-    --background: 220 20% 8%;        /* Deeper background */
-    --foreground: 0 0% 98%;
-    --card: 220 20% 12%;             /* Slightly lighter cards */
-    --card-foreground: 0 0% 98%;
-    --muted: 220 15% 18%;            /* Better muted background */
-    --muted-foreground: 220 8% 75%;  /* Higher contrast text */
-    --border: 220 15% 20%;           /* More visible borders */
-    --input: 220 15% 18%;            /* Consistent with muted */
+    --background: 225 35% 10%;       /* Deep scholarly blue-black */
+    --foreground: 40 30% 95%;        /* Warm ivory text */
+    --card: 225 30% 14%;             /* Slightly lighter cards */
+    --card-foreground: 40 30% 95%;
+    --muted: 225 25% 18%;            /* Muted background */
+    --muted-foreground: 40 20% 70%;
+    --border: 225 25% 22%;           /* Subtle borders */
+    --input: 225 25% 18%;
+    
+    --popover: 225 30% 14%;
+    --popover-foreground: 40 30% 95%;
 
-    /* Enhanced color palette for dark mode */
-    --primary: 220 85% 55%;           /* Brighter primary */
-    --primary-foreground: 220 20% 8%;
-    --primary-light: 220 85% 95%;
-    --primary-dark: 220 85% 45%;
+    /* Enhanced colors for dark mode */
+    --primary: 152 65% 45%;          /* Brighter emerald */
+    --primary-foreground: 225 35% 10%;
+    --primary-light: 152 50% 20%;
+    --primary-dark: 152 70% 55%;
 
-    --accent: 174 70% 60%;            /* Brighter accent */
+    --secondary: 43 80% 55%;         /* Brighter gold */
+    --secondary-foreground: 225 35% 10%;
+    --secondary-light: 43 60% 20%;
+
+    --accent: 225 55% 55%;           /* Brighter indigo */
     --accent-foreground: 0 0% 100%;
-    --accent-light: 174 70% 95%;
-    --accent-dark: 174 70% 50%;
-
-    --secondary: 25 85% 65%;          /* Brighter secondary */
-    --secondary-foreground: 0 0% 100%;
-    --secondary-light: 25 85% 95%;
+    --accent-light: 225 40% 20%;
+    --accent-dark: 225 60% 65%;
 
     /* Status colors for dark mode */
-    --success: 142 70% 50%;
+    --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 90% 55%;
+    --warning: 38 85% 55%;
     --warning-foreground: 0 0% 100%;
-    --error: 0 80% 55%;
+    --error: 0 70% 55%;
     --error-foreground: 0 0% 100%;
-    --info: 217 85% 55%;
+    --info: 225 55% 55%;
     --info-foreground: 0 0% 100%;
+    
+    --pattern-opacity: 0.06;
   }
 
   /* Auto dark mode based on system preference */
   @media (prefers-color-scheme: dark) {
     :root:not(.light) {
-      --background: 220 20% 8%;
-      --foreground: 0 0% 98%;
-      --card: 220 20% 12%;
-      --card-foreground: 0 0% 98%;
-      --muted: 220 15% 18%;
-      --muted-foreground: 220 8% 75%;
-      --border: 220 15% 20%;
-      --input: 220 15% 18%;
+      --background: 225 35% 10%;
+      --foreground: 40 30% 95%;
+      --card: 225 30% 14%;
+      --card-foreground: 40 30% 95%;
+      --muted: 225 25% 18%;
+      --muted-foreground: 40 20% 70%;
+      --border: 225 25% 22%;
+      --input: 225 25% 18%;
+      --popover: 225 30% 14%;
+      --popover-foreground: 40 30% 95%;
 
-      --primary: 220 85% 55%;
-      --primary-foreground: 220 20% 8%;
-      --accent: 174 70% 60%;
+      --primary: 152 65% 45%;
+      --primary-foreground: 225 35% 10%;
+      --secondary: 43 80% 55%;
+      --secondary-foreground: 225 35% 10%;
+      --accent: 225 55% 55%;
       --accent-foreground: 0 0% 100%;
-      --secondary: 25 85% 65%;
-      --secondary-foreground: 0 0% 100%;
     }
-  }
-
-  /* Dark mode transitions */
-  .dark-transition {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
 
   * {
     @apply border-border;
   }
 
-  /* ✅ Apply Cairo font to all text globally */
+  /* ✅ Apply fonts globally */
   html,
-  body,
-  * {
-    font-family: var(--font-cairo), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
+  body {
+    font-family: var(--font-tajawal), system-ui, -apple-system, sans-serif;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -197,27 +227,39 @@
     overflow-x: hidden;
   }
 
+  /* Elegant text selection */
   ::selection {
-    @apply bg-primary/30 text-primary;
+    @apply text-foreground;
+    background-color: hsl(var(--secondary) / 0.3);
   }
 
-  /* Custom Scrollbar */
+  /* Custom Scrollbar - Islamic Style */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-muted/50;
+    background-color: hsl(var(--muted) / 0.3);
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/40 hover:bg-primary/60 rounded-full;
+    background-color: hsl(var(--primary) / 0.4);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 0.6);
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-transparent;
   }
 }
 
 /* ============================================
-   🎬 ULTRA SMOOTH ANIMATIONS
+   🎬 ELEGANT ANIMATIONS - حركات أنيقة
    ============================================ */
 
 @layer utilities {
@@ -299,12 +341,12 @@
   /* Floating & Rotating */
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
+    50% { transform: translateY(-15px); }
   }
 
   @keyframes float-slow {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-30px) rotate(5deg); }
+    50% { transform: translateY(-20px) rotate(3deg); }
   }
 
   @keyframes spin-slow {
@@ -315,12 +357,12 @@
   /* Pulse & Glow */
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4),
-                  0 0 40px rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.3),
+                  0 0 40px hsl(var(--secondary) / 0.2);
     }
     50% {
-      box-shadow: 0 0 30px rgba(139, 92, 246, 0.6),
-                  0 0 60px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 0 30px hsl(var(--primary) / 0.5),
+                  0 0 60px hsl(var(--secondary) / 0.3);
     }
   }
 
@@ -335,36 +377,33 @@
     100% { background-position: 1000px 0; }
   }
 
+  /* Islamic Ornament Animation */
+  @keyframes ornament-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes ornament-pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
   /* Loading Animation Keyframes */
   @keyframes bounce {
-    0%, 80%, 100% {
-      transform: scale(0);
-    }
-    40% {
-      transform: scale(1);
-    }
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
   }
 
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   /* Border Animation */
   @keyframes border-dance {
-    0%, 100% {
-      border-color: hsl(var(--primary));
-    }
-    33% {
-      border-color: hsl(var(--accent));
-    }
-    66% {
-      border-color: hsl(var(--secondary));
-    }
+    0%, 100% { border-color: hsl(var(--primary)); }
+    33% { border-color: hsl(var(--secondary)); }
+    66% { border-color: hsl(var(--accent)); }
   }
 
   /* Enhanced Animation Classes */
@@ -375,15 +414,17 @@
   .animate-slide-in-left { animation: slide-in-left 0.8s ease-out; }
   .animate-scale-in { animation: scale-in 0.5s ease-out; }
   .animate-bounce-in { animation: bounce-in 0.8s ease-out; }
-  .animate-float { animation: float 3s ease-in-out infinite; }
+  .animate-float { animation: float 4s ease-in-out infinite; }
   .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
-  .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+  .animate-spin-slow { animation: spin-slow 25s linear infinite; }
   .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
   .animate-gradient { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
   .animate-shimmer { animation: shimmer 2s linear infinite; }
   .animate-border-dance { animation: border-dance 3s ease-in-out infinite; }
+  .animate-ornament { animation: ornament-spin 30s linear infinite; }
+  .animate-ornament-pulse { animation: ornament-pulse 4s ease-in-out infinite; }
 
-  /* New Micro-Interaction Animations */
+  /* Micro-Interaction Animations */
   .animate-tap { animation: tap 0.2s ease-in-out; }
   .animate-wiggle { animation: wiggle 1s ease-in-out infinite; }
   .animate-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
@@ -393,58 +434,20 @@
   .animate-scale-hover { transition: transform 0.2s ease; }
   .animate-scale-hover:hover { transform: scale(1.02); }
 
-  /* Hover Micro-Interactions */
+  /* Hover Effects */
   .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px -8px hsl(var(--primary) / 0.2);
   }
 
   .hover-glow {
     transition: box-shadow 0.3s ease;
   }
   .hover-glow:hover {
-    box-shadow: var(--shadow-glow-primary);
-  }
-
-  .hover-rotate {
-    transition: transform 0.3s ease;
-  }
-  .hover-rotate:hover {
-    transform: rotate(5deg);
-  }
-
-  /* Interactive State Animations */
-  .interactive-press {
-    transition: all 0.1s ease;
-  }
-  .interactive-press:active {
-    transform: scale(0.98);
-  }
-
-  .interactive-bounce {
-    transition: transform 0.2s ease;
-  }
-  .interactive-bounce:active {
-    animation: tap 0.15s ease-in-out;
-  }
-
-  /* Loading States */
-  .loading-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .loading-shimmer {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.4),
-      transparent
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.3);
   }
 
   /* Stagger Animation Delays */
@@ -474,292 +477,399 @@
 }
 
 /* ============================================
-   💎 ULTRA MODERN COMPONENTS
+   💎 ISLAMIC SCHOLARLY COMPONENTS
+   مكونات إسلامية أصيلة
    ============================================ */
 
 @layer components {
-  /* ========== GLASS CARDS ========== */
+  /* ========== ISLAMIC PATTERNS ========== */
+  
+  /* Geometric Islamic Pattern Background */
+  .islamic-pattern {
+    position: relative;
+  }
+  
+  .islamic-pattern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: var(--pattern-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30L30 0zm0 10L10 30l20 20 20-20L30 10z' fill='%23115E3C' fill-opacity='1'/%3E%3C/svg%3E");
+    background-size: 30px 30px;
+    pointer-events: none;
+  }
+
+  /* Arabesque Pattern */
+  .arabesque-pattern {
+    position: relative;
+  }
+  
+  .arabesque-pattern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: var(--pattern-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='1'%3E%3Ccircle cx='40' cy='40' r='30'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Ccircle cx='40' cy='40' r='10'/%3E%3Cpath d='M40 10 L40 70 M10 40 L70 40 M18 18 L62 62 M62 18 L18 62'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  /* Star Pattern (Eight-pointed Islamic Star) */
+  .star-pattern {
+    position: relative;
+  }
+  
+  .star-pattern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: calc(var(--pattern-opacity) * 1.5);
+    background-image: url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='25,2 31,19 50,19 35,31 40,48 25,38 10,48 15,31 0,19 19,19' fill='none' stroke='%23D4A017' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ========== GLASS CARDS - Scholarly Style ========== */
   .glass-card {
-    @apply backdrop-blur-2xl bg-white/70 dark:bg-white/5;
-    @apply border border-white/20 dark:border-white/10;
-    @apply rounded-3xl shadow-2xl shadow-black/5;
-    @apply transition-all duration-500;
-  }
-
-  .glass-card-hover {
-    @apply glass-card;
-    @apply hover:shadow-3xl hover:shadow-primary/10;
-    @apply hover:-translate-y-2 hover:scale-[1.02];
-    @apply cursor-pointer;
-  }
-
-  .glass-card-gradient {
     @apply backdrop-blur-2xl;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.8) 0%,
-      rgba(255, 255, 255, 0.4) 100%
+      hsl(var(--card) / 0.9) 0%,
+      hsl(var(--card) / 0.7) 100%
     );
-    @apply dark:bg-gradient-to-br dark:from-white/10 dark:to-white/5;
-    @apply border border-white/40 dark:border-white/10;
-    @apply rounded-3xl shadow-2xl;
+    @apply rounded-2xl shadow-xl;
+    @apply transition-all duration-500;
+    border: 1px solid hsl(var(--border) / 0.5);
   }
 
-  /* ========== MODERN CARDS ========== */
+  .glass-card-hover {
+    @apply glass-card cursor-pointer;
+    @apply hover:-translate-y-2;
+  }
+  .glass-card-hover:hover {
+    @apply shadow-2xl;
+    border-color: hsl(var(--primary) / 0.3);
+  }
+
+  .glass-card-gradient {
+    @apply backdrop-blur-2xl rounded-2xl shadow-xl;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--card)) 0%,
+      hsl(var(--primary-light)) 100%
+    );
+    border: 1px solid hsl(var(--primary) / 0.2);
+  }
+
+  /* ========== SCHOLARLY CARDS ========== */
   .card-ultra {
-    @apply bg-card rounded-3xl border border-border/50;
-    @apply shadow-lg shadow-black/5;
-    @apply transition-all duration-500 ease-out;
-    @apply hover:shadow-2xl hover:shadow-primary/10;
-    @apply hover:border-primary/30;
+    @apply bg-card rounded-2xl shadow-lg;
+    @apply transition-all duration-300 ease-out;
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+  .card-ultra:hover {
+    @apply shadow-xl;
+    border-color: hsl(var(--primary) / 0.4);
   }
 
   .card-compact {
-    @apply bg-card rounded-xl border border-border/30;
-    @apply shadow-sm shadow-black/5;
+    @apply bg-card rounded-xl shadow-md;
     @apply transition-all duration-300 ease-out;
-    @apply hover:shadow-md hover:shadow-primary/5;
+    border: 1px solid hsl(var(--border) / 0.4);
+  }
+  .card-compact:hover {
+    @apply shadow-lg;
+    border-color: hsl(var(--primary) / 0.3);
   }
 
   .card-minimal {
-    @apply bg-card rounded-lg border border-border/20;
+    @apply bg-card rounded-lg;
     @apply transition-all duration-200 ease-out;
-    @apply hover:bg-muted/20;
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+  .card-minimal:hover {
+    background-color: hsl(var(--primary) / 0.05);
   }
 
   .card-interactive {
     @apply card-ultra cursor-pointer;
-    @apply hover:-translate-y-3 hover:scale-[1.02];
-    @apply active:scale-[0.98];
+    @apply hover:-translate-y-2 hover:scale-[1.01];
+    @apply active:scale-[0.99];
   }
 
-  .card-gradient-border {
-    @apply relative rounded-3xl p-[2px] overflow-hidden;
+  /* Islamic Border Card */
+  .card-islamic-border {
+    @apply relative rounded-2xl p-[3px] overflow-hidden;
     background: linear-gradient(
       135deg,
       hsl(var(--primary)),
+      hsl(var(--secondary)),
       hsl(var(--accent)),
-      hsl(var(--secondary))
+      hsl(var(--primary))
     );
+    background-size: 300% 300%;
     @apply animate-gradient;
   }
 
-  .card-gradient-border > div {
-    @apply bg-card rounded-[calc(1.5rem-2px)] h-full w-full;
+  .card-islamic-border > div {
+    @apply bg-card rounded-[calc(1rem-3px)] h-full w-full;
   }
 
-  /* ========== ENHANCED BUTTON SYSTEM ========== */
+  /* Gold Accent Card */
+  .card-gold-accent {
+    @apply bg-card rounded-2xl shadow-lg;
+    @apply transition-all duration-300;
+    border: 2px solid hsl(var(--secondary) / 0.3);
+  }
+  .card-gold-accent:hover {
+    @apply shadow-xl;
+    border-color: hsl(var(--secondary) / 0.6);
+  }
+
+  /* ========== ISLAMIC BUTTON SYSTEM ========== */
   .btn-ultra {
     @apply relative overflow-hidden;
-    @apply px-8 py-4 rounded-2xl font-semibold;
-    @apply transition-all duration-300 ease-spring;
-    @apply hover:-translate-y-1 hover:shadow-2xl;
+    @apply px-8 py-4 rounded-xl font-semibold;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:-translate-y-1 hover:shadow-xl;
     @apply active:translate-y-0 active:shadow-lg;
-    @apply focus:outline-none focus:ring-4 focus:ring-primary/20;
+    @apply focus:outline-none focus:ring-4;
     @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+    --tw-ring-color: hsl(var(--primary) / 0.2);
   }
 
   .btn-primary {
     @apply btn-ultra;
-    @apply bg-gradient-to-r from-primary via-primary to-accent;
-    @apply text-white;
-    @apply hover:shadow-primary/50;
-    @apply hover:brightness-110;
+    @apply bg-primary text-primary-foreground;
+    @apply hover:bg-primary-dark;
+    box-shadow: 0 4px 15px hsl(var(--primary) / 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 8px 25px hsl(var(--primary) / 0.4);
   }
 
   .btn-secondary {
     @apply btn-ultra;
-    @apply bg-gradient-to-r from-secondary via-secondary to-info;
-    @apply text-white;
-    @apply hover:shadow-secondary/50;
-    @apply hover:brightness-110;
+    @apply bg-secondary text-secondary-foreground;
+    box-shadow: 0 4px 15px hsl(var(--secondary) / 0.3);
+  }
+
+  .btn-secondary:hover {
+    box-shadow: 0 8px 25px hsl(var(--secondary) / 0.4);
+  }
+
+  .btn-accent {
+    @apply btn-ultra;
+    @apply bg-accent text-accent-foreground;
+    box-shadow: 0 4px 15px hsl(var(--accent) / 0.3);
   }
 
   .btn-glass {
-    @apply btn-ultra;
-    @apply backdrop-blur-xl bg-white/20 dark:bg-white/10;
-    @apply border-2 border-white/30 dark:border-white/20;
-    @apply text-foreground hover:bg-white/30 dark:hover:bg-white/20;
+    @apply btn-ultra backdrop-blur-xl;
+    @apply border-2 border-border;
+    @apply text-foreground;
+    background-color: hsl(var(--card) / 0.8);
+  }
+  .btn-glass:hover {
+    @apply bg-card;
+    border-color: hsl(var(--primary) / 0.5);
   }
 
   .btn-outline {
     @apply btn-ultra;
     @apply bg-transparent border-2 border-primary;
-    @apply text-primary hover:bg-primary hover:text-white;
+    @apply text-primary hover:bg-primary hover:text-primary-foreground;
   }
 
-  /* New Button Variants */
+  .btn-outline-gold {
+    @apply btn-ultra;
+    @apply bg-transparent border-2 border-secondary;
+    @apply text-secondary hover:bg-secondary hover:text-secondary-foreground;
+  }
+
   .btn-ghost {
     @apply btn-ultra px-4 py-2;
-    @apply bg-transparent hover:bg-muted/50;
-    @apply text-muted-foreground hover:text-foreground;
+    @apply bg-transparent text-muted-foreground;
     @apply border-0 shadow-none;
+  }
+  .btn-ghost:hover {
+    @apply text-foreground;
+    background-color: hsl(var(--muted) / 0.5);
   }
 
   .btn-success {
     @apply btn-ultra;
-    @apply bg-gradient-to-r from-success to-success;
-    @apply text-white;
-    @apply hover:shadow-success/50;
+    @apply bg-success text-success-foreground;
+    box-shadow: 0 4px 15px hsl(var(--success) / 0.3);
   }
 
   .btn-warning {
     @apply btn-ultra;
-    @apply bg-gradient-to-r from-warning to-warning;
-    @apply text-white;
-    @apply hover:shadow-warning/50;
+    @apply bg-warning text-warning-foreground;
+    box-shadow: 0 4px 15px hsl(var(--warning) / 0.3);
   }
 
   .btn-danger {
     @apply btn-ultra;
-    @apply bg-gradient-to-r from-error to-error;
-    @apply text-white;
-    @apply hover:shadow-error/50;
+    @apply bg-error text-error-foreground;
+    box-shadow: 0 4px 15px hsl(var(--error) / 0.3);
   }
 
   /* Button Sizes */
-  .btn-sm {
-    @apply px-4 py-2 text-sm rounded-xl;
-  }
+  .btn-sm { @apply px-4 py-2 text-sm rounded-lg; }
+  .btn-lg { @apply px-10 py-5 text-lg rounded-2xl; }
+  .btn-xl { @apply px-12 py-6 text-xl rounded-2xl; }
 
-  .btn-lg {
-    @apply px-10 py-5 text-lg rounded-3xl;
-  }
-
-  .btn-xl {
-    @apply px-12 py-6 text-xl rounded-3xl;
-  }
-
-  /* ========== ENHANCED INPUT SYSTEM ========== */
+  /* ========== SCHOLARLY INPUT SYSTEM ========== */
   .input-ultra {
-    @apply w-full px-6 py-4 rounded-2xl;
-    @apply bg-muted/50 border-2 border-transparent;
+    @apply w-full px-6 py-4 rounded-xl;
+    @apply bg-card border-2 border-border;
     @apply text-foreground placeholder:text-muted-foreground;
-    @apply transition-all duration-300 ease-spring;
-    @apply focus:border-primary focus:bg-background;
-    @apply focus:ring-4 focus:ring-primary/20;
-    @apply focus:shadow-lg focus:shadow-primary/10;
+    @apply transition-all duration-300 ease-out;
+    @apply focus:border-primary focus:bg-card;
+    @apply focus:ring-4;
+    @apply focus:shadow-lg;
     @apply outline-none;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  .input-compact {
-    @apply px-4 py-3 rounded-xl text-sm;
+  .input-ultra:focus {
+    --tw-ring-color: hsl(var(--primary) / 0.15);
   }
 
-  .input-large {
-    @apply px-8 py-5 rounded-3xl text-lg;
-  }
+  .input-compact { @apply px-4 py-3 rounded-lg text-sm; }
+  .input-large { @apply px-8 py-5 rounded-2xl text-lg; }
 
   /* Input States */
-  .input-error {
-    @apply border-error focus:border-error focus:ring-error/20;
+  .input-error { 
+    @apply border-error focus:border-error focus:ring-4;
+    --tw-ring-color: hsl(var(--error) / 0.2);
+  }
+  .input-success { 
+    @apply border-success focus:border-success focus:ring-4;
+    --tw-ring-color: hsl(var(--success) / 0.2);
+  }
+  .input-warning { 
+    @apply border-warning focus:border-warning focus:ring-4;
+    --tw-ring-color: hsl(var(--warning) / 0.2);
   }
 
-  .input-success {
-    @apply border-success focus:border-success focus:ring-success/20;
-  }
-
-  .input-warning {
-    @apply border-warning focus:border-warning focus:ring-warning/20;
-  }
-
-  /* Input with Icons */
-  .input-with-icon {
-    @apply relative;
-  }
-
-  .input-with-icon input {
-    @apply pl-12;
-  }
-
-  .input-with-icon .input-icon {
-    @apply absolute left-4 top-1/2 -translate-y-1/2;
-    @apply w-5 h-5 text-muted-foreground;
-  }
-
-  [dir="rtl"] .input-with-icon input {
-    @apply pl-6 pr-12;
-  }
-
-  [dir="rtl"] .input-with-icon .input-icon {
-    @apply left-auto right-4;
-  }
-
-  /* ========== BADGES ========== */
+  /* ========== ISLAMIC BADGES ========== */
   .badge-ultra {
     @apply inline-flex items-center gap-2 px-4 py-2 rounded-full;
-    @apply text-sm font-semibold backdrop-blur-xl;
+    @apply text-sm font-semibold;
     @apply transition-all duration-300;
   }
 
   .badge-primary {
-    @apply badge-ultra;
-    @apply bg-primary/10 text-primary border border-primary/30;
-    @apply hover:bg-primary/20;
+    @apply badge-ultra text-primary;
+    background-color: hsl(var(--primary) / 0.15);
+    border: 1px solid hsl(var(--primary) / 0.3);
+  }
+  .badge-primary:hover {
+    background-color: hsl(var(--primary) / 0.25);
+  }
+
+  .badge-secondary {
+    @apply badge-ultra text-secondary;
+    background-color: hsl(var(--secondary) / 0.15);
+    border: 1px solid hsl(var(--secondary) / 0.3);
+  }
+  .badge-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.25);
+  }
+
+  .badge-accent {
+    @apply badge-ultra text-accent;
+    background-color: hsl(var(--accent) / 0.15);
+    border: 1px solid hsl(var(--accent) / 0.3);
+  }
+  .badge-accent:hover {
+    background-color: hsl(var(--accent) / 0.25);
   }
 
   .badge-success {
-    @apply badge-ultra;
-    @apply bg-success/10 text-success border border-success/30;
-    @apply hover:bg-success/20;
+    @apply badge-ultra text-success;
+    background-color: hsl(var(--success) / 0.15);
+    border: 1px solid hsl(var(--success) / 0.3);
+  }
+  .badge-success:hover {
+    background-color: hsl(var(--success) / 0.25);
   }
 
-  .badge-gradient {
-    @apply badge-ultra;
-    @apply bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20;
-    @apply text-primary border border-primary/30;
+  .badge-gold {
+    @apply badge-ultra text-secondary;
+    background-color: hsl(var(--secondary) / 0.2);
+    border: 1px solid hsl(var(--secondary) / 0.5);
   }
 
-  /* ========== TEXT GRADIENTS ========== */
+  /* ========== TEXT GRADIENTS - Islamic Colors ========== */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-accent to-secondary;
     @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(var(--secondary)),
+      hsl(var(--accent))
+    );
+    background-size: 200% 200%;
     @apply animate-gradient;
   }
 
   .text-gradient-primary {
-    @apply bg-gradient-to-r from-primary to-accent;
     @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)));
   }
 
-  .text-gradient-secondary {
-    @apply bg-gradient-to-r from-secondary to-info;
+  .text-gradient-gold {
     @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--secondary)), hsl(43 90% 40%));
   }
 
-  /* ========== BACKGROUNDS ========== */
+  .text-gradient-scholarly {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)));
+  }
+
+  /* ========== ISLAMIC BACKGROUNDS ========== */
   .bg-gradient-mesh {
     background-image: 
-      radial-gradient(at 0% 0%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 50% 0%, hsl(var(--accent) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, hsl(var(--secondary) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 0% 50%, hsl(var(--accent) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 50%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, hsl(var(--secondary) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsl(var(--accent) / 0.15) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, hsl(var(--primary) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(var(--secondary) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(var(--accent) / 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--primary) / 0.08) 0px, transparent 50%);
   }
 
   .bg-dots {
     background-image: radial-gradient(
       circle,
-      hsl(var(--primary) / 0.1) 1px,
+      hsl(var(--primary) / 0.08) 1px,
       transparent 1px
     );
-    background-size: 24px 24px;
+    background-size: 20px 20px;
   }
 
   .bg-grid {
     background-image: 
-      linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
-    background-size: 50px 50px;
+      linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  /* ========== FLOATING ELEMENTS ========== */
+  /* Parchment Background */
+  .bg-parchment {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      hsl(40 35% 94%) 50%,
+      hsl(var(--background)) 100%
+    );
+  }
+
+  /* ========== FLOATING DECORATIVE ELEMENTS ========== */
   .floating-orb {
-    @apply absolute rounded-full blur-3xl opacity-30;
+    @apply absolute rounded-full blur-3xl opacity-20;
     @apply pointer-events-none;
   }
 
@@ -767,32 +877,42 @@
     @apply floating-orb bg-primary animate-float-slow;
   }
 
-  .orb-accent {
-    @apply floating-orb bg-accent animate-float-slow delay-500;
+  .orb-secondary {
+    @apply floating-orb bg-secondary animate-float-slow delay-500;
   }
 
-  .orb-secondary {
-    @apply floating-orb bg-secondary animate-float-slow delay-1000;
+  .orb-accent {
+    @apply floating-orb bg-accent animate-float-slow delay-1000;
+  }
+
+  /* Islamic Crescent Moon Decoration */
+  .crescent-decoration {
+    @apply absolute w-24 h-24 opacity-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 5 A45 45 0 1 1 50 95 A35 35 0 1 0 50 5' fill='%23D4A017'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
   }
 
   /* ========== NAVIGATION ========== */
   .nav-link-ultra {
-    @apply relative px-6 py-3 rounded-xl;
+    @apply relative px-5 py-3 rounded-xl;
     @apply text-muted-foreground font-medium;
     @apply transition-all duration-300;
-    @apply hover:text-foreground hover:bg-muted/50;
+  }
+  .nav-link-ultra:hover {
+    @apply text-foreground;
+    background-color: hsl(var(--primary) / 0.1);
   }
 
   .nav-link-active {
-    @apply nav-link-ultra;
-    @apply text-primary bg-primary/10;
-    @apply font-semibold;
+    @apply nav-link-ultra text-primary font-semibold;
+    background-color: hsl(var(--primary) / 0.15);
   }
 
   .nav-link-active::after {
     content: '';
     @apply absolute bottom-0 left-1/2 -translate-x-1/2;
-    @apply w-1/2 h-1 bg-gradient-to-r from-primary to-accent;
+    @apply w-1/2 h-1 bg-gradient-to-r from-primary via-secondary to-primary;
     @apply rounded-full;
   }
 
@@ -802,85 +922,73 @@
     background: linear-gradient(
       90deg,
       transparent,
+      hsl(var(--secondary)),
       hsl(var(--primary)),
-      hsl(var(--accent)),
       hsl(var(--secondary)),
       transparent
     );
   }
 
+  .divider-islamic {
+    @apply h-1 w-full relative;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--secondary) / 0.3) 20%,
+      hsl(var(--secondary)) 50%,
+      hsl(var(--secondary) / 0.3) 80%,
+      transparent 100%
+    );
+  }
+
+  .divider-islamic::before {
+    content: '✦';
+    @apply absolute left-1/2 -translate-x-1/2 -top-2;
+    @apply text-secondary text-lg;
+  }
+
   /* ========== SECTION CONTAINERS ========== */
   .section-ultra {
-    @apply relative py-20 md:py-32 overflow-hidden;
+    @apply relative py-16 md:py-24 overflow-hidden;
   }
 
   .container-ultra {
     @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
   }
 
-  /* ========== PERFORMANCE OPTIMIZED LOADING STATES ========== */
-
-  /* Skeleton Loading */
+  /* ========== LOADING STATES ========== */
   .skeleton {
     @apply bg-muted animate-pulse rounded-md;
   }
 
-  .skeleton-text {
-    @apply skeleton h-4 w-full mb-2;
-  }
+  .skeleton-text { @apply skeleton h-4 w-full mb-2; }
+  .skeleton-text:last-child { @apply mb-0; }
+  .skeleton-title { @apply skeleton h-6 w-3/4 mb-4; }
+  .skeleton-avatar { @apply skeleton h-12 w-12 rounded-full; }
+  .skeleton-card { @apply skeleton h-32 w-full rounded-xl; }
+  .skeleton-button { @apply skeleton h-10 w-24 rounded-lg; }
 
-  .skeleton-text:last-child {
-    @apply mb-0;
-  }
-
-  .skeleton-title {
-    @apply skeleton h-6 w-3/4 mb-4;
-  }
-
-  .skeleton-avatar {
-    @apply skeleton h-12 w-12 rounded-full;
-  }
-
-  .skeleton-card {
-    @apply skeleton h-32 w-full rounded-xl;
-  }
-
-  .skeleton-button {
-    @apply skeleton h-10 w-24 rounded-lg;
-  }
-
-  /* Shimmer Effect */
   .skeleton-shimmer {
     @apply relative overflow-hidden bg-muted rounded-md;
   }
 
   .skeleton-shimmer::before {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, hsl(var(--secondary) / 0.2), transparent);
     animation: shimmer 1.5s infinite;
   }
 
-  /* Loading Spinners */
+  /* Spinners */
   .spinner {
     @apply inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full;
     animation: spin 1s linear infinite;
   }
 
-  .spinner-lg {
-    @apply w-8 h-8 border-4;
-  }
-
-  .spinner-xl {
-    @apply w-12 h-12 border-4;
-  }
-
-  .spinner-primary {
-    @apply text-primary;
-  }
-
-  .spinner-accent {
-    @apply text-accent;
-  }
+  .spinner-lg { @apply w-8 h-8 border-4; }
+  .spinner-xl { @apply w-12 h-12 border-4; }
+  .spinner-primary { @apply text-primary; }
+  .spinner-secondary { @apply text-secondary; }
 
   /* Loading Dots */
   .loading-dots {
@@ -895,57 +1003,52 @@
   .loading-dots div:nth-child(1) { animation-delay: -0.32s; }
   .loading-dots div:nth-child(2) { animation-delay: -0.16s; }
 
-  /* Loading Pulse */
-  .loading-pulse {
-    @apply animate-pulse;
-  }
-
-  .loading-pulse-gentle {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  /* Progressive Loading */
-  .loading-progressive {
-    @apply opacity-0 animate-fade-in;
-  }
-
-  .loading-progressive.delay-1 { animation-delay: 0.1s; }
-  .loading-progressive.delay-2 { animation-delay: 0.2s; }
-  .loading-progressive.delay-3 { animation-delay: 0.3s; }
-  .loading-progressive.delay-4 { animation-delay: 0.4s; }
-
   /* ========== SHADOWS ========== */
   .shadow-glow-primary {
     box-shadow:
-      0 20px 60px -15px hsl(var(--primary) / 0.4),
-      0 0 40px hsl(var(--primary) / 0.2);
+      0 15px 40px -10px hsl(var(--primary) / 0.3),
+      0 0 30px hsl(var(--primary) / 0.15);
+  }
+
+  .shadow-glow-secondary {
+    box-shadow:
+      0 15px 40px -10px hsl(var(--secondary) / 0.3),
+      0 0 30px hsl(var(--secondary) / 0.15);
   }
 
   .shadow-glow-accent {
     box-shadow:
-      0 20px 60px -15px hsl(var(--accent) / 0.4),
-      0 0 40px hsl(var(--accent) / 0.2);
+      0 15px 40px -10px hsl(var(--accent) / 0.3),
+      0 0 30px hsl(var(--accent) / 0.15);
   }
 
   .shadow-3xl {
     box-shadow:
-      0 35px 60px -15px rgba(0, 0, 0, 0.3),
-      0 4px 25px -5px rgba(0, 0, 0, 0.1);
+      0 30px 50px -15px rgba(0, 0, 0, 0.2),
+      0 4px 20px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Islamic Card Shadow */
+  .shadow-islamic {
+    box-shadow:
+      0 10px 30px -10px hsl(var(--primary) / 0.15),
+      0 4px 15px -5px hsl(var(--secondary) / 0.1),
+      inset 0 1px 0 hsl(var(--secondary) / 0.1);
   }
 }
 
 /* ============================================
-   📱 ENHANCED RESPONSIVE & ACCESSIBILITY UTILITIES
+   📱 RESPONSIVE & ACCESSIBILITY UTILITIES
    ============================================ */
 
 @layer utilities {
   /* Responsive Grid Systems */
   .grid-ultra {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
   }
 
   .grid-ultra-4 {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5;
   }
 
   .grid-responsive {
@@ -953,7 +1056,7 @@
   }
 
   .stack-ultra {
-    @apply flex flex-col gap-8;
+    @apply flex flex-col gap-6;
   }
 
   /* Mobile-First Responsive Text */
@@ -978,11 +1081,13 @@
 
   /* Enhanced Accessibility */
   .focus-ring {
-    @apply focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary;
+    @apply focus:outline-none focus:ring-4 focus:border-primary;
+    --tw-ring-color: hsl(var(--primary) / 0.2);
   }
 
   .focus-ring-inset {
-    @apply focus:outline-none focus:ring-4 focus:ring-primary/20 focus:ring-inset;
+    @apply focus:outline-none focus:ring-4 focus:ring-inset;
+    --tw-ring-color: hsl(var(--primary) / 0.2);
   }
 
   /* Screen Reader Utilities */
@@ -1012,25 +1117,18 @@
   /* Skip Links */
   .skip-link {
     @apply absolute left-4 top-4 z-50;
-    @apply bg-primary text-white px-4 py-2 rounded-lg;
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg;
     @apply transform -translate-y-full;
-    @apply focus:translate-y-0 focus:outline-none focus:ring-4 focus:ring-primary/20;
+    @apply focus:translate-y-0 focus:outline-none focus:ring-4;
     @apply transition-transform duration-200;
+    --tw-ring-color: hsl(var(--primary) / 0.2);
   }
 
   /* High Contrast Mode */
   @media (prefers-contrast: high) {
-    .text-high-contrast {
-      color: hsl(var(--foreground));
-    }
-
-    .bg-high-contrast {
-      background-color: hsl(var(--background));
-    }
-
-    .border-high-contrast {
-      border-color: hsl(var(--border));
-    }
+    .text-high-contrast { color: hsl(var(--foreground)); }
+    .bg-high-contrast { background-color: hsl(var(--background)); }
+    .border-high-contrast { border-color: hsl(var(--border)); }
   }
 
   /* Reduced Motion */
@@ -1043,7 +1141,7 @@
 }
 
 /* ============================================
-   🌍 ADVANCED RTL SUPPORT
+   🌍 RTL SUPPORT - دعم الكتابة من اليمين لليسار
    ============================================ */
 
 [dir="rtl"] {
@@ -1054,13 +1152,9 @@
   direction: ltr;
 }
 
-/* RTL-aware spacing and positioning */
+/* RTL-aware spacing */
 [dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 1;
-}
-
-[dir="rtl"] .rtl\:space-y-reverse > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 1;
 }
 
 /* RTL-aware margins */
@@ -1075,31 +1169,15 @@
 }
 
 /* RTL-aware text alignment */
-[dir="rtl"] .rtl\:text-left {
-  text-align: right;
-}
-
-[dir="rtl"] .rtl\:text-right {
-  text-align: left;
-}
+[dir="rtl"] .rtl\:text-left { text-align: right; }
+[dir="rtl"] .rtl\:text-right { text-align: left; }
 
 /* RTL-aware floating */
-[dir="rtl"] .rtl\:float-left {
-  float: right;
-}
-
-[dir="rtl"] .rtl\:float-right {
-  float: left;
-}
+[dir="rtl"] .rtl\:float-left { float: right; }
+[dir="rtl"] .rtl\:float-right { float: left; }
 
 /* RTL-aware transforms */
-[dir="rtl"] .rtl\:mirror {
-  transform: scaleX(-1);
-}
-
-[dir="rtl"] .rtl\:mirror-y {
-  transform: scaleY(-1);
-}
+[dir="rtl"] .rtl\:mirror { transform: scaleX(-1); }
 
 /* RTL-aware borders */
 [dir="rtl"] .rtl\:border-l {
@@ -1113,44 +1191,18 @@
 }
 
 /* RTL-aware positioning */
-[dir="rtl"] .rtl\:left-auto {
-  left: auto;
-  right: 0;
-}
-
-[dir="rtl"] .rtl\:right-auto {
-  right: auto;
-  left: 0;
-}
+[dir="rtl"] .rtl\:left-auto { left: auto; right: 0; }
+[dir="rtl"] .rtl\:right-auto { right: auto; left: 0; }
 
 /* RTL-aware flexbox */
-[dir="rtl"] .rtl\:flex-row-reverse {
-  flex-direction: row-reverse;
-}
+[dir="rtl"] .rtl\:flex-row-reverse { flex-direction: row-reverse; }
 
-/* RTL-aware navigation and menus */
-[dir="rtl"] .rtl\:dropdown-align-start {
-  /* Align dropdown to start in RTL */
-}
+/* RTL-aware rotations */
+[dir="rtl"] .rtl\:rotate-180 { transform: rotate(180deg); }
+[dir="rtl"] .rtl\:rotate-90 { transform: rotate(90deg); }
+[dir="rtl"] .rtl\:-rotate-90 { transform: rotate(-90deg); }
 
-[dir="rtl"] .rtl\:dropdown-align-end {
-  /* Align dropdown to end in RTL */
-}
-
-/* RTL-aware icons and arrows */
-[dir="rtl"] .rtl\:rotate-180 {
-  transform: rotate(180deg);
-}
-
-[dir="rtl"] .rtl\:rotate-90 {
-  transform: rotate(90deg);
-}
-
-[dir="rtl"] .rtl\:-rotate-90 {
-  transform: rotate(-90deg);
-}
-
-/* RTL-aware transitions for smooth direction changes */
+/* RTL transitions */
 .rtl-transition {
   transition: margin 0.3s ease, padding 0.3s ease, transform 0.3s ease;
 }
@@ -1174,14 +1226,14 @@
   text-align: left;
 }
 
-/* RTL-aware number inputs (keep LTR for numbers) */
+/* Keep numbers LTR */
 input[type="number"],
 input[type="tel"] {
   direction: ltr;
   text-align: left;
 }
 
-/* RTL-aware code blocks and pre-formatted text */
+/* Keep code blocks LTR */
 [dir="rtl"] code,
 [dir="rtl"] pre,
 [dir="rtl"] .code-block {
@@ -1194,7 +1246,6 @@ input[type="tel"] {
    ============================================ */
 
 @media (hover: none) and (pointer: coarse) {
-  /* Touch device specific styles */
   .touch-target {
     min-height: 48px;
     min-width: 48px;
@@ -1205,41 +1256,24 @@ input[type="tel"] {
     min-width: 56px;
   }
 
-  /* Touch-friendly hover states */
   .touch-hover:hover {
-    @apply bg-muted/50;
+    background-color: hsl(var(--muted) / 0.5);
   }
 
-  /* Prevent text selection on touch */
   .touch-no-select {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
   }
 
-  /* Touch feedback animations */
   .touch-feedback:active {
     animation: tap 0.1s ease-in-out;
   }
 
-  .touch-bounce:active {
-    animation: tap 0.15s ease-in-out;
-  }
-
-  /* Touch gestures */
-  .touch-swipe {
-    touch-action: pan-y;
-  }
-
-  .touch-pinch {
-    touch-action: pinch-zoom;
-  }
+  .touch-swipe { touch-action: pan-y; }
+  .touch-pinch { touch-action: pinch-zoom; }
 }
 
-/* Haptic feedback simulation */
 .touch-haptic {
   cursor: pointer;
 }
@@ -1263,7 +1297,7 @@ input[type="tel"] {
   width: 0;
   height: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: hsl(var(--primary) / 0.2);
   transform: translate(-50%, -50%);
   transition: width 0.3s ease, height 0.3s ease;
 }
@@ -1273,92 +1307,37 @@ input[type="tel"] {
   height: 300px;
 }
 
-/* Safe area handling for mobile devices */
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-area-left {
-  padding-left: env(safe-area-inset-left);
-}
-
-.safe-area-right {
-  padding-right: env(safe-area-inset-right);
-}
-
-/* Touch drag and drop */
-.touch-drag {
-  touch-action: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.touch-drag:active {
-  cursor: grabbing;
-}
+/* Safe area handling */
+.safe-area-top { padding-top: env(safe-area-inset-top); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-area-left { padding-left: env(safe-area-inset-left); }
+.safe-area-right { padding-right: env(safe-area-inset-right); }
 
 /* ============================================
    ♿ ENHANCED ACCESSIBILITY
    ============================================ */
 
 *:focus-visible {
-  @apply outline-none ring-4 ring-primary/40 ring-offset-2 ring-offset-background;
+  @apply outline-none ring-4 ring-offset-2 ring-offset-background;
   @apply rounded-xl;
+  --tw-ring-color: hsl(var(--primary) / 0.3);
 }
 
-/* Enhanced focus for touch devices */
 @media (hover: none) and (pointer: coarse) {
   *:focus-visible {
-    @apply ring-8 ring-primary/60 ring-offset-4;
+    @apply ring-8 ring-offset-4;
+    --tw-ring-color: hsl(var(--primary) / 0.5);
   }
-}
-
-/* Screen reader only content */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.sr-only:focus,
-.focus\:not-sr-only:focus {
-  position: static;
-  width: auto;
-  height: auto;
-  padding: inherit;
-  margin: inherit;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
 }
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .text-primary {
-    color: hsl(var(--primary));
-  }
-
-  .bg-primary {
-    background-color: hsl(var(--primary));
-  }
-
-  .border-primary {
-    border-color: hsl(var(--primary));
-  }
+  .text-primary { color: hsl(var(--primary)); }
+  .bg-primary { background-color: hsl(var(--primary)); }
+  .border-primary { border-color: hsl(var(--primary)); }
 }
 
-/* Reduced motion for accessibility */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1370,27 +1349,8 @@ input[type="tel"] {
   }
 }
 
-/* Safe area for mobile devices */
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 /* ============================================
-   🖨️ PRINT
+   🖨️ PRINT STYLES
    ============================================ */
 
 @media print {
@@ -1402,3 +1362,108 @@ input[type="tel"] {
     display: none !important;
   }
 }
+
+/* ============================================
+   🎨 SPECIAL ISLAMIC DECORATIVE ELEMENTS
+   العناصر الزخرفية الإسلامية
+   ============================================ */
+
+/* Bismillah Header Decoration */
+.bismillah-header {
+  @apply text-center py-4;
+  font-family: var(--font-amiri);
+}
+
+.bismillah-header::before {
+  content: '﷽';
+  @apply block text-3xl md:text-4xl text-primary mb-2;
+}
+
+/* Ayah/Quote Box */
+.ayah-box {
+  @apply relative p-6 my-6 rounded-lg border-r-4 border-primary;
+  background-color: hsl(var(--primary) / 0.05);
+  font-family: var(--font-amiri);
+}
+
+[dir="rtl"] .ayah-box {
+  @apply border-r-0 border-l-4;
+}
+
+.ayah-box::before,
+.ayah-box::after {
+  @apply text-secondary text-3xl absolute;
+  font-family: serif;
+}
+
+.ayah-box::before {
+  content: '"';
+  @apply top-2 right-4;
+}
+
+.ayah-box::after {
+  content: '"';
+  @apply bottom-2 left-4;
+}
+
+[dir="rtl"] .ayah-box::before {
+  @apply right-auto left-4;
+}
+
+[dir="rtl"] .ayah-box::after {
+  @apply left-auto right-4;
+}
+
+/* Section Title with Islamic Ornament */
+.section-title-islamic {
+  @apply relative text-center py-4;
+}
+
+.section-title-islamic::before,
+.section-title-islamic::after {
+  content: '❁';
+  @apply text-secondary mx-4;
+}
+
+/* Calligraphy Display */
+.calligraphy-display {
+  font-family: var(--font-amiri);
+  @apply text-3xl md:text-4xl lg:text-5xl;
+  @apply text-primary leading-relaxed;
+  @apply tracking-wide;
+}
+
+/* Gold Underline */
+.gold-underline {
+  @apply relative inline-block;
+}
+
+.gold-underline::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-full h-1;
+  background: linear-gradient(90deg, transparent, hsl(var(--secondary)), transparent);
+}
+
+/* Minaret Icon Frame */
+.icon-frame-islamic {
+  @apply relative p-4 rounded-full;
+  background: linear-gradient(to bottom right, hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.1));
+  border: 2px solid hsl(var(--secondary) / 0.3);
+}
+
+/* Geometric Corner Decorations */
+.corner-decoration {
+  @apply absolute w-12 h-12 opacity-30;
+}
+
+.corner-decoration::before {
+  content: '';
+  @apply absolute w-full h-full;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Cpath d='M0 0 L50 0 L50 10 L10 10 L10 50 L0 50 Z' fill='%23D4A017'/%3E%3C/svg%3E");
+  background-size: contain;
+}
+
+.corner-decoration.top-left { @apply top-0 left-0; }
+.corner-decoration.top-right { @apply top-0 right-0 rotate-90; }
+.corner-decoration.bottom-right { @apply bottom-0 right-0 rotate-180; }
+.corner-decoration.bottom-left { @apply bottom-0 left-0 -rotate-90; }

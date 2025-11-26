@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LucideIcon, Sparkles } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -10,7 +10,7 @@ interface PageHeaderProps {
   description?: string;
   children?: React.ReactNode;
   className?: string;
-  gradient?: string; // tailwind gradient stops classes e.g. "from-indigo-600 via-purple-600 to-indigo-700"
+  gradient?: string;
 }
 
 export function PageHeader({
@@ -19,43 +19,34 @@ export function PageHeader({
   description,
   children,
   className,
-  gradient
 }: PageHeaderProps) {
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-3xl p-8 mb-8 animate-fade-in-down",
-      "glass-card-gradient",
+      "relative overflow-hidden rounded-2xl p-6 md:p-8 mb-6 animate-fade-in-down",
+      "bg-card/80 backdrop-blur-sm",
+      "border border-primary/15",
+      "shadow-lg shadow-primary/5",
       className
     )}>
-      {/* Background Orbs */}
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float" />
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float delay-500" />
-
-      {/* Dots Pattern */}
-      <div className="absolute inset-0 bg-dots opacity-20" />
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-l from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex items-start gap-4">
-            {/* Icon */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-primary rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative p-4 bg-primary rounded-2xl">
-                <Icon className="w-8 h-8 text-white" />
-              </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+          <div className="flex items-center gap-4">
+            {/* Icon with gradient */}
+            <div className="p-3 md:p-4 bg-gradient-to-br from-primary to-primary-dark rounded-xl shadow-lg shadow-primary/20">
+              <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
             </div>
 
             {/* Text */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-                  {title}
-                </h1>
-                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-              </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+                {title}
+              </h1>
               {description && (
-                <p className="text-lg text-muted-foreground max-w-2xl">
+                <p className="text-sm md:text-base text-muted-foreground mt-1 max-w-xl">
                   {description}
                 </p>
               )}
@@ -64,12 +55,15 @@ export function PageHeader({
 
           {/* Actions */}
           {children && (
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               {children}
             </div>
           )}
         </div>
       </div>
+
+      {/* Bottom accent line */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
     </div>
   );
 }

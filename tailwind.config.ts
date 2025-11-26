@@ -16,19 +16,24 @@ const config: Config = {
       'lg': '1024px',   // Desktop
       'xl': '1280px',   // Large desktop
       '2xl': '1536px',  // Extra large
-      'tall': { 'raw': '(min-height: 800px)' }, // Tall screens
-      'short': { 'raw': '(max-height: 600px)' }, // Short screens
+      'tall': { 'raw': '(min-height: 800px)' },
+      'short': { 'raw': '(max-height: 600px)' },
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
-        poppins: ['var(--font-poppins)', 'sans-serif'],
-        cairo: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
+        // Islamic Scholarly Fonts
+        sans: ['var(--font-tajawal)', 'var(--font-cairo)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-amiri)', 'var(--font-tajawal)', 'Georgia', 'serif'],
+        heading: ['var(--font-tajawal)', 'var(--font-cairo)', 'system-ui', 'sans-serif'],
+        arabic: ['var(--font-amiri)', 'var(--font-tajawal)', 'serif'],
+        calligraphy: ['var(--font-scheherazade)', 'var(--font-amiri)', 'serif'],
+        // Legacy fonts for compatibility
+        poppins: ['var(--font-tajawal)', 'sans-serif'],
+        cairo: ['var(--font-tajawal)', 'system-ui', 'sans-serif'],
+        tajawal: ['var(--font-tajawal)', 'system-ui', 'sans-serif'],
+        amiri: ['var(--font-amiri)', 'Georgia', 'serif'],
       },
-      // Enhanced spacing scale for consistent design
+      // Enhanced spacing scale
       spacing: {
         'safe-top': 'env(safe-area-inset-top)',
         'safe-bottom': 'env(safe-area-inset-bottom)',
@@ -41,25 +46,27 @@ const config: Config = {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'gradient-mesh': 'var(--gradient-mesh)',
-        'gradient-dots': 'radial-gradient(circle, hsl(var(--primary) / 0.1) 1px, transparent 1px)',
-        'gradient-grid': 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
+        'gradient-dots': 'radial-gradient(circle, hsl(var(--primary) / 0.08) 1px, transparent 1px)',
+        'gradient-grid': 'linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)',
+        // Islamic Patterns
+        'islamic-geometric': 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M30 0L60 30L30 60L0 30L30 0zm0 10L10 30l20 20 20-20L30 10z\' fill=\'%23115E3C\' fill-opacity=\'0.05\'/%3E%3C/svg%3E")',
+        'islamic-stars': 'url("data:image/svg+xml,%3Csvg width=\'50\' height=\'50\' viewBox=\'0 0 50 50\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpolygon points=\'25,2 31,19 50,19 35,31 40,48 25,38 10,48 15,31 0,19 19,19\' fill=\'none\' stroke=\'%23D4A017\' stroke-width=\'0.5\' opacity=\'0.1\'/%3E%3C/svg%3E")',
       },
       // Enhanced typography scale
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1rem' }],
         'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
+        'base': ['1rem', { lineHeight: '1.6rem' }],
         'lg': ['1.125rem', { lineHeight: '1.75rem' }],
         'xl': ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
-        '5xl': ['3rem', { lineHeight: '1' }],
-        '6xl': ['3.75rem', { lineHeight: '1' }],
-        '7xl': ['4.5rem', { lineHeight: '1' }],
+        '5xl': ['3rem', { lineHeight: '1.2' }],
+        '6xl': ['3.75rem', { lineHeight: '1.1' }],
+        '7xl': ['4.5rem', { lineHeight: '1.1' }],
         '8xl': ['6rem', { lineHeight: '1' }],
         '9xl': ['8rem', { lineHeight: '1' }],
       },
@@ -137,18 +144,73 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        // Islamic Color Palette - Named Colors
+        emerald: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+          950: '#022c22',
+        },
+        gold: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+          950: '#451a03',
+        },
+        indigo: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
+          950: '#1e1b4b',
+        },
+        ivory: {
+          50: '#fdfcfa',
+          100: '#f8f5f0',
+          200: '#f0ebe2',
+          300: '#e5ddd0',
+          400: '#d9cfc0',
+          500: '#c9bda8',
+          600: '#b5a68e',
+          700: '#9a8b74',
+          800: '#7f7260',
+          900: '#685d4f',
+          950: '#3a3329',
+        },
       },
       // Enhanced shadow system
       boxShadow: {
         '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
-        'glow-primary': 'var(--shadow-glow-primary)',
-        'glow-accent': 'var(--shadow-glow-accent)',
+        'glow-primary': '0 15px 40px -10px hsl(var(--primary) / 0.3), 0 0 30px hsl(var(--primary) / 0.15)',
+        'glow-secondary': '0 15px 40px -10px hsl(var(--secondary) / 0.3), 0 0 30px hsl(var(--secondary) / 0.15)',
+        'glow-accent': '0 15px 40px -10px hsl(var(--accent) / 0.3), 0 0 30px hsl(var(--accent) / 0.15)',
         'inner-glow': 'inset 0 2px 4px 0 hsl(var(--primary) / 0.1)',
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
         'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         'large': '0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 4px 25px -5px rgba(0, 0, 0, 0.1)',
+        'islamic': '0 10px 30px -10px hsl(var(--primary) / 0.15), 0 4px 15px -5px hsl(var(--secondary) / 0.1), inset 0 1px 0 hsl(var(--secondary) / 0.1)',
       },
-      // Enhanced animations for micro-interactions
+      // Enhanced animations
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -158,7 +220,6 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
-        // Enhanced entrance animations
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(30px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
@@ -185,7 +246,6 @@ const config: Config = {
           '70%': { transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
-        // Micro-interactions
         'tap': {
           '0%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(0.95)' },
@@ -199,14 +259,13 @@ const config: Config = {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.1)' },
         },
-        // Advanced animations
         'float': {
           '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
+          '50%': { transform: 'translateY(-15px)' },
         },
         'float-slow': {
           '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-          '50%': { transform: 'translateY(-30px) rotate(5deg)' },
+          '50%': { transform: 'translateY(-20px) rotate(3deg)' },
         },
         'shimmer': {
           '0%': { backgroundPosition: '-1000px 0' },
@@ -216,6 +275,14 @@ const config: Config = {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
           '100%': { backgroundPosition: '0% 50%' },
+        },
+        'ornament-spin': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        'ornament-pulse': {
+          '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.05)' },
         },
       },
       animation: {
@@ -230,10 +297,12 @@ const config: Config = {
         'tap': 'tap 0.2s ease-in-out',
         'wiggle': 'wiggle 1s ease-in-out infinite',
         'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
-        'float': 'float 3s ease-in-out infinite',
+        'float': 'float 4s ease-in-out infinite',
         'float-slow': 'float-slow 6s ease-in-out infinite',
         'shimmer': 'shimmer 2s linear infinite',
         'gradient': 'gradient-shift 8s ease infinite',
+        'ornament': 'ornament-spin 30s linear infinite',
+        'ornament-pulse': 'ornament-pulse 4s ease-in-out infinite',
       },
       // RTL-aware utilities
       inset: {

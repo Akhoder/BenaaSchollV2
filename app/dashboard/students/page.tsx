@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { DashboardStatsSkeleton, TableSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { ResponsiveTable } from '@/components/ResponsiveTable';
 import { ErrorDisplay, EmptyState } from '@/components/ErrorDisplay';
 import { InputMask } from '@/components/InputMask';
@@ -391,18 +391,12 @@ export default function StudentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-fade-in">
-          <PageHeaderSkeleton />
-          <DashboardStatsSkeleton />
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('students')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TableSkeleton rows={5} cols={5} />
-            </CardContent>
-          </Card>
-        </div>
+        <PageLoading
+          text={t('loadingStudents')}
+          statsCount={4}
+          contentType={viewMode === 'grid' ? 'grid' : 'table'}
+          contentRows={6}
+        />
       </DashboardLayout>
     );
   }
@@ -414,30 +408,29 @@ export default function StudentsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Enhanced Header */}
+        {/* ✨ Enhanced Header - Islamic Design */}
         <PageHeader 
           icon={GraduationCap}
           title={t('studentsManagement')}
           description={t('studentsManagementDescription')}
-          gradient="from-emerald-600 via-teal-600 to-emerald-700"
         >
           <ToggleGroup
             type="single"
             value={viewMode}
             onValueChange={(value) => value && setViewMode(value as 'list' | 'grid')}
-            className="rounded-full border border-emerald-100/60 bg-emerald-900/20 p-1 text-white backdrop-blur-lg shadow-inner shadow-emerald-900/30"
+            className="rounded-full border border-white/30 bg-white/10 p-1 text-white backdrop-blur-lg shadow-inner"
             aria-label={t('viewMode')}
           >
             <ToggleGroupItem
               value="list"
-              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-800 data-[state=on]:shadow-lg data-[state=on]:shadow-emerald-500/30 text-white/80 hover:text-white"
+              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-secondary data-[state=on]:text-white data-[state=on]:shadow-lg text-white/80 hover:text-white"
             >
               <List className="h-4 w-4" />
               {t('listView')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="grid"
-              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-800 data-[state=on]:shadow-lg data-[state=on]:shadow-emerald-500/30 text-white/80 hover:text-white"
+              className="flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wide transition data-[state=on]:bg-secondary data-[state=on]:text-white data-[state=on]:shadow-lg text-white/80 hover:text-white"
             >
               <LayoutGrid className="h-4 w-4" />
               {t('gridView')}
@@ -446,67 +439,82 @@ export default function StudentsPage() {
           {profile?.role === 'admin' && (
             <Button 
               onClick={() => setCreateOpen(true)}
-              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg transition-all duration-300 hover:scale-105"
+              className="bg-secondary hover:bg-secondary/90 text-white backdrop-blur-sm border border-secondary/50 shadow-lg shadow-secondary/30 transition-all duration-300 hover:scale-105"
             >
-              <Plus className="h-4 w-4 mr-2 animate-pulse-glow" />
+              <Plus className="h-4 w-4 mr-2" />
               {t('addStudent')}
             </Button>
           )}
         </PageHeader>
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-          {statsConfig.map((stat) => {
+          {statsConfig.map((stat, index) => {
             const Icon = stat.icon;
+            const gradients = [
+              'from-primary to-accent',
+              'from-success to-primary',
+              'from-secondary to-secondary/80',
+              'from-accent to-primary'
+            ];
+            const borderColors = [
+              'border-primary/10 hover:border-primary/30',
+              'border-success/10 hover:border-success/30',
+              'border-secondary/10 hover:border-secondary/30',
+              'border-accent/10 hover:border-accent/30'
+            ];
+            const textColors = ['text-primary', 'text-success', 'text-secondary', 'text-accent'];
             return (
-              <Card key={stat.title} className="card-interactive">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
+              <Card key={stat.title} className={`glass-card-hover ${borderColors[index % 4]} transition-all duration-300`}>
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
                     {stat.title}
-              </CardTitle>
-                  <div className={`p-2 bg-gradient-to-br ${stat.accent} rounded-lg`}>
-                    <Icon className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-                  <div className="text-3xl font-bold font-display text-slate-900 dark:text-white">
+                  </CardTitle>
+                  <div className={`p-2.5 bg-gradient-to-br ${gradients[index % 4]} rounded-xl shadow-lg`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-3xl font-bold font-display ${textColors[index % 4]}`}>
                     {stat.value}
-              </div>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1 font-sans">{stat.subtitle}</p>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
 
-        {/* Search and Filters */}
-        <Card className="card-elegant">
+        {/* ✨ Search and Filters - Islamic Design */}
+        <Card className="glass-card border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display">{t('searchAndFilter')}</CardTitle>
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Filter className="h-4 w-4 text-primary" />
+              </div>
+              <CardTitle className="font-display text-foreground">{t('searchAndFilter')}</CardTitle>
             </div>
-            <CardDescription className="font-sans">
+            <CardDescription className="font-sans text-muted-foreground">
               {t('searchStudentsHelper')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t('searchStudentsPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 font-sans input-modern"
+                className="pl-10 rtl:pl-3 rtl:pr-10 h-11 font-sans input-modern border-primary/20 focus:border-primary"
               />
             </div>
             <div className="grid gap-4 pt-4 md:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {t('enrollmentFilterLabel')}
                 </label>
                 <Select value={enrollmentFilter} onValueChange={(value) => setEnrollmentFilter(value as 'all' | 'enrolled' | 'notEnrolled')}>
-                  <SelectTrigger className="mt-1 font-sans">
+                  <SelectTrigger className="mt-1 font-sans border-primary/20">
                     <SelectValue placeholder={t('enrollmentFilterLabel')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -520,22 +528,27 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
-        {/* Create Student Dialog */}
+        {/* ✨ Create Student Dialog - Islamic Design */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display">{t('addStudent')}</DialogTitle>
-              <DialogDescription className="font-sans">{t('createStudentDescription')}</DialogDescription>
+          <DialogContent className="max-w-lg border-primary/20">
+            <DialogHeader className="border-b border-primary/10 pb-4">
+              <DialogTitle className="text-2xl font-display text-primary flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
+                {t('addStudent')}
+              </DialogTitle>
+              <DialogDescription className="font-sans text-muted-foreground">{t('createStudentDescription')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Avatar Upload */}
-              <div className="space-y-4 border-b pb-4">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('profilePicture' as TranslationKey)}</h3>
+              <div className="space-y-4 border-b border-primary/10 pb-4">
+                <h3 className="text-sm font-semibold text-foreground font-sans">{t('profilePicture' as TranslationKey)}</h3>
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <Avatar className="h-20 w-20 ring-2 ring-blue-500/20">
+                    <Avatar className="h-20 w-20 ring-2 ring-secondary/40 shadow-lg">
                       <AvatarImage src={createAvatarPreview || undefined} />
-                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-lg">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold text-lg">
                         {createName.charAt(0).toUpperCase() || <User className="h-6 w-6" />}
                       </AvatarFallback>
                     </Avatar>
@@ -602,7 +615,7 @@ export default function StudentsPage() {
                         </span>
                       </Button>
                     </label>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                    <p className="text-xs text-muted-foreground mt-1 font-sans">
                       {t('imageUploadHint' as TranslationKey)}
                     </p>
                   </div>
@@ -611,7 +624,7 @@ export default function StudentsPage() {
 
               {/* Basic Information */}
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('basicInformation' as TranslationKey)}</h3>
+                <h3 className="text-sm font-semibold text-foreground font-sans">{t('basicInformation' as TranslationKey)}</h3>
               <div>
                   <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                 <Input value={createName} onChange={(e) => setCreateName(e.target.value)} className="mt-1 font-sans" />
@@ -792,11 +805,15 @@ export default function StudentsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Students List */}
-        <Card className="card-elegant">
-          <CardHeader>
-            <CardTitle className="font-display text-gradient">
-              {t('students')} ({filteredStudents.length})
+        {/* ✨ Students List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+            <CardTitle className="font-display text-foreground flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <GraduationCap className="h-5 w-5 text-primary" />
+              </div>
+              {t('students')} 
+              <Badge variant="gold" className="mr-2">{filteredStudents.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -809,21 +826,23 @@ export default function StudentsPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {paginatedStudents.map((s) => (
-                  <Card key={s.id} className="border border-slate-200/70 dark:border-slate-800/70 shadow-sm hover:shadow-lg transition-shadow">
+                  <Card key={s.id} className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300">
                     <CardHeader className="flex-row items-center gap-4">
-                      <Avatar className="h-14 w-14">
+                      <Avatar className="h-14 w-14 ring-2 ring-secondary/30 shadow-lg">
                         <AvatarImage src={s.avatar_url} />
-                        <AvatarFallback>{(s.full_name || '?').charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                          {(s.full_name || '?').charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-lg font-semibold">{s.full_name}</CardTitle>
-                          <Badge variant="secondary" className="text-xs">
+                          <CardTitle className="text-lg font-semibold text-foreground">{s.full_name}</CardTitle>
+                          <Badge variant={s.enrolled_classes && s.enrolled_classes > 0 ? 'success' : 'gold'} className="text-xs">
                             {s.enrolled_classes && s.enrolled_classes > 0 ? t('enrolled') : t('notEnrolled')}
                           </Badge>
                         </div>
-                        <p className="text-sm text-slate-500">{s.email}</p>
-                        <p className="text-sm text-slate-500">{s.phone || '—'}</p>
+                        <p className="text-sm text-muted-foreground">{s.email}</p>
+                        <p className="text-sm text-muted-foreground">{s.phone || '—'}</p>
                       </div>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -904,22 +923,22 @@ export default function StudentsPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-500">{t('enrolled')}</p>
-                          <p className="text-lg font-semibold">{s.enrolled_classes ?? 0}</p>
+                        <div className="bg-primary/5 rounded-lg p-3">
+                          <p className="text-muted-foreground text-xs">{t('enrolled')}</p>
+                          <p className="text-lg font-semibold text-primary">{s.enrolled_classes ?? 0}</p>
                         </div>
-                        <div>
-                          <p className="text-slate-500">{t('avgGrade')}</p>
-                          <p className="text-lg font-semibold">{s.average_grade ?? '—'}</p>
+                        <div className="bg-secondary/5 rounded-lg p-3">
+                          <p className="text-muted-foreground text-xs">{t('avgGrade')}</p>
+                          <p className="text-lg font-semibold text-secondary">{s.average_grade ?? '—'}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                         <span>
                           {t('createdAt')}: {new Date(s.created_at).toLocaleDateString(dateLocale)}
                         </span>
-                        <span>
-                          {t('code')}: {s.id.slice(0, 8)}...
-                        </span>
+                        <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                          {s.id.slice(0, 8)}...
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -929,34 +948,40 @@ export default function StudentsPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead>{t('fullName')}</TableHead>
-                      <TableHead>{t('email')}</TableHead>
-                      <TableHead>{t('phone')}</TableHead>
-                      <TableHead>{t('enrolled')}</TableHead>
-                      <TableHead>{t('avgGrade')}</TableHead>
-                      <TableHead className="text-right">{t('actions')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                      <TableHead className="font-semibold text-foreground">{t('fullName')}</TableHead>
+                      <TableHead className="font-semibold text-foreground">{t('email')}</TableHead>
+                      <TableHead className="font-semibold text-foreground">{t('phone')}</TableHead>
+                      <TableHead className="font-semibold text-foreground">{t('enrolled')}</TableHead>
+                      <TableHead className="font-semibold text-foreground">{t('avgGrade')}</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedStudents.map((s) => (
-                      <TableRow key={s.id}>
+                      <TableRow key={s.id} className="hover:bg-primary/5 transition-colors border-b border-border/50">
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
+                            <Avatar className="h-9 w-9 ring-2 ring-secondary/30">
                               <AvatarImage src={s.avatar_url} />
-                              <AvatarFallback>{(s.full_name||'?').charAt(0).toUpperCase()}</AvatarFallback>
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                                {(s.full_name||'?').charAt(0).toUpperCase()}
+                              </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{s.full_name}</div>
-                              <div className="text-xs text-slate-500">{s.id.slice(0,8)}...</div>
+                              <div className="font-medium text-foreground">{s.full_name}</div>
+                              <div className="text-xs text-muted-foreground">{s.id.slice(0,8)}...</div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{s.email}</TableCell>
-                        <TableCell>{s.phone || '—'}</TableCell>
-                        <TableCell>{s.enrolled_classes ?? 0}</TableCell>
-                        <TableCell>{s.average_grade ?? '—'}</TableCell>
+                        <TableCell className="text-foreground">{s.email}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.phone || '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant="islamic">{s.enrolled_classes ?? 0}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="gold">{s.average_grade ?? '—'}</Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1041,9 +1066,9 @@ export default function StudentsPage() {
           
           {/* ✅ PAGINATION: Add pagination UI */}
           {filteredStudents.length > itemsPerPage && (
-            <div className="border-t border-slate-200 dark:border-slate-800 p-4">
+            <div className="border-t border-primary/10 p-4 bg-gradient-to-l from-primary/5 to-transparent">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+                <div className="text-sm text-muted-foreground">
                   {t('showing')} {startIndex + 1} {t('to')} {Math.min(endIndex, filteredStudents.length)} {t('of')}{' '}
                   {filteredStudents.length} {t('students')}
                 </div>
