@@ -9,7 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { CardGridSkeleton, PageHeaderSkeleton, ListSkeleton } from '@/components/SkeletonLoaders';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
+import { StatCard } from '@/components/StatCard';
 import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,10 +68,10 @@ export default function ClassViewPage() {
   };
 
   const getCompletionColor = (progress: number) => {
-    if (progress >= 80) return 'bg-emerald-500';
-    if (progress >= 50) return 'bg-blue-500';
-    if (progress > 0) return 'bg-amber-500';
-    return 'bg-gray-300 dark:bg-gray-700';
+    if (progress >= 80) return 'bg-success';
+    if (progress >= 50) return 'bg-info';
+    if (progress > 0) return 'bg-warning';
+    return 'bg-muted';
   };
 
   const getProgressStatus = (progress: any): ProgressStatus => {
@@ -215,11 +216,7 @@ export default function ClassViewPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-fade-in">
-          <PageHeaderSkeleton />
-          <CardGridSkeleton count={2} />
-          <ListSkeleton items={3} />
-        </div>
+        <SimplePageLoading text={t('loadingClass' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -239,35 +236,36 @@ export default function ClassViewPage() {
           />
         )}
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between animate-fade-in">
           {/* Back Button */}
           <Button 
-            variant="ghost" 
+            variant="outline"
             onClick={() => router.push('/dashboard/my-classes')}
-            className="w-fit"
+            className="w-fit border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('backToClasses' as TranslationKey)}
           </Button>
           {classData.enrolled_at && (
-            <div className="text-sm text-muted-foreground">
-              {t('enrolledOn' as TranslationKey)}{' '}
-              <span className="font-medium text-foreground">
-                {new Date(classData.enrolled_at).toLocaleDateString(dateLocale)}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span>
+                <span className="font-semibold">{t('enrolledOn' as TranslationKey)}:</span>{' '}
+                <span className="font-medium text-foreground">
+                  {new Date(classData.enrolled_at).toLocaleDateString(dateLocale)}
+                </span>
               </span>
             </div>
           )}
         </div>
 
         {/* Class Header */}
-        <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 border border-white/20 bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-2xl shadow-primary/20 animate-fade-in-up">
           {/* Animated Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.08) 0%, transparent 50%)'
-          }}></div>
+          <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20 animate-float blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16 animate-float blur-2xl" style={{animationDelay: '1s'}}></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/30 rounded-full translate-y-16 -translate-x-16 animate-float blur-2xl" style={{animationDelay: '1s'}}></div>
 
           <div className="relative z-10">
             <div className="flex items-start gap-6">
@@ -340,82 +338,39 @@ export default function ClassViewPage() {
         </div>
 
         {/* Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('classOverview' as TranslationKey)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {overviewStats.total}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t('totalSubjectsLabel' as TranslationKey)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('subjectsCompleted' as TranslationKey)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {overviewStats.completed}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {Math.round((overviewStats.completed / Math.max(overviewStats.total, 1)) * 100)}%
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-emerald-100/60 dark:bg-emerald-950/40 flex items-center justify-center">
-                <CircleCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('subjectsInProgress' as TranslationKey)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {overviewStats.inProgress}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {Math.round((overviewStats.inProgress / Math.max(overviewStats.total, 1)) * 100)}%
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100/60 dark:bg-blue-950/40 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-100 dark:border-slate-800 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t('subjectsNotStarted' as TranslationKey)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                  {overviewStats.notStarted}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {Math.round((overviewStats.notStarted / Math.max(overviewStats.total, 1)) * 100)}%
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-amber-100/60 dark:bg-amber-950/40 flex items-center justify-center">
-                <CircleDot className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+          <StatCard
+            title={t('classOverview' as TranslationKey)}
+            value={overviewStats.total}
+            description={t('totalSubjectsLabel' as TranslationKey)}
+            icon={BookOpen}
+            gradient="from-primary to-accent"
+            color="primary"
+          />
+          <StatCard
+            title={t('subjectsCompleted' as TranslationKey)}
+            value={overviewStats.completed}
+            description={`${Math.round((overviewStats.completed / Math.max(overviewStats.total, 1)) * 100)}%`}
+            icon={CircleCheck}
+            gradient="from-success to-primary"
+            color="success"
+          />
+          <StatCard
+            title={t('subjectsInProgress' as TranslationKey)}
+            value={overviewStats.inProgress}
+            description={`${Math.round((overviewStats.inProgress / Math.max(overviewStats.total, 1)) * 100)}%`}
+            icon={CheckCircle}
+            gradient="from-info to-primary"
+            color="info"
+          />
+          <StatCard
+            title={t('subjectsNotStarted' as TranslationKey)}
+            value={overviewStats.notStarted}
+            description={`${Math.round((overviewStats.notStarted / Math.max(overviewStats.total, 1)) * 100)}%`}
+            icon={CircleDot}
+            gradient="from-warning to-warning/80"
+            color="warning"
+          />
         </div>
 
         {/* Filter Tabs */}
@@ -443,40 +398,52 @@ export default function ClassViewPage() {
 
         {/* Subjects List */}
         {subjects.length === 0 ? (
-          <Card className="card-elegant">
-            <CardContent className="py-12">
-              <EmptyState
-                title={t('noSubjectsFound' as TranslationKey)}
-                description={t('noSubjectsAddedYet' as TranslationKey)}
-                icon={BookOpen}
-                onRetry={loadData}
-                error={error}
-              />
+          <Card className="glass-card border-primary/10">
+            <CardContent className="py-12 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              <div className="relative z-10">
+                <EmptyState
+                  title={t('noSubjectsFound' as TranslationKey)}
+                  description={t('noSubjectsAddedYet' as TranslationKey)}
+                  icon={BookOpen}
+                  onRetry={loadData}
+                  error={error}
+                />
+              </div>
             </CardContent>
           </Card>
         ) : filteredSubjects.length === 0 ? (
-          <Card className="card-elegant">
-            <CardContent className="py-12">
-              <EmptyState
-                title={t('noClassesMatchSearch' as TranslationKey)}
-                description={t('tryAdjustingFilters' as TranslationKey)}
-                icon={BookOpen}
-                action={{
-                  label: t('clear' as TranslationKey),
-                  onClick: () => setFilterTab('all'),
-                }}
-              />
+          <Card className="glass-card border-primary/10">
+            <CardContent className="py-12 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              <div className="relative z-10">
+                <EmptyState
+                  title={t('noClassesMatchSearch' as TranslationKey)}
+                  description={t('tryAdjustingFilters' as TranslationKey)}
+                  icon={BookOpen}
+                  action={{
+                    label: t('clear' as TranslationKey),
+                    onClick: () => setFilterTab('all'),
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
-            {filteredSubjects.map(({ subject, progress, status }) => {
+          <div className="grid gap-6 animate-fade-in-up">
+            {filteredSubjects.map(({ subject, progress, status }, index) => {
               const progressValue = progress?.overall_progress || 0;
               const StatusIcon = statusIconMap[status];
               const statusText = t(statusLabelMap[status]);
               
               return (
-                <Card key={subject.id} className="card-hover overflow-hidden">
+                <Card key={subject.id} className="glass-card-hover border-primary/10 group overflow-hidden" style={{ animationDelay: `${index * 50}ms` }}>
                   <div className="flex flex-col h-full">
                     <Link
                       href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`}
@@ -484,14 +451,14 @@ export default function ClassViewPage() {
                       className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-2xl"
                       aria-label={subject.subject_name}
                     >
-                      <CardHeader className="pb-4 h-full">
+                      <CardHeader className="pb-4 h-full hover:bg-primary/5 transition-all">
                         <div className="flex items-start justify-between gap-4">
                           {/* Subject Info */}
                           <div className="flex items-start gap-4 flex-1 min-w-0">
                             {/* Subject Image/Icon */}
                             <div className="relative flex-shrink-0">
                               {subject.image_url ? (
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-blue-100 dark:border-blue-900 relative">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all relative">
                                   <img
                                     src={subject.image_url}
                                     alt={subject.subject_name}
@@ -500,8 +467,8 @@ export default function ClassViewPage() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center relative border-2 border-blue-100 dark:border-blue-900">
+                                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all shadow-lg shadow-primary/20">
                                     <BookOpen className="h-8 w-8 text-white" />
                                   </div>
                                 </>
@@ -510,13 +477,13 @@ export default function ClassViewPage() {
 
                             {/* Subject Details */}
                             <div className="flex-1 min-w-0 pt-1">
-                              <CardTitle className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+                              <CardTitle className="text-2xl font-display font-bold text-foreground mb-2 group-hover:text-primary transition-colors cursor-pointer">
                                 {subject.subject_name}
                               </CardTitle>
                               
-                              {/* ✅ NEW: Subject Description */}
+                              {/* Subject Description */}
                               {subject.description && (
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{subject.description}</p>
+                                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{subject.description}</p>
                               )}
                               
                               {/* Teacher Info with Avatar */}
@@ -524,31 +491,31 @@ export default function ClassViewPage() {
                                 <Link
                                   href={`/dashboard/teachers/${subject.teacher.id}`}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group/teacher"
+                                  className="flex items-center gap-2 text-sm text-muted-foreground mb-3 hover:text-primary transition-colors group/teacher"
                                 >
                                   {subject.teacher.avatar_url ? (
-                                    <Avatar className="h-6 w-6 border border-slate-200 dark:border-slate-700">
+                                    <Avatar className="h-6 w-6 ring-2 ring-secondary/30">
                                       <AvatarImage src={subject.teacher.avatar_url} alt={subject.teacher.full_name} />
                                       <AvatarFallback className="text-xs">
                                         {subject.teacher.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                   ) : (
-                                    <div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                      <User className="h-3.5 w-3.5 text-slate-500" />
+                                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                                      <User className="h-3.5 w-3.5 text-muted-foreground" />
                                     </div>
                                   )}
                                   <span className="truncate group-hover/teacher:underline">{subject.teacher.full_name}</span>
                                 </Link>
                               )}
                               
-                              {/* ✅ NEW: Reference URL */}
+                              {/* Reference URL */}
                               {subject.reference_url && (
                                 <a
                                   href={subject.reference_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mb-2"
+                                  className="text-xs text-info hover:underline flex items-center gap-1 mb-2"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <ExternalLink className="h-3 w-3" />
@@ -563,18 +530,18 @@ export default function ClassViewPage() {
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
                                         <StatusIcon className={`h-4 w-4 ${
-                                          status === 'completed' ? 'text-emerald-600' :
-                                          status === 'in_progress' ? 'text-blue-600' : 'text-gray-400'
+                                          status === 'completed' ? 'text-success' :
+                                          status === 'in_progress' ? 'text-info' : 'text-muted-foreground'
                                         }`} />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <span className="text-sm font-medium text-foreground">
                                           {statusText}
                                         </span>
                                       </div>
-                                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                      <span className="text-sm font-bold text-foreground">
                                         {Math.round(progressValue)}%
                                       </span>
                                     </div>
-                                    <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="relative h-3 bg-muted rounded-full overflow-hidden">
                                       <div
                                         className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${getCompletionColor(progressValue)}`}
                                         style={{ width: `${progressValue}%` }}
@@ -585,29 +552,29 @@ export default function ClassViewPage() {
                                   </div>
 
                                   {/* Stats */}
-                                  <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-4 text-sm flex-wrap">
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                      <span className="text-gray-600 dark:text-gray-400">
+                                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                                      <span className="text-muted-foreground">
                                         {progress.completed_lessons} {t('completedLessons' as TranslationKey)}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                      <span className="text-gray-600 dark:text-gray-400">
+                                      <div className="w-2 h-2 rounded-full bg-info"></div>
+                                      <span className="text-muted-foreground">
                                         {progress.in_progress_lessons} {t('lessonsInProgress' as TranslationKey)}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                      <span className="text-gray-600 dark:text-gray-400">
+                                      <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
+                                      <span className="text-muted-foreground">
                                         {progress.not_started_lessons} {t('lessonsRemaining' as TranslationKey)}
                                       </span>
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                   <StatusIcon className="h-4 w-4" />
                                   <span>{t('noLessonsYet' as TranslationKey)}</span>
                                 </div>
@@ -617,22 +584,22 @@ export default function ClassViewPage() {
 
                           {/* Arrow */}
                           <div className="flex-shrink-0 pt-2">
-                            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 transition-colors">
-                              <ArrowRight className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            <div className="p-3 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                              <ArrowRight className="h-6 w-6 text-primary" />
                             </div>
                           </div>
                         </div>
                       </CardHeader>
                     </Link>
-                    <CardContent className="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-wrap gap-2">
+                    <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 pt-4 flex flex-wrap gap-2">
                       <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true}>
-                        <Button variant="outline" size="sm" className="gap-2">
+                        <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors">
                           <BookOpen className="h-4 w-4" />
                           {t('viewLesson' as TranslationKey)}
                         </Button>
                       </Link>
                       <Link href={`/dashboard/my-assignments?subject=${subject.id}`} prefetch={false}>
-                        <Button variant="outline" size="sm" className="gap-2">
+                        <Button variant="outline" size="sm" className="gap-2 hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors">
                           <FileText className="h-4 w-4" />
                           {t('openAssignments' as TranslationKey)}
                         </Button>
@@ -641,14 +608,14 @@ export default function ClassViewPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="gap-2"
+                        className="gap-2 hover:bg-info/10 hover:text-info hover:border-info/30 transition-colors"
                         onClick={() => setDiscussionSubject({ id: subject.id, name: subject.subject_name })}
                       >
                         <MessageCircle className="h-4 w-4" />
                         {t('openDiscussion' as TranslationKey)}
                       </Button>
                       <Link href={`/dashboard/schedule?subject=${subject.id}`} prefetch={false}>
-                        <Button variant="outline" size="sm" className="gap-2">
+                        <Button variant="outline" size="sm" className="gap-2 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-colors">
                           <Calendar className="h-4 w-4" />
                           {t('openSchedule' as TranslationKey)}
                         </Button>

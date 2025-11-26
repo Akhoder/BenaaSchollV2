@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,8 @@ import {
   X,
   Award,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Target
 } from 'lucide-react';
 import { 
   fetchSubjectsForClass, 
@@ -471,9 +473,7 @@ export default function SubjectLessonsPage() {
   if (classId === null || subjectId === null) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        </div>
+        <SimplePageLoading />
       </DashboardLayout>
     );
   }
@@ -485,9 +485,7 @@ export default function SubjectLessonsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        </div>
+        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل بيانات المادة...' : 'Loading subject data...'} />
       </DashboardLayout>
     );
   }
@@ -496,9 +494,7 @@ export default function SubjectLessonsPage() {
   if (!profile || profile.role !== 'student') {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        </div>
+        <SimplePageLoading />
       </DashboardLayout>
     );
   }
@@ -506,13 +502,7 @@ export default function SubjectLessonsPage() {
   if (!subject || lessons.length === 0) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
-            </p>
-          </div>
-        </div>
+        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'} />
       </DashboardLayout>
     );
   }
@@ -522,13 +512,7 @@ export default function SubjectLessonsPage() {
   if (!activeLesson) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'}
-            </p>
-          </div>
-        </div>
+        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل الدرس...' : 'Loading lesson...'} />
       </DashboardLayout>
     );
   }
@@ -670,33 +654,44 @@ export default function SubjectLessonsPage() {
       <div className="animate-fade-in">
         {/* Certificate Eligibility Banner */}
         {certificateEligibility && (
-          <Card className="card-elegant border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between gap-4">
+          <Card className="glass-card border-secondary/30 bg-gradient-to-r from-secondary/10 to-accent/10 mb-6 shadow-xl shadow-secondary/20 animate-fade-in-up">
+            <CardContent className="pt-6 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl animate-pulse"></div>
+              
+              <div className="flex items-center justify-between gap-4 relative z-10">
                 <div className="flex items-start gap-4 flex-1">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-full blur-lg opacity-50 animate-pulse"></div>
+                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <Sparkles className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-1 font-display">
                       {language === 'ar' ? 'شهادة جاهزة للإصدار!' : 'Certificate Ready to Issue!'}
                     </h3>
-                    <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                    <p className="text-sm text-muted-foreground mb-3">
                       {language === 'ar' 
                         ? `تهانينا! لقد أكملت جميع الدروس والاختبارات في مادة ${subject?.subject_name || ''}. يمكنك الآن إصدار شهادتك مباشرة.`
                         : `Congratulations! You've completed all lessons and quizzes for ${subject?.subject_name || ''}. You can now issue your certificate.`
                       }
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-amber-600 dark:text-amber-400">
-                      <span>
+                    <div className="flex items-center gap-4 text-xs">
+                      <Badge variant="gold" className="gap-1">
+                        <Award className="h-3 w-3" />
                         {language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
-                      </span>
-                      <span className="font-semibold">{certificateEligibility.grade || '-'}</span>
+                      </Badge>
+                      <Badge variant="success" className="font-semibold">
+                        {certificateEligibility.grade || '-'}
+                      </Badge>
                     </div>
                   </div>
                 </div>
                 <Button
-                  className="btn-gradient whitespace-nowrap"
+                  variant="default"
+                  className="whitespace-nowrap hover:scale-105 transition-transform"
                   onClick={async () => {
                     try {
                       setIssuingCertificate(true);
@@ -737,27 +732,28 @@ export default function SubjectLessonsPage() {
         )}
 
         {/* Mobile Header */}
-        <div className="lg:hidden mb-4 flex items-center justify-between">
+        <div className="lg:hidden mb-4 flex items-center justify-between animate-fade-in-up">
           <Button 
-            variant="ghost" 
+            variant="outline"
             size="sm"
             onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
+            className="border-primary/30 hover:bg-primary/5 hover:border-primary/50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {language === 'ar' ? 'رجوع' : 'Back'}
           </Button>
           
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5">
                 <Menu className="h-4 w-4 mr-2" />
-                Lessons
+                {language === 'ar' ? 'الدروس' : 'Lessons'}
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4">
               <div className="mb-4">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">{subject.subject_name}</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lessons.length} Lessons</p>
+                <h2 className="text-lg font-bold text-foreground font-display">{subject.subject_name}</h2>
+                <p className="text-sm text-muted-foreground">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
               </div>
               <LessonSidebar />
             </SheetContent>
@@ -765,46 +761,60 @@ export default function SubjectLessonsPage() {
         </div>
 
         {/* Subject Header - Mobile Only */}
-        <div className="lg:hidden relative overflow-hidden rounded-2xl p-6 mb-6 border border-white/20 bg-gradient-to-br from-cyan-600 via-teal-600 to-blue-700 text-white shadow-xl">
+        <div className="lg:hidden relative overflow-hidden rounded-3xl p-6 mb-6 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-2xl shadow-primary/20 animate-fade-in-up">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-secondary/30 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
+          
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-4">
-              {/* ✅ NEW: Subject Image */}
+              {/* Subject Image */}
               {subject.image_url ? (
-                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 flex-shrink-0">
-                  <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-2xl blur-sm opacity-75"></div>
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-secondary/50 flex-shrink-0 shadow-lg">
+                    <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                  </div>
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                  <BookOpen className="h-8 w-8 text-white" />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-white/20 rounded-2xl blur-md"></div>
+                  <div className="relative w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-secondary/50 shadow-lg">
+                    <BookOpen className="h-8 w-8 text-white" />
+                  </div>
                 </div>
               )}
               <div className="flex-1">
-                <h1 className="text-2xl font-display font-bold mb-1">{subject.subject_name}</h1>
+                <h1 className="text-2xl font-display font-bold mb-1 drop-shadow-lg">{subject.subject_name}</h1>
                 {subject.teacher?.full_name && (
-                  <div className="flex items-center gap-2 text-sm text-white/90 mb-1">
+                  <div className="flex items-center gap-2 text-sm text-white/95 mb-1">
                     <User className="h-3.5 w-3.5" />
                     <span>{subject.teacher.full_name}</span>
                   </div>
                 )}
-                <p className="text-sm text-white/90">Lesson {activeLessonIndex + 1} of {lessons.length}</p>
+                <p className="text-sm text-white/95">{language === 'ar' ? 'الدرس' : 'Lesson'} {activeLessonIndex + 1} {language === 'ar' ? 'من' : 'of'} {lessons.length}</p>
               </div>
             </div>
             
-            {/* ✅ NEW: Subject Description */}
+            {/* Subject Description */}
             {subject.description && (
-              <div className="mb-3 pb-3 border-b border-white/20">
-                <p className="text-sm text-white/90 leading-relaxed">{subject.description}</p>
+              <div className="mb-3 pb-3 border-b border-white/30">
+                <p className="text-sm text-white/95 leading-relaxed">{subject.description}</p>
               </div>
             )}
             
-            {/* ✅ NEW: Objectives */}
+            {/* Objectives */}
             {subject.objectives && subject.objectives.length > 0 && (
-              <div className="mb-3 pb-3 border-b border-white/20">
-                <p className="text-sm font-semibold text-white mb-2">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
-                <ul className="space-y-1">
+              <div className="mb-3 pb-3 border-b border-white/30">
+                <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  {language === 'ar' ? 'الأهداف:' : 'Objectives:'}
+                </p>
+                <ul className="space-y-1.5">
                   {subject.objectives.map((obj: string, idx: number) => (
-                    <li key={idx} className="text-sm text-white/90 flex items-start gap-2">
-                      <span className="text-white mt-0.5">•</span>
+                    <li key={idx} className="text-sm text-white/95 flex items-start gap-2">
+                      <span className="text-secondary mt-0.5">✦</span>
                       <span>{obj}</span>
                     </li>
                   ))}
@@ -812,14 +822,14 @@ export default function SubjectLessonsPage() {
               </div>
             )}
             
-            {/* ✅ NEW: Reference URL */}
+            {/* Reference URL */}
             {subject.reference_url && (
               <div>
                 <a
                   href={subject.reference_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-white hover:underline flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 inline-block"
+                  className="text-sm text-white hover:text-secondary flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2.5 inline-flex transition-all hover:bg-white/30 border border-white/20 hover:border-secondary/50"
                 >
                   <ExternalLink className="h-4 w-4" />
                   {language === 'ar' ? 'المرجع' : 'Reference'}
@@ -836,53 +846,59 @@ export default function SubjectLessonsPage() {
             <div className="sticky top-24 space-y-4">
               <div className="mb-4">
                 <Button 
-                  variant="ghost" 
+                  variant="outline"
                   size="sm"
                   onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
-                  className="mb-3"
+                  className="mb-3 border-primary/30 hover:bg-primary/5 hover:border-primary/50"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Subjects
+                  {language === 'ar' ? 'رجوع' : 'Back to Subjects'}
                 </Button>
-                <div className="p-4 bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 rounded-xl border border-cyan-200 dark:border-cyan-800">
+                <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/10">
                   <div className="flex items-center gap-3 mb-3">
-                    {/* ✅ NEW: Subject Image */}
+                    {/* Subject Image */}
                     {subject.image_url ? (
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-cyan-200 dark:border-cyan-800 flex-shrink-0">
-                        <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-xl blur-sm opacity-50"></div>
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-secondary/30 flex-shrink-0 shadow-lg">
+                          <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
+                        </div>
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                         <BookOpen className="h-6 w-6 text-white" />
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 dark:text-white text-sm">{subject.subject_name}</h3>
+                      <h3 className="font-bold text-foreground text-sm font-display">{subject.subject_name}</h3>
                       {subject.teacher?.full_name && (
-                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                           <User className="h-3 w-3" />
                           <span className="truncate">{subject.teacher.full_name}</span>
                         </div>
                       )}
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                      <p className="text-xs text-muted-foreground">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
                     </div>
                   </div>
                   
-                  {/* ✅ NEW: Subject Description */}
+                  {/* Subject Description */}
                   {subject.description && (
                     <div className="mb-3">
-                      <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{subject.description}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{subject.description}</p>
                     </div>
                   )}
                   
-                  {/* ✅ NEW: Objectives */}
+                  {/* Objectives */}
                   {subject.objectives && subject.objectives.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</p>
+                      <p className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-2">
+                        <Target className="h-3.5 w-3.5 text-primary" />
+                        {language === 'ar' ? 'الأهداف:' : 'Objectives:'}
+                      </p>
                       <ul className="space-y-1">
                         {subject.objectives.map((obj: string, idx: number) => (
-                          <li key={idx} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
-                            <span className="text-cyan-600 dark:text-cyan-400 mt-0.5">•</span>
+                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-primary mt-0.5">✦</span>
                             <span>{obj}</span>
                           </li>
                         ))}
@@ -890,14 +906,14 @@ export default function SubjectLessonsPage() {
                     </div>
                   )}
                   
-                  {/* ✅ NEW: Reference URL */}
+                  {/* Reference URL */}
                   {subject.reference_url && (
                     <div className="mb-3">
                       <a
                         href={subject.reference_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                        className="text-xs text-info hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         {language === 'ar' ? 'المرجع' : 'Reference'}
@@ -907,39 +923,48 @@ export default function SubjectLessonsPage() {
                   {/* Subject Progress */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{subjectProgress.percentage}%</span>
+                      <span className="text-muted-foreground">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="font-semibold text-foreground">{subjectProgress.percentage}%</span>
                     </div>
                     <Progress value={subjectProgress.percentage} className="h-2" />
-                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                      <span>{subjectProgress.completed} {language === 'ar' ? 'مكتمل' : 'Completed'}</span>
-                      <span>{subjectProgress.inProgress} {language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span>
-                      <span>{subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress} {language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-success"></div>
+                        {subjectProgress.completed}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-info"></div>
+                        {subjectProgress.inProgress}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
+                        {subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <Card className="border-gray-200 dark:border-gray-800 overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
+              <Card className="glass-card border-primary/10 overflow-hidden">
+                <CardHeader className="pb-3 bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                  <CardTitle className="text-sm font-semibold font-display">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   {/* Search and Filter */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                       <Input
                         placeholder={language === 'ar' ? 'بحث في الدروس...' : 'Search lessons...'}
                         value={lessonSearchQuery}
                         onChange={(e) => setLessonSearchQuery(e.target.value)}
-                        className="pl-10 h-9 text-sm"
+                        className="input-modern pl-10 h-9 text-sm"
                       />
                       {lessonSearchQuery && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setLessonSearchQuery('')}
                         >
                           <X className="h-3 w-3" />
@@ -947,7 +972,7 @@ export default function SubjectLessonsPage() {
                       )}
                     </div>
                     <Select value={lessonStatusFilter} onValueChange={(v) => setLessonStatusFilter(v as any)}>
-                      <SelectTrigger className="h-9 text-sm">
+                      <SelectTrigger className="input-modern h-9 text-sm">
                         <Filter className="h-3.5 w-3.5 mr-2" />
                         <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
                       </SelectTrigger>

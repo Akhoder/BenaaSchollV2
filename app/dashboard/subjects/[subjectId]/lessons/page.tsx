@@ -6,6 +6,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
+import { StatCard } from '@/components/StatCard';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Button } from '@/components/ui/button';
@@ -87,6 +89,7 @@ interface SortableLessonProps {
   getStatusBadge: (status?: LessonStatus) => JSX.Element;
   getVideoEmbedUrl: (url?: string | null) => string | null;
   t: (key: any) => string;
+  canEdit: boolean;
 }
 
 function SortableLesson({
@@ -114,6 +117,7 @@ function SortableLesson({
   getStatusBadge,
   getVideoEmbedUrl,
   t,
+  canEdit,
 }: SortableLessonProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: l.id });
 
@@ -127,58 +131,62 @@ function SortableLesson({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className="card-hover overflow-hidden">
-        <CardHeader className="pb-2">
+      <Card className="glass-card-hover border-primary/10 overflow-hidden group">
+        <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2 flex-1 min-w-0">
-              <button
-                {...attributes}
-                {...listeners}
-                className="mt-1 p-1 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                aria-label={t('dragHandle')}
-              >
-                <GripVertical className="h-5 w-5" />
-              </button>
-              <CardTitle className="text-lg font-display font-semibold line-clamp-1 flex-1">{l.title}</CardTitle>
+              {canEdit && (
+                <button
+                  {...attributes}
+                  {...listeners}
+                  className="mt-1 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors"
+                  aria-label={t('dragHandle')}
+                >
+                  <GripVertical className="h-5 w-5" />
+                </button>
+              )}
+              <CardTitle className="text-lg font-display font-semibold line-clamp-1 flex-1 text-foreground group-hover:text-primary transition-colors">{l.title}</CardTitle>
             </div>
             <div className="flex flex-wrap gap-2">
               {getStatusBadge(l.status)}
               {hasVideo && (
-                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 flex items-center gap-1">
+                <Badge variant="info" className="flex items-center gap-1">
                   <Video className="h-3 w-3" />
                   {t('video')}
                 </Badge>
               )}
               {atts.length > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Badge variant="outline" className="text-xs flex items-center gap-1 border-primary/20">
                   <FileText className="h-3 w-3" />
                   {atts.length} {t('attachments')}
               </Badge>
               )}
             </div>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="text-xs text-slate-600 dark:text-slate-400">{t('status')}:</span>
-            <Select
-              value={l.status || 'draft'}
-              onValueChange={(value) => onUpdateStatus(l.id, value as LessonStatus)}
-            >
-              <SelectTrigger className="h-8 w-32 text-xs input-modern">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">{t('draft')}</SelectItem>
-                <SelectItem value="published">{t('published')}</SelectItem>
-                <SelectItem value="scheduled">{t('scheduled')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {l.status === 'scheduled' && l.scheduled_at && (
-              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(l.scheduled_at).toLocaleDateString()}</span>
-              </div>
-            )}
-          </div>
+          {canEdit && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-slate-600 dark:text-slate-400">{t('status')}:</span>
+              <Select
+                value={l.status || 'draft'}
+                onValueChange={(value) => onUpdateStatus(l.id, value as LessonStatus)}
+              >
+                <SelectTrigger className="h-8 w-32 text-xs input-modern">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">{t('draft')}</SelectItem>
+                  <SelectItem value="published">{t('published')}</SelectItem>
+                  <SelectItem value="scheduled">{t('scheduled')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {l.status === 'scheduled' && l.scheduled_at && (
+                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                  <Calendar className="h-3 w-3" />
+                  <span>{new Date(l.scheduled_at).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {editingLessonId === l.id ? (
@@ -425,14 +433,16 @@ function SortableLesson({
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <Button variant="secondary" size="sm" onClick={() => onEditStart(l)} className="flex-1">
-                  {t('edit')}
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => onDelete(l.id)} className="flex-1">
-                  {t('delete')}
-                </Button>
-              </div>
+              {canEdit && (
+                <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <Button variant="secondary" size="sm" onClick={() => onEditStart(l)} className="flex-1">
+                    {t('edit')}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => onDelete(l.id)} className="flex-1">
+                    {t('delete')}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -447,6 +457,11 @@ export default function SubjectLessonsPage() {
   const subjectId = (params?.subjectId as string) || '';
   const { user, profile, loading } = useAuth();
   const { t, language } = useLanguage();
+  
+  // Check if user can edit lessons (admin or teacher only, not students)
+  const canEdit = useMemo(() => {
+    return profile?.role === 'admin' || profile?.role === 'teacher';
+  }, [profile]);
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
@@ -828,12 +843,12 @@ export default function SubjectLessonsPage() {
   const getStatusBadge = useCallback((status?: LessonStatus) => {
     if (!status) status = 'draft';
     const statusConfig = {
-      draft: { label: t('draft'), className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-      published: { label: t('published'), className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-      scheduled: { label: t('scheduled'), className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      draft: { label: t('draft'), variant: 'warning' as const },
+      published: { label: t('published'), variant: 'success' as const },
+      scheduled: { label: t('scheduled'), variant: 'info' as const },
     };
     const config = statusConfig[status] || statusConfig.draft;
-    return <Badge className={config.className}>{config.label}</Badge>;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   }, [t]);
 
   const filteredLessons = useMemo(() => {
@@ -905,22 +920,27 @@ export default function SubjectLessonsPage() {
           icon={BookOpen}
           title={t('lessons')}
           description={t('manageLessons')}
+          gradient="from-primary to-accent"
         >
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => router.push(`/dashboard/subjects/${subjectId}/view`)}
-            >
-              <Video className="h-4 w-4 mr-2" />
-              {t('viewLessons')}
-            </Button>
-            <Button 
-              className="bg-primary hover:bg-primary/90 text-white" 
-              onClick={() => setShowAddDialog(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('addLesson')}
-            </Button>
+            {canEdit && (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/subjects/${subjectId}/view`)}
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  {t('viewLessons')}
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={() => setShowAddDialog(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('addLesson')}
+                </Button>
+              </>
+            )}
           </div>
         </PageHeader>
 
@@ -1046,66 +1066,42 @@ export default function SubjectLessonsPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                {t('totalLessons')}
-              </CardTitle>
-          </CardHeader>
-          <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                {t('publishedLessons')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.published}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                {t('draftLessons')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-orange-600">{stats.draft}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Video className="h-4 w-4" />
-                {t('lessonsWithVideo')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.withVideo}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <FileVideo className="h-4 w-4" />
-                {t('lessonsWithoutVideo')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-slate-600">{stats.withoutVideo}</div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
+          <StatCard
+            title={t('totalLessons')}
+            value={stats.total}
+            icon={BookOpen}
+            gradient="from-primary to-accent"
+            color="primary"
+          />
+          <StatCard
+            title={t('publishedLessons')}
+            value={stats.published}
+            icon={CheckCircle2}
+            gradient="from-success to-primary"
+            color="success"
+          />
+          <StatCard
+            title={t('draftLessons')}
+            value={stats.draft}
+            icon={XCircle}
+            gradient="from-warning to-warning/80"
+            color="warning"
+          />
+          <StatCard
+            title={t('lessonsWithVideo')}
+            value={stats.withVideo}
+            icon={Video}
+            gradient="from-info to-primary"
+            color="info"
+          />
+          <StatCard
+            title={t('lessonsWithoutVideo')}
+            value={stats.withoutVideo}
+            icon={FileVideo}
+            gradient="from-accent to-secondary"
+            color="accent"
+          />
         </div>
 
         {/* AI Content Generator - Only for teachers and admins */}
@@ -1219,17 +1215,21 @@ export default function SubjectLessonsPage() {
         </Dialog>
 
         {/* Search & Filters */}
-        <Card className="card-interactive">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              {t('search')} & {t('filterByStatus')}
-            </CardTitle>
+        <Card className="glass-card border-primary/10 animate-fade-in-up">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="font-display text-foreground">
+                {t('search')} & {t('filterByStatus')}
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="relative md:col-span-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-primary" />
                 <Input
                   placeholder={t('searchLessons')}
                   value={lessonSearchQuery}
@@ -1256,39 +1256,52 @@ export default function SubjectLessonsPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-interactive">
-          <CardHeader>
-            <CardTitle className="font-display">{t('lessonsList')}</CardTitle>
+        <Card className="glass-card border-primary/10 animate-fade-in-up">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="font-display text-foreground">{t('lessonsList')}</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {loadingLessons ? (
-              <div className="text-center py-12 animate-fade-in">
-                <div className="relative inline-block mb-4">
-                  <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
-                  <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('loading')}</p>
+              <div className="text-center py-12 animate-fade-in relative">
+                <SimplePageLoading text={t('loading')} />
               </div>
             ) : filteredLessons.length === 0 ? (
-              <div className="text-center py-16 animate-fade-in">
-                <div className="relative inline-block mb-6">
-                  <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl"></div>
-                  <BookOpen className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float relative z-10" />
+              <div className="text-center py-16 animate-fade-in relative overflow-hidden">
+                {/* Decorative Background */}
+                <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+                <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+                
+                <div className="relative z-10">
+                  <div className="relative inline-block mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+                    <div className="relative p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+                      <BookOpen className="h-16 w-16 mx-auto text-primary animate-float" />
+                    </div>
+                  </div>
+                  <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
+                  <h3 className="text-xl font-semibold text-foreground font-display mb-2">{t('noLessons')}</h3>
+                  <p className="text-sm text-muted-foreground font-sans mb-6">{t('addLessonToGetStarted')}</p>
+                  {canEdit && (
+                    <Button 
+                      variant="default"
+                      onClick={() => setShowAddDialog(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('addLesson')}
+                    </Button>
+                  )}
                 </div>
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noLessons')}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans mb-6">{t('addLessonToGetStarted')}</p>
-                <Button 
-                  className="bg-primary hover:bg-primary/90 text-white"
-                  onClick={() => setShowAddDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('addLesson')}
-                </Button>
               </div>
             ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext sensors={canEdit ? sensors : []} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredLessons.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in-up">
                     {filteredLessons.map((l) => {
                       const atts = attachmentsByLesson[l.id] || [];
                       return (
@@ -1318,6 +1331,7 @@ export default function SubjectLessonsPage() {
                           getStatusBadge={getStatusBadge}
                           getVideoEmbedUrl={getVideoEmbedUrl}
                           t={t}
+                          canEdit={canEdit}
                         />
                       );
                     })}

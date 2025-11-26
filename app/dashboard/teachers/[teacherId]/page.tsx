@@ -4,11 +4,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
+import { StatCard } from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Phone, Calendar, School, BookOpen, Users, GraduationCap, ArrowLeft, Globe, Award, TrendingUp, MapPin, Briefcase, User, FileText, Clock } from 'lucide-react';
+import { Mail, Phone, Calendar, School, BookOpen, Users, GraduationCap, ArrowLeft, Globe, Award, TrendingUp, MapPin, Briefcase, User, FileText, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -245,9 +247,7 @@ export default function TeacherProfilePage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل بيانات المعلم...' : 'Loading teacher data...'} />
       </DashboardLayout>
     );
   }
@@ -261,21 +261,21 @@ export default function TeacherProfilePage() {
       <div className="space-y-6">
         {/* Back Button */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.push('/dashboard/teachers')}
-          className="mb-4"
+          className="mb-4 border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           {language === 'ar' ? 'العودة إلى المعلمين' : 'Back to Teachers'}
         </Button>
 
         {/* Hero Section with Teacher Photo */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-xl shadow-primary/10 animate-fade-in-up">
           {/* Background Pattern */}
-          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
+          <div className="absolute inset-0 islamic-pattern-subtle opacity-10" />
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/10 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}} />
           
           <div className="relative p-8 md:p-12">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
@@ -488,84 +488,56 @@ export default function TeacherProfilePage() {
           </Card>
         )}
 
-        {/* Stats Cards - Enhanced Design */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {language === 'ar' ? 'الفصول' : 'Classes'}
-              </CardTitle>
-              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <School className="h-5 w-5 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold mb-1">{stats.totalClasses}</div>
-              <p className="text-xs text-muted-foreground">
-                {language === 'ar' ? 'فصل دراسي' : 'class'}{stats.totalClasses !== 1 ? (language === 'ar' ? 'ات' : 'es') : ''}
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-accent/10 transition-colors" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {language === 'ar' ? 'المواد' : 'Subjects'}
-              </CardTitle>
-              <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                <BookOpen className="h-5 w-5 text-accent-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold mb-1">{stats.totalSubjects}</div>
-              <p className="text-xs text-muted-foreground">
-                {language === 'ar' ? 'مادة دراسية' : 'subject'}{stats.totalSubjects !== 1 ? (language === 'ar' ? 'ات' : 's') : ''}
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-green-500/10 transition-colors" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {language === 'ar' ? 'الطلاب' : 'Students'}
-              </CardTitle>
-              <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                <Users className="h-5 w-5 text-green-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold mb-1">{stats.totalStudents}</div>
-              <p className="text-xs text-muted-foreground">
-                {language === 'ar' ? 'طالب' : 'student'}{stats.totalStudents !== 1 ? (language === 'ar' ? 'ين' : 's') : ''}
-              </p>
-            </CardContent>
-          </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
+          <StatCard
+            title={language === 'ar' ? 'الفصول' : 'Classes'}
+            value={stats.totalClasses}
+            description={`${language === 'ar' ? 'فصل دراسي' : 'class'}${stats.totalClasses !== 1 ? (language === 'ar' ? 'ات' : 'es') : ''}`}
+            icon={School}
+            gradient="from-primary to-accent"
+            color="primary"
+          />
+          <StatCard
+            title={language === 'ar' ? 'المواد' : 'Subjects'}
+            value={stats.totalSubjects}
+            description={`${language === 'ar' ? 'مادة دراسية' : 'subject'}${stats.totalSubjects !== 1 ? (language === 'ar' ? 'ات' : 's') : ''}`}
+            icon={BookOpen}
+            gradient="from-accent to-secondary"
+            color="accent"
+          />
+          <StatCard
+            title={language === 'ar' ? 'الطلاب' : 'Students'}
+            value={stats.totalStudents}
+            description={`${language === 'ar' ? 'طالب' : 'student'}${stats.totalStudents !== 1 ? (language === 'ar' ? 'ين' : 's') : ''}`}
+            icon={Users}
+            gradient="from-success to-primary"
+            color="success"
+          />
         </div>
 
         {/* Classes Section - Enhanced */}
         {classes.length > 0 && (
-          <Card className="border-2">
-            <CardHeader className="border-b bg-muted/50">
+          <Card className="glass-card border-primary/10 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
               <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <School className="h-5 w-5 text-primary" />
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                  <School className="h-5 w-5 text-white" />
                 </div>
                 {language === 'ar' ? 'الفصول التي يدرسها' : 'Classes Taught'}
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="gold" className="ml-auto">
                   {classes.length}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {classes.map((cls) => (
+                {classes.map((cls, index) => (
                   <Card
                     key={cls.id}
-                    className="cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all group overflow-hidden border-2"
+                    className="glass-card-hover cursor-pointer border-primary/10 transition-all group overflow-hidden"
                     onClick={() => router.push(`/dashboard/classes`)}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="relative">
                       {cls.image_url ? (
@@ -583,7 +555,7 @@ export default function TeacherProfilePage() {
                         </div>
                       )}
                       <div className="absolute top-3 right-3">
-                        <Badge className="bg-white/90 text-foreground backdrop-blur-sm">
+                        <Badge variant="islamic" className="backdrop-blur-sm">
                           {language === 'ar' ? 'المستوى' : 'Lv.'} {cls.level}
                         </Badge>
                       </div>
@@ -594,12 +566,12 @@ export default function TeacherProfilePage() {
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1.5">
-                          <Users className="h-4 w-4" />
+                          <Users className="h-4 w-4 text-success" />
                           <span className="font-medium">{cls.student_count}</span>
                           <span className="text-xs">{language === 'ar' ? 'طالب' : 'students'}</span>
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <BookOpen className="h-4 w-4" />
+                          <BookOpen className="h-4 w-4 text-accent" />
                           <span className="font-medium">{cls.subject_count}</span>
                           <span className="text-xs">{language === 'ar' ? 'مادة' : 'subjects'}</span>
                         </span>
@@ -614,14 +586,14 @@ export default function TeacherProfilePage() {
 
         {/* Subjects Section - Enhanced */}
         {subjects.length > 0 && (
-          <Card className="border-2">
-            <CardHeader className="border-b bg-muted/50">
+          <Card className="glass-card border-primary/10 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-l from-accent/5 to-primary/5 border-b border-primary/10">
               <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-accent/10">
-                  <BookOpen className="h-5 w-5 text-accent-foreground" />
+                <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg">
+                  <BookOpen className="h-5 w-5 text-white" />
                 </div>
                 {language === 'ar' ? 'المواد التي يدرسها' : 'Subjects Taught'}
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="gold" className="ml-auto">
                   {subjects.length}
                 </Badge>
               </CardTitle>
@@ -630,7 +602,7 @@ export default function TeacherProfilePage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="hover:bg-transparent">
+                    <TableRow className="hover:bg-transparent bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
                       <TableHead className="font-semibold">{language === 'ar' ? 'اسم المادة' : 'Subject Name'}</TableHead>
                       <TableHead className="font-semibold">{language === 'ar' ? 'الفصل' : 'Class'}</TableHead>
                       <TableHead className="font-semibold">{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
@@ -638,51 +610,60 @@ export default function TeacherProfilePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {subjects.map((subject, index) => (
-                      <TableRow 
-                        key={subject.id}
-                        className="hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/dashboard/subjects/${subject.id}/lessons`)}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-primary" />
-                            {subject.subject_name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <School className="h-4 w-4 text-muted-foreground" />
-                            {subject.class_name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={subject.published ? 'default' : 'secondary'}
-                            className={cn(
-                              subject.published && 'bg-green-500 hover:bg-green-600'
-                            )}
-                          >
-                            {subject.published
-                              ? language === 'ar' ? 'منشور' : 'Published'
-                              : language === 'ar' ? 'مسودة' : 'Draft'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="hover:bg-primary hover:text-primary-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/dashboard/subjects/${subject.id}/lessons`);
-                            }}
-                          >
-                            {language === 'ar' ? 'عرض' : 'View'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {subjects.map((subject, index) => {
+                      // Determine the correct route based on user role
+                      const handleSubjectClick = () => {
+                        if (currentProfile?.role === 'student') {
+                          // Students go to my-classes view
+                          router.push(`/dashboard/my-classes/${subject.class_id}/subjects/${subject.id}`);
+                        } else {
+                          // Teachers and admins go to lessons management
+                          router.push(`/dashboard/subjects/${subject.id}/lessons`);
+                        }
+                      };
+
+                      return (
+                        <TableRow 
+                          key={subject.id}
+                          className="hover:bg-primary/5 cursor-pointer transition-colors animate-fade-in-up"
+                          onClick={handleSubjectClick}
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                              {subject.subject_name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <School className="h-4 w-4 text-primary" />
+                              {subject.class_name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={subject.published ? 'success' : 'warning'}>
+                              {subject.published
+                                ? language === 'ar' ? 'منشور' : 'Published'
+                                : language === 'ar' ? 'مسودة' : 'Draft'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectClick();
+                              }}
+                            >
+                              {language === 'ar' ? 'عرض' : 'View'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -691,12 +672,26 @@ export default function TeacherProfilePage() {
         )}
 
         {classes.length === 0 && subjects.length === 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8 text-muted-foreground">
-                {language === 'ar' 
-                  ? 'لا توجد فصول أو مواد مسجلة لهذا المعلم'
-                  : 'No classes or subjects registered for this teacher'}
+          <Card className="glass-card border-primary/10">
+            <CardContent className="pt-6 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              
+              <div className="text-center py-8 text-muted-foreground relative z-10">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+                    <School className="h-16 w-16 mx-auto text-primary" />
+                  </div>
+                </div>
+                <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
+                <p className="text-lg font-semibold text-foreground">
+                  {language === 'ar' 
+                    ? 'لا توجد فصول أو مواد مسجلة لهذا المعلم'
+                    : 'No classes or subjects registered for this teacher'}
+                </p>
               </div>
             </CardContent>
           </Card>
