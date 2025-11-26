@@ -6,10 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, Clock, Send, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { FileText, Clock, Send, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
 import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass } from '@/lib/supabase';
@@ -95,28 +96,28 @@ export default function MyAssignmentsPage() {
     if (submission) {
       if (submission.status === 'graded') {
         return (
-          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-            <CheckCircle className="mr-1 h-3 w-3" /> Graded: {submission.score}/{assignment.total_points}
+          <Badge variant="success" className="gap-1">
+            <CheckCircle className="h-3 w-3" /> {t('graded')}: {submission.score}/{assignment.total_points}
           </Badge>
         );
       }
       return (
-        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-          <Send className="mr-1 h-3 w-3" /> Submitted
+        <Badge variant="info" className="gap-1">
+          <Send className="h-3 w-3" /> {t('submitted')}
         </Badge>
       );
     }
     const now = new Date();
     if (assignment.due_date && new Date(assignment.due_date) < now) {
       return (
-        <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-          <XCircle className="mr-1 h-3 w-3" /> Overdue
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="h-3 w-3" /> {t('overdue')}
         </Badge>
       );
     }
     return (
-      <Badge variant="outline">
-        <Clock className="mr-1 h-3 w-3" /> Pending
+      <Badge variant="warning" className="gap-1">
+        <Clock className="h-3 w-3" /> {t('pending')}
       </Badge>
     );
   };
@@ -124,9 +125,7 @@ export default function MyAssignmentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        </div>
+        <SimplePageLoading text={t('loadingAssignments')} />
       </DashboardLayout>
     );
   }
@@ -138,73 +137,113 @@ export default function MyAssignmentsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Enhanced Header */}
         <PageHeader 
           icon={FileText}
-          title="My Assignments"
-          description="View and submit your assignments"
-          gradient="from-green-600 via-teal-600 to-green-700"
+          title={t('myAssignments')}
+          description={t('viewAndSubmitAssignments')}
+          gradient="from-primary to-accent"
         />
 
         {assignments.length === 0 ? (
-          <Card className="card-elegant">
-            <CardContent className="py-12 text-center animate-fade-in">
-              <div className="relative inline-block mb-4">
-                <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+          <Card className="glass-card border-primary/10">
+            <CardContent className="py-12 text-center animate-fade-in relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+                    <FileText className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-foreground font-display mb-2">{t('noAssignments')}</h3>
+                <p className="text-muted-foreground font-sans">{t('noAssignmentsDescription')}</p>
               </div>
-              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">No Assignments</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-sans">You don't have any assignments yet. Check back later!</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {assignments.map((assignment: any) => {
+          <div className="grid gap-4 md:grid-cols-2 animate-fade-in-up">
+            {assignments.map((assignment: any, index: number) => {
               const submission = submissions[assignment.id];
+              const isOverdue = assignment.due_date && new Date(assignment.due_date) < new Date() && !submission;
               return (
-                <Card key={assignment.id} className="card-hover">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg font-display">{assignment.title}</CardTitle>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline">{getTypeLabel(assignment.assignment_type)}</Badge>
+                <Card 
+                  key={assignment.id} 
+                  className="glass-card-hover border-primary/10 group overflow-hidden"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg flex-shrink-0">
+                        <FileText className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg font-display text-foreground group-hover:text-primary transition-colors mb-2">
+                          {assignment.title}
+                        </CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="islamic" className="gap-1">
+                            <FileText className="h-3 w-3" />
+                            {getTypeLabel(assignment.assignment_type)}
+                          </Badge>
                           {getStatusBadge(assignment, submission)}
                         </div>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-4 pt-4">
                     {assignment.description && (
                       <p className="text-sm text-muted-foreground line-clamp-3">{assignment.description}</p>
                     )}
-                    <div className="space-y-2 text-xs text-muted-foreground">
+                    
+                    <div className="space-y-2.5 text-sm">
                       {assignment.due_date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          Due: {new Date(assignment.due_date).toLocaleDateString()}
+                        <div className="flex items-center gap-2.5 text-muted-foreground">
+                          <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="flex-1">
+                            <span className="font-semibold">{t('dueDate')}:</span>{' '}
+                            <span className={isOverdue ? 'text-destructive font-medium' : ''}>
+                              {new Date(assignment.due_date).toLocaleDateString()}
+                            </span>
+                          </span>
+                          {isOverdue && <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />}
                         </div>
                       )}
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-3 w-3" />
-                        Points: {assignment.total_points} | Weight: {assignment.grade_weight}
+                      <div className="flex items-center gap-2.5 text-muted-foreground">
+                        <FileText className="h-4 w-4 text-accent flex-shrink-0" />
+                        <span>
+                          <span className="font-semibold">{t('points')}:</span> {assignment.total_points} | 
+                          <span className="font-semibold"> {t('weight')}:</span> {assignment.grade_weight}%
+                        </span>
                       </div>
                       {submission && (
-                        <div className="flex items-center gap-2">
-                          <Send className="h-3 w-3" />
-                          Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
-                        </div>
-                      )}
-                      {submission?.feedback && (
-                        <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs">
-                          <strong>Feedback:</strong> {submission.feedback}
+                        <div className="flex items-center gap-2.5 text-muted-foreground">
+                          <Send className="h-4 w-4 text-info flex-shrink-0" />
+                          <span>
+                            <span className="font-semibold">{t('submitted')}:</span>{' '}
+                            {new Date(submission.submitted_at).toLocaleDateString()}
+                          </span>
                         </div>
                       )}
                     </div>
+
+                    {submission?.feedback && (
+                      <div className="p-3 bg-gradient-to-l from-primary/5 to-secondary/5 border border-primary/10 rounded-xl">
+                        <p className="text-xs font-semibold text-primary mb-1">{t('feedback')}:</p>
+                        <p className="text-sm text-foreground">{submission.feedback}</p>
+                      </div>
+                    )}
+
                     <Button
-                      className="btn-gradient w-full transition-all duration-300 hover:scale-105"
+                      variant={submission ? 'outline' : 'default'}
+                      className="w-full transition-all duration-300 hover:scale-105"
                       onClick={() => router.push(`/dashboard/assignments/${assignment.id}/submit`)}
                     >
-                      {submission ? 'View Submission' : 'Submit Work'}
+                      {submission ? t('viewSubmission') : t('submitWork')}
                     </Button>
                   </CardContent>
                 </Card>

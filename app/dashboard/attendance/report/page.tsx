@@ -6,13 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { LoadingInline } from '@/components/LoadingSpinner';
+import { LoadingInline, SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Download, Users, Calendar, BookOpen, School, FileText, TrendingUp, CheckCircle, X, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, fetchStudentsInClass } from '@/lib/supabase';
@@ -352,9 +353,7 @@ export default function AttendanceReportPage() {
   if (authLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Skeleton className="h-12 w-12" />
-        </div>
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }
@@ -372,33 +371,35 @@ export default function AttendanceReportPage() {
           description={t('attendanceReportDescription')}
         />
 
-        {/* Filters */}
-        <Card className="card-hover glass-strong">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-slate-500" />
+        {/* ✨ Filters Card - Islamic Design */}
+        <Card className="glass-card border-primary/10">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3 text-primary">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
               {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid gap-4 md:grid-cols-5">
               <div className="md:col-span-2">
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <BookOpen className="h-4 w-4 text-accent" />
                   {t('subjectLabel')}
                 </label>
                 {loadingSubjects ? (
-                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 ) : (
                   <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                       <SelectValue placeholder={t('selectSubject')} />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((s: any) => (
                         <SelectItem key={s.id} value={s.id}>
                           <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            <BookOpen className="h-4 w-4 text-accent" />
                             {s.subject_name}
                           </div>
                         </SelectItem>
@@ -408,25 +409,28 @@ export default function AttendanceReportPage() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <School className="h-4 w-4 text-purple-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <School className="h-4 w-4 text-info" />
                   {t('class')}
                 </label>
                 {loadingClasses ? (
-                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 ) : (
                   <Select 
                     value={selectedClassId} 
                     onValueChange={setSelectedClassId}
                     disabled={!selectedSubjectId || classesForSubject.length === 0}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                       <SelectValue placeholder={t('selectClass')} />
                     </SelectTrigger>
                     <SelectContent>
                       {classesForSubject.map((c: any) => (
                         <SelectItem key={c.class_id} value={c.class_id}>
-                          {c.class_name}
+                          <div className="flex items-center gap-2">
+                            <School className="h-4 w-4 text-info" />
+                            {c.class_name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -434,36 +438,39 @@ export default function AttendanceReportPage() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <Calendar className="h-4 w-4 text-primary" />
                   {t('fromDate')}
                 </label>
                 <Input 
                   type="date" 
                   value={fromDate} 
                   onChange={(e) => setFromDate(e.target.value)} 
-                  className="input-modern h-11" 
+                  className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm" 
                 />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <Calendar className="h-4 w-4 text-secondary" />
                   {t('toDate')}
                 </label>
                 <Input 
                   type="date" 
                   value={toDate} 
                   onChange={(e) => setToDate(e.target.value)} 
-                  className="input-modern h-11" 
+                  className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm" 
                 />
               </div>
             </div>
+
+            {/* ✨ Export Button */}
             {rows.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+              <div className="mt-6 pt-6 border-t border-primary/10 flex justify-end">
                 <Button 
                   onClick={exportCSV} 
                   disabled={rows.length === 0}
                   size="lg"
+                  className="shadow-lg"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   {t('exportCSV')}
@@ -473,65 +480,86 @@ export default function AttendanceReportPage() {
           </CardContent>
         </Card>
 
-        {/* Summary Stats */}
+        {/* ✨ Summary Stats - Islamic Design */}
         {rows.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+            {/* Total Students */}
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('totalStudents')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-primary">{summaryStats.total}</div>
+                <div className="text-3xl font-bold text-primary font-display">{summaryStats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('students')}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
+
+            {/* Total Present */}
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('totalPresent')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <CheckCircle className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-emerald-600">{summaryStats.totalPresent}</div>
+                <div className="text-3xl font-bold text-success font-display">{summaryStats.totalPresent}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('totalAttendances')}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <X className="h-4 w-4" />
+
+            {/* Total Absent */}
+            <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('totalAbsent')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <X className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-red-600">{summaryStats.totalAbsent}</div>
+                <div className="text-3xl font-bold text-error font-display">{summaryStats.totalAbsent}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('totalAbsences')}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
+
+            {/* Average Rate */}
+            <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('averageRate')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-blue-600">{summaryStats.avgRate}%</div>
+                <div className="text-3xl font-bold text-info font-display">{summaryStats.avgRate}%</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('attendanceRate')}</p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Report Table */}
-        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              {t('summary')} ({rows.length})
+        {/* ✨ Report Table - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-primary font-display">{t('summary')} ({rows.length})</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loadingData ? (
               <div className="py-8">
                 <LoadingInline 
@@ -540,85 +568,111 @@ export default function AttendanceReportPage() {
                 />
               </div>
             ) : rows.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <FileText className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
                   {t('noData')}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                <p className="text-muted-foreground max-w-md mx-auto">
                   {t('noAttendanceData')}
                 </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold w-12">#</TableHead>
-                      <TableHead className="font-semibold">{t('name')}</TableHead>
-                      <TableHead className="font-semibold text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                      <TableHead className="font-bold text-foreground w-16">#</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('name')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <CheckCircle className="h-4 w-4 text-success" />
                           {t('present')}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <X className="h-4 w-4 text-red-600" />
+                      <TableHead className="font-bold text-foreground text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <X className="h-4 w-4 text-error" />
                           {t('absent')}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Clock className="h-4 w-4 text-amber-600" />
+                      <TableHead className="font-bold text-foreground text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Clock className="h-4 w-4 text-warning" />
                           {t('late')}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <AlertCircle className="h-4 w-4 text-blue-600" />
+                      <TableHead className="font-bold text-foreground text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <AlertCircle className="h-4 w-4 text-info" />
                           {t('excused')}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-center">{t('total')}</TableHead>
-                      <TableHead className="font-semibold text-center">{t('rate')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">{t('total')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">{t('rate')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rows.map((r: any, i: number) => (
                       <TableRow 
                         key={r.student.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                        className="hover:bg-primary/5 border-b border-border/50 transition-all duration-200 group animate-fade-in-up"
+                        style={{ animationDelay: `${i * 30}ms` }}
                       >
-                        <TableCell className="text-xs text-muted-foreground font-medium">
+                        <TableCell className="text-sm text-muted-foreground font-medium">
                           {i + 1}
                         </TableCell>
-                        <TableCell className="font-semibold font-sans">
+                        <TableCell className="font-semibold text-foreground">
                           {r.student.full_name || r.student.email}
                         </TableCell>
-                        <TableCell className="text-center text-emerald-600 font-semibold">
-                          {r.present}
+                        <TableCell className="text-center">
+                          <Badge variant="success" className="font-semibold">
+                            {r.present}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-center text-red-600 font-semibold">
-                          {r.absent}
+                        <TableCell className="text-center">
+                          <Badge variant="destructive" className="font-semibold">
+                            {r.absent}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-center text-amber-600 font-semibold">
-                          {r.late}
+                        <TableCell className="text-center">
+                          <Badge variant="warning" className="font-semibold">
+                            {r.late}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-center text-blue-600 font-semibold">
-                          {r.excused}
+                        <TableCell className="text-center">
+                          <Badge variant="info" className="font-semibold">
+                            {r.excused}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-center font-semibold">
+                        <TableCell className="text-center font-semibold text-foreground">
                           {r.total}
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className={`px-2 py-1 rounded-md text-sm font-semibold ${
-                            r.rate >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' :
-                            r.rate >= 60 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                          }`}>
+                          <Badge 
+                            variant={
+                              r.rate >= 80 ? 'success' :
+                              r.rate >= 60 ? 'warning' :
+                              'destructive'
+                            }
+                            className="font-semibold"
+                          >
                             {r.rate}%
-                          </span>
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}

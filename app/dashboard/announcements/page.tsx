@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -144,22 +145,27 @@ export default function AnnouncementsPage() {
     myAnnouncements: announcements.filter(a => a.author_id === profile?.id).length,
   }), [announcements, profile?.id]);
 
-  const roleColors = useMemo(() => ({
-    admin: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    teacher: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    student: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-    supervisor: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  }), []);
+  const getRoleColor = useCallback((role: string, isSelected: boolean) => {
+    if (!isSelected) return "bg-muted text-muted-foreground hover:bg-muted/80";
+    
+    switch (role) {
+      case 'admin':
+        return 'bg-error/10 text-error border-error/30';
+      case 'teacher':
+        return 'bg-info/10 text-info border-info/30';
+      case 'student':
+        return 'bg-success/10 text-success border-success/30';
+      case 'supervisor':
+        return 'bg-accent/10 text-accent border-accent/30';
+      default:
+        return 'bg-primary/10 text-primary border-primary/30';
+    }
+  }, []);
 
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400 font-sans">{t('loadingAnnouncements' as TranslationKey)}</p>
-          </div>
-        </div>
+        <SimplePageLoading text={t('loadingAnnouncements' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -171,12 +177,10 @@ export default function AnnouncementsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Enhanced Header */}
         <PageHeader 
           icon={Megaphone}
           title={t('announcements')}
           description={t('announcementsDescription' as TranslationKey)}
-          gradient="from-indigo-600 via-purple-600 to-indigo-700"
         >
           {canCreate && (
             <Button
@@ -188,7 +192,7 @@ export default function AnnouncementsPage() {
                 setEditIsPublished(false);
                 setIsDialogOpen(true);
               }}
-              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
+              className="shadow-lg"
             >
               <Plus className="mr-2 h-4 w-4" />
               {t('createAnnouncement' as TranslationKey)}
@@ -196,85 +200,127 @@ export default function AnnouncementsPage() {
           )}
         </PageHeader>
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         {(profile.role === 'admin' || stats.myAnnouncements > 0) && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+            {/* Total Announcements */}
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('totalAnnouncements' as TranslationKey)}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Megaphone className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display">{stats.total}</div>
+                <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('total')}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+
+            {/* Published */}
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('publishedAnnouncements' as TranslationKey)}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Eye className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-emerald-600">{stats.published}</div>
+                <div className="text-3xl font-bold text-success font-display">{stats.published}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('published' as TranslationKey)}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+
+            {/* Drafts */}
+            <Card className="glass-card-hover border-primary/10 hover:border-warning/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('draftAnnouncements' as TranslationKey)}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-warning to-warning/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <EyeOff className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-amber-600">{stats.drafts}</div>
+                <div className="text-3xl font-bold text-warning font-display">{stats.drafts}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('draft' as TranslationKey)}</p>
               </CardContent>
             </Card>
+
+            {/* My Announcements */}
             {profile?.role !== 'student' && (
-              <Card className="card-hover glass-strong">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+              <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground">
                     {t('myAnnouncements' as TranslationKey)}
                   </CardTitle>
+                  <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold font-display text-indigo-600">{stats.myAnnouncements}</div>
+                  <div className="text-3xl font-bold text-accent font-display">{stats.myAnnouncements}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{t('myAnnouncements' as TranslationKey)}</p>
                 </CardContent>
               </Card>
             )}
           </div>
         )}
 
-        {/* Search and Filter */}
-        <Card className="card-elegant">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-display text-gradient">
-              <Filter className="h-5 w-5 text-indigo-600" />
+        {/* ✨ Search and Filter - Islamic Design */}
+        <Card className="glass-card border-primary/10">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3 text-primary">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
               {t('searchAndFilter' as TranslationKey)}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-primary/10 rounded-lg group-focus-within:bg-primary/20 transition-colors">
+                    <Search className="h-4 w-4 text-primary" />
+                  </div>
                   <Input
                     placeholder={t('searchAnnouncements' as TranslationKey)}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 font-sans input-modern"
+                    className="pl-14 h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm"
                   />
                 </div>
               </div>
               {profile?.role !== 'student' && (
-                <div className="w-full md:w-48">
+                <div className="w-full md:w-56">
                   <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="font-sans">
+                    <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t('all' as TranslationKey)}</SelectItem>
-                      <SelectItem value="published">{t('published' as TranslationKey)}</SelectItem>
-                      <SelectItem value="draft">{t('draft' as TranslationKey)}</SelectItem>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-primary" />
+                          {t('all' as TranslationKey)}
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="published">
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-4 w-4 text-success" />
+                          {t('published' as TranslationKey)}
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="draft">
+                        <div className="flex items-center gap-2">
+                          <EyeOff className="h-4 w-4 text-warning" />
+                          {t('draft' as TranslationKey)}
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -283,28 +329,51 @@ export default function AnnouncementsPage() {
           </CardContent>
         </Card>
 
-        {/* Announcements List */}
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle>{t('announcements' as TranslationKey)}</CardTitle>
+        {/* ✨ Announcements List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Megaphone className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-primary font-display">{t('announcements' as TranslationKey)}</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {filteredAnnouncements.length === 0 ? (
-              <div className="text-center py-12">
-                <Megaphone className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-600 dark:text-slate-400 font-sans">
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <Megaphone className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
                   {searchQuery ? t('noAnnouncementsFound' as TranslationKey) : t('noAnnouncementsYet' as TranslationKey)}
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {searchQuery ? t('tryAdjustingFilters') : t('noAnnouncementsYet' as TranslationKey)}
                 </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredAnnouncements.map((ann) => (
+                {filteredAnnouncements.map((ann, index) => (
                   <Card
                     key={ann.id}
                     className={cn(
-                      "border-slate-200 dark:border-slate-800 transition-all cursor-pointer",
-                      "hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-800"
+                      "glass-card border-primary/10 transition-all cursor-pointer animate-fade-in-up group",
+                      "hover:shadow-xl hover:border-primary/30 hover:scale-[1.01]"
                     )}
+                    style={{ animationDelay: `${index * 50}ms` }}
                     onClick={() => {
                       setSelectedAnnouncement(ann);
                       setEditTitle(ann.title);
@@ -315,46 +384,62 @@ export default function AnnouncementsPage() {
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12 ring-2 ring-indigo-500/20">
+                        <Avatar className="h-12 w-12 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all">
                           <AvatarImage src={ann.author?.avatar_url} />
-                          <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
                             {ann.author?.full_name?.charAt(0).toUpperCase() || 'A'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-3">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <h3 className="text-xl font-bold font-display">{ann.title}</h3>
-                              <div className="flex items-center gap-2 mt-1 text-sm text-slate-600 dark:text-slate-400">
-                                <User className="h-4 w-4" />
-                                <span>{ann.author?.full_name}</span>
+                              <h3 className="text-xl font-bold text-foreground font-display group-hover:text-primary transition-colors">{ann.title}</h3>
+                              <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3.5 w-3.5 text-accent" />
+                                  <span>{ann.author?.full_name}</span>
+                                </div>
                                 <span>•</span>
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(ann.created_at).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar className="h-3.5 w-3.5 text-primary" />
+                                  <span>{new Date(ann.created_at).toLocaleDateString()}</span>
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge className={cn('font-semibold', ann.is_published ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400')}>
+                              <Badge 
+                                variant={ann.is_published ? 'success' : 'warning'}
+                                className="gap-1.5"
+                              >
                                 {ann.is_published ? (
-                                  <><Eye className="h-3 w-3 mr-1" /> {t('published' as TranslationKey)}</>
+                                  <><Eye className="h-3 w-3" /> {t('published' as TranslationKey)}</>
                                 ) : (
-                                  <><EyeOff className="h-3 w-3 mr-1" /> {t('draft' as TranslationKey)}</>
+                                  <><EyeOff className="h-3 w-3" /> {t('draft' as TranslationKey)}</>
                                 )}
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-slate-700 dark:text-slate-300 font-sans line-clamp-3">
+                          <p className="text-foreground/80 font-sans line-clamp-3 leading-relaxed">
                             {ann.content}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {ann.target_roles.map(role => (
-                              <Badge key={role} className={cn('font-semibold', roleColors[role as keyof typeof roleColors])}>
+                              <Badge 
+                                key={role} 
+                                variant={
+                                  role === 'admin' ? 'destructive' :
+                                  role === 'teacher' ? 'info' :
+                                  role === 'student' ? 'success' :
+                                  'accent'
+                                }
+                                className="font-medium"
+                              >
                                 {role}
                               </Badge>
                             ))}
                           </div>
                           {(canEdit(ann) || canDelete) && (
-                            <div className="flex gap-2 pt-2">
+                            <div className="flex gap-2 pt-3 border-t border-border/50">
                               {canEdit(ann) && (
                                 <Button
                                   variant="outline"
@@ -363,6 +448,7 @@ export default function AnnouncementsPage() {
                                     e.stopPropagation();
                                     setIsDialogOpen(true);
                                   }}
+                                  className="border-primary/30 text-primary hover:bg-primary/10"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
                                   {t('edit' as TranslationKey)}
@@ -377,7 +463,7 @@ export default function AnnouncementsPage() {
                                     setSelectedAnnouncement(ann);
                                     setDeleteConfirmOpen(true);
                                   }}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                  className="border-error/30 text-error hover:bg-error/10"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   {t('delete' as TranslationKey)}
@@ -432,10 +518,8 @@ export default function AnnouncementsPage() {
                     <Badge
                       key={role}
                       className={cn(
-                        "cursor-pointer font-semibold transition-all",
-                        editTargetRoles.includes(role)
-                          ? roleColors[role]
-                          : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        "cursor-pointer font-semibold transition-all hover:scale-105 border",
+                        getRoleColor(role, editTargetRoles.includes(role))
                       )}
                       onClick={() => {
                         if (editTargetRoles.includes(role)) {

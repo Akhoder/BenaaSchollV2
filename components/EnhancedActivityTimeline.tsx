@@ -131,12 +131,12 @@ export function EnhancedActivityTimeline() {
             .limit(3),
           supabase
             .from('student_enrollments')
-            .select('id, created_at, class_id, student_id, classes(class_name), profiles!student_id(full_name)')
+            .select('id, created_at, class_id, student_id, classes(class_name), profiles(full_name)')
             .order('created_at', { ascending: false })
             .limit(5),
           supabase
             .from('assignments')
-            .select('id, title, created_at, subjects(name)')
+            .select('id, title, created_at, class_subjects!subject_id(subject_name)')
             .order('created_at', { ascending: false })
             .limit(5)
         ]);
@@ -223,7 +223,7 @@ export function EnhancedActivityTimeline() {
         if (recentAssignments.data) {
           const config = ACTIVITY_CONFIG.assignment_created;
           recentAssignments.data.forEach((assignment: any) => {
-            const subjectName = assignment.subjects?.name || 'Unknown';
+            const subjectName = assignment.class_subjects?.subject_name || 'Unknown';
             allActivities.push(createActivityItem(
               `assignment-${assignment.id}`,
               'assignment_created',

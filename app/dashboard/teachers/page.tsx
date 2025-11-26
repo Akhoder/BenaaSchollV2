@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
+import { PageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -483,12 +484,12 @@ export default function TeachersPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400">{t('loadingTeachers')}</p>
-          </div>
-        </div>
+        <PageLoading
+          text={t('loadingTeachers')}
+          statsCount={4}
+          contentType="table"
+          contentRows={8}
+        />
       </DashboardLayout>
     );
   }
@@ -511,96 +512,116 @@ export default function TeachersPage() {
           </Button>
         </PageHeader>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Users className="h-4 w-4" />
+        {/* ✨ Stats Cards - Islamic Design */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+          {/* Total Teachers */}
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalTeachers')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Users className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('totalTeachersInSchool')}
+              </p>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Activity className="h-4 w-4" />
+          {/* Active Teachers */}
+          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('activeTeachers')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Activity className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.active}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('last30Days')}</p>
+              <div className="text-3xl font-bold text-success font-display">{stats.active}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('last30Days')}</p>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+          {/* New Teachers This Month */}
+          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('newTeachersThisMonth')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.newThisMonth}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('thisMonth')}</p>
+              <div className="text-3xl font-bold text-info font-display">{stats.newThisMonth}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('thisMonth')}</p>
             </CardContent>
           </Card>
           
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Globe className="h-4 w-4" />
+          {/* Teachers By Language */}
+          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('teachersByLanguage')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Globe className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {Object.keys(stats.byLanguage).length > 0 ? (
                   Object.entries(stats.byLanguage)
                     .sort(([, a], [, b]) => b - a)
                     .slice(0, 2)
                     .map(([lang, count]) => (
                       <div key={lang} className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium text-foreground">
                           {getLanguageLabel(lang)}
                         </span>
-                        <span className="text-lg font-bold text-purple-600">{count}</span>
+                        <span className="text-lg font-bold text-accent font-display">{count}</span>
                       </div>
                     ))
                 ) : (
-                  <div className="text-2xl font-bold font-display text-slate-400">—</div>
+                  <div className="text-2xl font-bold font-display text-muted-foreground">—</div>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="card-elegant">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-slate-500" />
-              <CardTitle className="font-display text-foreground">{t('searchAndFilter')}</CardTitle>
-            </div>
+        {/* ✨ Search and Filter Card - Islamic Design */}
+        <Card className="glass-card border-primary/10">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3 text-primary">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
+              {t('searchAndFilter')}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-primary/10 rounded-lg group-focus-within:bg-primary/20 transition-colors">
+                  <Search className="h-4 w-4 text-primary" />
+                </div>
                 <Input
                   placeholder={t('searchByNameEmailOrPhone')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 h-11 font-sans input-modern"
+                  className="pl-14 h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Select value={languageFilter} onValueChange={setLanguageFilter}>
-                  <SelectTrigger className="h-11 font-sans">
+                  <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                     <SelectValue placeholder={t('filterByLanguage')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -614,7 +635,7 @@ export default function TeachersPage() {
                 </Select>
                 
                 <Select value={activityFilter} onValueChange={setActivityFilter}>
-                  <SelectTrigger className="h-11 font-sans">
+                  <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                     <SelectValue placeholder={t('filterByActivity')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -625,7 +646,7 @@ export default function TeachersPage() {
                 </Select>
                 
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-11 font-sans">
+                  <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                     <SelectValue placeholder={t('sortBy')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -644,78 +665,140 @@ export default function TeachersPage() {
           </CardContent>
         </Card>
 
-        <Card className="card-elegant">
-          <CardHeader>
-            <CardTitle className="font-display text-foreground">
-              {t('teachers')} ({filtered.length})
+        {/* ✨ Teachers Table - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-primary font-display">{t('teachers')} ({filtered.length})</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {paginatedTeachers.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                {t('noTeachersFound')}
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <Users className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
+                  {t('noTeachersFound')}
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {t('tryAdjustingFilters')}
+                </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold font-sans">{t('teacher')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('email')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('phone')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('classesCount')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('studentsCount')}</TableHead>
-                      <TableHead className="font-semibold font-sans">{t('languagePreference')}</TableHead>
-                      <TableHead className="text-right font-semibold font-sans">{t('actions')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10 hover:bg-gradient-to-l hover:from-primary/10 hover:to-secondary/10">
+                      <TableHead className="font-bold text-foreground">{t('teacher')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('email')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('phone')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('classesCount')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('studentsCount')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('languagePreference')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTeachers.map((teacher) => (
-                      <TableRow key={teacher.id}>
+                    {paginatedTeachers.map((teacher, index) => (
+                      <TableRow 
+                        key={teacher.id}
+                        className="hover:bg-primary/5 border-b border-border/50 transition-all duration-200 animate-fade-in-up group"
+                        style={{ animationDelay: `${index * 30}ms` }}
+                      >
+                        {/* Teacher with Avatar */}
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                            <Avatar className="h-10 w-10 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all">
                               <AvatarImage src={teacher.avatar_url || ''} />
-                              <AvatarFallback className="bg-primary text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
                                 {teacher.full_name?.charAt(0).toUpperCase() || 'T'}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-semibold font-sans">{teacher.full_name}</div>
-                              <div className="text-sm text-slate-500 dark:text-slate-400 font-sans">{t('teacher')}</div>
+                              <div className="font-semibold text-foreground">{teacher.full_name}</div>
+                              <div className="text-xs text-muted-foreground">{t('teacher')}</div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-sans">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-slate-400" /> {teacher.email}
+
+                        {/* Email */}
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                              <Mail className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-foreground">{teacher.email}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-sans">
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-slate-400" /> {teacher.phone || '—'}
+
+                        {/* Phone */}
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm">
+                            {teacher.phone ? (
+                              <>
+                                <div className="p-1.5 bg-accent/10 rounded-lg">
+                                  <Phone className="h-4 w-4 text-accent" />
+                                </div>
+                                <span className="text-foreground">{teacher.phone}</span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-sans">
+
+                        {/* Classes Count */}
+                        <TableCell>
                           <div className="flex items-center gap-2">
-                            <School className="h-4 w-4 text-blue-500" />
-                            <span className="font-semibold">{teacher.classes_count ?? 0}</span>
+                            <div className="p-1.5 bg-info/10 rounded-lg">
+                              <School className="h-4 w-4 text-info" />
+                            </div>
+                            <span className="font-semibold text-foreground">{teacher.classes_count ?? 0}</span>
                             {teacher.classes_count === 0 && (
-                              <span className="text-xs text-slate-400 ml-1">({t('noClasses')})</span>
+                              <span className="text-xs text-muted-foreground">({t('noClasses')})</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-sans">
+
+                        {/* Students Count */}
+                        <TableCell>
                           <div className="flex items-center gap-2">
-                            <GraduationCap className="h-4 w-4 text-emerald-500" />
-                            <span className="font-semibold">{teacher.students_count ?? 0}</span>
+                            <div className="p-1.5 bg-success/10 rounded-lg">
+                              <GraduationCap className="h-4 w-4 text-success" />
+                            </div>
+                            <span className="font-semibold text-foreground">{teacher.students_count ?? 0}</span>
                             {teacher.students_count === 0 && (
-                              <span className="text-xs text-slate-400 ml-1">({t('noStudents')})</span>
+                              <span className="text-xs text-muted-foreground">({t('noStudents')})</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-sans">{getLanguageLabel(teacher.language_preference)}</TableCell>
-                        <TableCell className="text-right">
+
+                        {/* Language Preference */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-accent" />
+                            <span className="text-sm text-foreground">{getLanguageLabel(teacher.language_preference)}</span>
+                          </div>
+                        </TableCell>
+
+                        {/* Actions */}
+                        <TableCell className="text-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">

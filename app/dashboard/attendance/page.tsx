@@ -8,13 +8,14 @@ import { getErrorMessage } from '@/lib/errorHandler';
 import { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { LoadingInline } from '@/components/LoadingSpinner';
+import { LoadingInline, SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, Users, BookOpen, Filter, CheckCircle, X, Clock, AlertCircle, School, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, fetchStudentsInClass } from '@/lib/supabase';
@@ -400,9 +401,7 @@ export default function AttendancePage() {
   if (authLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Skeleton className="h-12 w-12" />
-        </div>
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }
@@ -420,94 +419,128 @@ export default function AttendancePage() {
           description={t('attendance')}
         />
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         {students.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+            {/* Total Students */}
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('totalStudents')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+                <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('students')}</p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
+
+            {/* Present */}
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('present')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <CheckCircle className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-emerald-600">{stats.present}</div>
+                <div className="text-3xl font-bold text-success font-display">{stats.present}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.total > 0 ? `${Math.round((stats.present / stats.total) * 100)}%` : '0%'}
+                </p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <X className="h-4 w-4" />
+
+            {/* Absent */}
+            <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('absent')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <X className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-red-600">{stats.absent}</div>
+                <div className="text-3xl font-bold text-error font-display">{stats.absent}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.total > 0 ? `${Math.round((stats.absent / stats.total) * 100)}%` : '0%'}
+                </p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
+
+            {/* Late */}
+            <Card className="glass-card-hover border-primary/10 hover:border-warning/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('late')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-warning to-warning/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Clock className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-amber-600">{stats.late}</div>
+                <div className="text-3xl font-bold text-warning font-display">{stats.late}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.total > 0 ? `${Math.round((stats.late / stats.total) * 100)}%` : '0%'}
+                </p>
               </CardContent>
             </Card>
-            <Card className="card-hover glass-strong">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
+
+            {/* Excused */}
+            <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
                   {t('excused')}
                 </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-display text-blue-600">{stats.excused}</div>
+                <div className="text-3xl font-bold text-info font-display">{stats.excused}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.total > 0 ? `${Math.round((stats.excused / stats.total) * 100)}%` : '0%'}
+                </p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Filters */}
-        <Card className="card-hover glass-strong">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Filter className="h-5 w-5 text-slate-500" />
+        {/* ✨ Filters Card - Islamic Design */}
+        <Card className="glass-card border-primary/10">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3 text-primary">
+              <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                <Filter className="h-5 w-5 text-white" />
+              </div>
               {t('filtersAndSearch')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid gap-4 md:grid-cols-4">
               <div className="md:col-span-2">
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <BookOpen className="h-4 w-4 text-accent" />
                   {t('subjectLabel')}
                 </label>
                 {loadingSubjects ? (
-                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 ) : (
                   <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                       <SelectValue placeholder={t('selectSubject')} />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((s: any) => (
                         <SelectItem key={s.id} value={s.id}>
                           <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            <BookOpen className="h-4 w-4 text-accent" />
                             {s.subject_name}
                           </div>
                         </SelectItem>
@@ -517,25 +550,28 @@ export default function AttendancePage() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <School className="h-4 w-4 text-purple-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <School className="h-4 w-4 text-info" />
                   {t('class')}
                 </label>
                 {loadingClasses ? (
-                  <Skeleton className="h-11 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 ) : (
                   <Select 
                     value={selectedClassId} 
                     onValueChange={setSelectedClassId}
                     disabled={!selectedSubjectId || classesForSubject.length === 0}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                       <SelectValue placeholder={t('selectClass')} />
                     </SelectTrigger>
                     <SelectContent>
                       {classesForSubject.map((c: any) => (
                         <SelectItem key={c.class_id} value={c.class_id}>
-                          {c.class_name}
+                          <div className="flex items-center gap-2">
+                            <School className="h-4 w-4 text-info" />
+                            {c.class_name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -543,25 +579,30 @@ export default function AttendancePage() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
+                <label className="text-sm font-medium block mb-2 flex items-center gap-2 text-foreground">
+                  <Calendar className="h-4 w-4 text-primary" />
                   {t('date')}
                 </label>
                 <Input 
                   type="date" 
                   value={dateStr} 
                   onChange={(e) => setDateStr(e.target.value)} 
-                  className="input-modern h-11" 
+                  className="h-12 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm" 
                 />
               </div>
             </div>
+
+            {/* ✨ Bulk Actions - Islamic Design */}
             {students.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="mt-6 pt-6 border-t border-primary/10">
+                <p className="text-sm font-medium text-muted-foreground mb-3">
+                  {t('quickActions')}
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
                   <Button 
                     variant="outline" 
                     onClick={() => setAllStatus('present')}
-                    className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                    className="border-success/30 bg-success/5 hover:bg-success/10 text-success hover:text-success hover:border-success/50"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     {t('allPresent')}
@@ -569,7 +610,7 @@ export default function AttendancePage() {
                   <Button 
                     variant="outline" 
                     onClick={() => setAllStatus('absent')}
-                    className="bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
+                    className="border-error/30 bg-error/5 hover:bg-error/10 text-error hover:text-error hover:border-error/50"
                   >
                     <X className="h-4 w-4 mr-2" />
                     {t('allAbsent')}
@@ -577,7 +618,7 @@ export default function AttendancePage() {
                   <Button 
                     variant="outline" 
                     onClick={() => setAllStatus('late')}
-                    className="bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                    className="border-warning/30 bg-warning/5 hover:bg-warning/10 text-warning hover:text-warning hover:border-warning/50"
                   >
                     <Clock className="h-4 w-4 mr-2" />
                     {t('allLate')}
@@ -585,7 +626,7 @@ export default function AttendancePage() {
                   <Button 
                     variant="outline" 
                     onClick={() => setAllStatus('excused')}
-                    className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                    className="border-info/30 bg-info/5 hover:bg-info/10 text-info hover:text-info hover:border-info/50"
                   >
                     <AlertCircle className="h-4 w-4 mr-2" />
                     {t('allExcused')}
@@ -596,37 +637,39 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
 
-        {/* Students Table */}
-        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="font-display flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
-                {t('students')} ({students.length})
+        {/* ✨ Students Table - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-primary font-display">{t('students')} ({students.length})</span>
               </CardTitle>
               {students.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                <div className="flex items-center gap-3 text-sm">
+                  <Badge variant="success" className="gap-1.5">
+                    <CheckCircle className="h-3 w-3" />
                     {stats.present}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <X className="h-4 w-4 text-red-600" />
+                  </Badge>
+                  <Badge variant="destructive" className="gap-1.5">
+                    <X className="h-3 w-3" />
                     {stats.absent}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-amber-600" />
+                  </Badge>
+                  <Badge variant="warning" className="gap-1.5">
+                    <Clock className="h-3 w-3" />
                     {stats.late}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                  </Badge>
+                  <Badge variant="info" className="gap-1.5">
+                    <AlertCircle className="h-3 w-3" />
                     {stats.excused}
-                  </span>
+                  </Badge>
                 </div>
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loadingStudents ? (
               <div className="py-8">
                 <LoadingInline 
@@ -635,24 +678,38 @@ export default function AttendancePage() {
                 />
               </div>
             ) : students.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <Users className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <Users className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
                   {t('noStudentsFound')}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                <p className="text-muted-foreground max-w-md mx-auto">
                   {t('noStudentsEnrolled')}
                 </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                      <TableHead className="font-semibold w-12">#</TableHead>
-                      <TableHead className="font-semibold">{t('name')}</TableHead>
-                      <TableHead className="font-semibold w-48">{t('status')}</TableHead>
-                      <TableHead className="font-semibold">{t('notes')}</TableHead>
+                    <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+                      <TableHead className="font-bold text-foreground w-16">#</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('name')}</TableHead>
+                      <TableHead className="font-bold text-foreground w-56">{t('status')}</TableHead>
+                      <TableHead className="font-bold text-foreground">{t('notes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -662,51 +719,64 @@ export default function AttendancePage() {
                       return (
                         <TableRow 
                           key={s.id}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                          className="hover:bg-primary/5 border-b border-border/50 transition-all duration-200 group"
                         >
-                          <TableCell className="text-xs text-muted-foreground font-medium">
+                          <TableCell className="text-sm text-muted-foreground font-medium">
                             {idx + 1}
                           </TableCell>
                           <TableCell>
-                            <div className="font-semibold font-sans">
+                            <div className="font-semibold text-foreground">
                               {s.full_name || s.email}
                             </div>
                           </TableCell>
+                          {/* Status Selector */}
                           <TableCell>
                             <Select 
                               value={current} 
                               onValueChange={(v) => updateStudentStatus(s.id, v)}
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="w-full h-10 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
                                 <SelectValue>
-                                  <span className={`px-2 py-1 rounded-md text-sm font-medium ${statusOption?.color || ''}`}>
+                                  <Badge 
+                                    variant={
+                                      current === 'present' ? 'success' :
+                                      current === 'absent' ? 'destructive' :
+                                      current === 'late' ? 'warning' :
+                                      'info'
+                                    }
+                                    className="gap-1.5"
+                                  >
+                                    {current === 'present' && <CheckCircle className="h-3 w-3" />}
+                                    {current === 'absent' && <X className="h-3 w-3" />}
+                                    {current === 'late' && <Clock className="h-3 w-3" />}
+                                    {current === 'excused' && <AlertCircle className="h-3 w-3" />}
                                     {t(current as 'present' | 'absent' | 'late' | 'excused')}
-                                  </span>
+                                  </Badge>
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {STATUS_OPTIONS.map(opt => (
                                   <SelectItem key={opt.value} value={opt.value}>
                                     <div className="flex items-center gap-2">
-                                      {opt.value === 'present' && <CheckCircle className="h-4 w-4 text-emerald-600" />}
-                                      {opt.value === 'absent' && <X className="h-4 w-4 text-red-600" />}
-                                      {opt.value === 'late' && <Clock className="h-4 w-4 text-amber-600" />}
-                                      {opt.value === 'excused' && <AlertCircle className="h-4 w-4 text-blue-600" />}
-                                      <span className={`px-2 py-0.5 rounded text-sm font-medium ${opt.color}`}>
-                                        {t(opt.labelKey)}
-                                      </span>
+                                      {opt.value === 'present' && <CheckCircle className="h-4 w-4 text-success" />}
+                                      {opt.value === 'absent' && <X className="h-4 w-4 text-error" />}
+                                      {opt.value === 'late' && <Clock className="h-4 w-4 text-warning" />}
+                                      {opt.value === 'excused' && <AlertCircle className="h-4 w-4 text-info" />}
+                                      <span>{t(opt.labelKey)}</span>
                                     </div>
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
+
+                          {/* Notes Input */}
                           <TableCell>
                             <Input
                               placeholder={t('notesOptional')}
                               value={statusByStudent[s.id]?.notes || ''}
                               onChange={(e) => updateStudentNotes(s.id, e.target.value, current)}
-                              className="input-modern"
+                              className="h-10 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm"
                             />
                           </TableCell>
                         </TableRow>
@@ -716,29 +786,58 @@ export default function AttendancePage() {
                 </Table>
               </div>
             )}
+            {/* ✨ Save Footer - Islamic Design */}
             {students.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  {t('totalStudents')}: <strong className="text-slate-900 dark:text-slate-100">{stats.total}</strong>
+              <div className="p-6 border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  {/* Stats Summary */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        {t('totalStudents')}: <strong className="text-foreground font-display">{stats.total}</strong>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-sm">
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <strong className="text-success">{stats.present}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-sm">
+                        <X className="h-4 w-4 text-error" />
+                        <strong className="text-error">{stats.absent}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-sm">
+                        <Clock className="h-4 w-4 text-warning" />
+                        <strong className="text-warning">{stats.late}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-sm">
+                        <AlertCircle className="h-4 w-4 text-info" />
+                        <strong className="text-info">{stats.excused}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <Button 
+                    onClick={onSave} 
+                    disabled={saving || !selectedSubjectId || !selectedClassId}
+                    size="lg"
+                    className="min-w-[160px] shadow-lg"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t('saving')}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        {t('save')}
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <Button 
-                  onClick={onSave} 
-                  disabled={saving || !selectedSubjectId || !selectedClassId}
-                  size="lg"
-                  className="min-w-[140px]"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {t('saving')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      {t('save')}
-                    </>
-                  )}
-                </Button>
               </div>
             )}
           </CardContent>

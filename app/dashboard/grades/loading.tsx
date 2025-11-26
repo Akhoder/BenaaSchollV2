@@ -1,17 +1,12 @@
 'use client';
 
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { PageLoading } from '@/components/LoadingSpinner';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 
 export default function GradesLoading() {
   return (
     <DashboardLayout>
-      <PageLoading
-        text="جاري تحميل الدرجات..."
-        statsCount={4}
-        contentType="list"
-        contentRows={5}
-      />
+      <SimplePageLoading />
     </DashboardLayout>
   );
 }

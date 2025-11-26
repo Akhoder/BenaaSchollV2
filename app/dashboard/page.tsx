@@ -62,6 +62,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
 import { usePrefetch } from '@/hooks/usePrefetch';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;

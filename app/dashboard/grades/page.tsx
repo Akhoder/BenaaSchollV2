@@ -6,11 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { DashboardStatsSkeleton, ListSkeleton, PageHeaderSkeleton } from '@/components/SkeletonLoaders';
-import { EmptyState, ErrorDisplay } from '@/components/ErrorDisplay';
+import { StatCard } from '@/components/StatCard';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, TrendingUp } from 'lucide-react';
+import { FileText, TrendingUp, Award, MessageSquare, Calendar } from 'lucide-react';
 import * as api from '@/lib/supabase';
 import { toast } from 'sonner';
 import { fetchMyEnrolledClassesWithDetails, fetchSubjectsForClass } from '@/lib/supabase';
@@ -123,11 +123,7 @@ export default function GradesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-fade-in">
-          <PageHeaderSkeleton />
-          <DashboardStatsSkeleton />
-          <ListSkeleton items={5} />
-        </div>
+        <SimplePageLoading text={t('loadingGrades')} />
       </DashboardLayout>
     );
   }
@@ -139,115 +135,129 @@ export default function GradesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Enhanced Header */}
         <PageHeader 
-          icon={FileText}
+          icon={TrendingUp}
           title={t('myGrades')}
           description={t('viewGradesAndFeedback')}
-          gradient="from-emerald-600 via-teal-600 to-emerald-700"
+          gradient="from-primary to-accent"
         />
 
-        {/* ✅ Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                {t('totalGraded')}
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
-                <FileText className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.total}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('assignmentsGraded')}</p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                {t('averageGrade')}
-              </CardTitle>
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.average}%</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('overallAverage')}</p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 font-sans">
-                {t('status')}
-              </CardTitle>
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">{t('active')}</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.graded}</div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">{t('gradedAssignments')}</p>
-            </CardContent>
-          </Card>
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-3 animate-fade-in-up">
+          <StatCard
+            title={t('totalGraded')}
+            value={stats.total}
+            description={t('assignmentsGraded')}
+            icon={FileText}
+            gradient="from-primary to-accent"
+            color="primary"
+          />
+          <StatCard
+            title={t('averageGrade')}
+            value={`${stats.average}%`}
+            description={t('overallAverage')}
+            icon={TrendingUp}
+            gradient="from-success to-primary"
+            color="success"
+          />
+          <StatCard
+            title={t('status')}
+            value={stats.graded}
+            description={t('gradedAssignments')}
+            icon={Award}
+            gradient="from-accent to-secondary"
+            color="accent"
+          />
         </div>
 
-        {/* ✅ Grades List */}
+        {/* Grades List */}
         {grades.length === 0 ? (
-          <Card className="card-elegant">
-            <CardContent className="py-12 text-center animate-fade-in">
-              <div className="relative inline-block mb-4">
-                <FileText className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+          <Card className="glass-card border-primary/10">
+            <CardContent className="py-12 text-center animate-fade-in relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+                    <TrendingUp className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
+                <h3 className="text-xl font-semibold text-foreground font-display mb-2">{t('noGradesYet')}</h3>
+                <p className="text-muted-foreground font-sans">{t('noGradesDescription')}</p>
               </div>
-              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">{t('noGradesYet')}</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-sans">{t('noGradesDescription')}</p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="card-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display text-gradient">
-                <TrendingUp className="h-5 w-5 text-emerald-600" />
-                {t('gradeDetails')}
-              </CardTitle>
+          <Card className="glass-card border-primary/10 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="font-display text-foreground">{t('gradeDetails')}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-4">
                 {grades.map((grade: any, idx: number) => {
                   const percentage = grade.total_points > 0 
                     ? Math.round((grade.score / grade.total_points) * 100)
                     : 0;
-                  const colorClass = percentage >= 80 
-                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                  const badgeVariant = percentage >= 80 
+                    ? 'success'
                     : percentage >= 60
-                    ? 'bg-amber-100 text-amber-700 border-amber-200'
-                    : 'bg-red-100 text-red-700 border-red-200';
+                    ? 'warning'
+                    : 'destructive';
 
                   return (
-                    <Card key={grade.id || idx} className="border-l-4 border-l-primary">
+                    <Card key={grade.id || idx} className="glass-card-hover border-primary/10 group" style={{ animationDelay: `${idx * 50}ms` }}>
                       <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-base">{grade.assignment_title}</CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">{grade.subject_name}</p>
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg flex-shrink-0">
+                            <FileText className="h-4 w-4 text-white" />
                           </div>
-                          <div className={`px-3 py-1 rounded-lg border ${colorClass}`}>
-                            <p className="text-lg font-bold">{percentage}%</p>
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base text-foreground group-hover:text-primary transition-colors mb-1">
+                              {grade.assignment_title}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="islamic" className="gap-1">
+                                <FileText className="h-3 w-3" />
+                                {grade.subject_name}
+                              </Badge>
+                              <Badge variant={badgeVariant} className="gap-1">
+                                <Award className="h-3 w-3" />
+                                {percentage}%
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{t('scoreLabel')}</span>
-                          <span className="font-semibold">{grade.score} / {grade.total_points}</span>
+                        <div className="flex items-center justify-between text-sm bg-gradient-to-l from-primary/5 to-secondary/5 p-3 rounded-xl border border-primary/10">
+                          <span className="text-muted-foreground font-semibold">{t('scoreLabel')}</span>
+                          <span className="font-bold text-foreground">{grade.score} / {grade.total_points}</span>
                         </div>
                         {grade.feedback && (
-                          <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                            <p className="text-xs font-medium text-blue-700 mb-1">{t('feedback')}</p>
-                            <p className="text-sm whitespace-pre-wrap">{grade.feedback}</p>
+                          <div className="p-3 bg-gradient-to-l from-info/10 to-primary/10 rounded-xl border border-info/20">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MessageSquare className="h-4 w-4 text-info" />
+                              <p className="text-xs font-semibold text-info">{t('feedback')}</p>
+                            </div>
+                            <p className="text-sm text-foreground whitespace-pre-wrap">{grade.feedback}</p>
                           </div>
                         )}
-                        <div className="text-xs text-muted-foreground">
-                          {t('gradedOn')} {new Date(grade.graded_at).toLocaleDateString(dateLocale)}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5 text-primary" />
+                          <span>
+                            <span className="font-semibold">{t('gradedOn')}:</span>{' '}
+                            {new Date(grade.graded_at).toLocaleDateString(dateLocale)}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageHeader } from '@/components/PageHeader';
+import { SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import * as api from '@/lib/supabase';
 import type { Certificate } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Loader2, Award, Eye, Search, FileText, Download as DownloadIcon, Sparkles } from 'lucide-react';
+import { Loader2, Award, Eye, Search, Calendar, Sparkles, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function MyCertificatesPage() {
@@ -115,15 +117,21 @@ export default function MyCertificatesPage() {
   };
 
   const getGradeBadge = (grade: string, score: number) => {
-    const gradeConfig: Record<string, { className: string }> = {
-      'ممتاز': { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' },
-      'جيد جداً': { className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-      'جيد': { className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-      'مقبول': { className: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
-      'راسب': { className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+    const gradeConfig: Record<string, { variant: any; icon?: any }> = {
+      'ممتاز': { variant: 'success', icon: CheckCircle },
+      'جيد جداً': { variant: 'info', icon: CheckCircle },
+      'جيد': { variant: 'warning', icon: CheckCircle },
+      'مقبول': { variant: 'accent', icon: CheckCircle },
+      'راسب': { variant: 'destructive', icon: null },
     };
-    const cfg = gradeConfig[grade] || { className: 'bg-slate-100 text-slate-700' };
-    return <Badge className={cfg.className}>{grade} ({score.toFixed(1)})</Badge>;
+    const cfg = gradeConfig[grade] || { variant: 'default', icon: null };
+    const Icon = cfg.icon;
+    return (
+      <Badge variant={cfg.variant} className="gap-1">
+        {Icon && <Icon className="h-3 w-3" />}
+        {grade} ({score.toFixed(1)})
+      </Badge>
+    );
   };
 
   const filteredCertificates = certificates.filter(cert => {
@@ -136,12 +144,7 @@ export default function MyCertificatesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96 animate-fade-in">
-          <div className="relative inline-block mb-4">
-            <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto animate-pulse-glow" />
-            <div className="absolute inset-0 bg-emerald-200/20 rounded-full blur-xl"></div>
-          </div>
-        </div>
+        <SimplePageLoading text={t('loadingCertificates')} />
       </DashboardLayout>
     );
   }
@@ -149,24 +152,28 @@ export default function MyCertificatesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between pt-1">
-          <div>
-            <h1 className="text-3xl font-display text-gradient">
-              {(t('myCertificates') as any) || 'My Certificates'}
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {(t('viewYourCertificates') as any) || 'View all your completion certificates'}
-            </p>
-          </div>
-        </div>
+        <PageHeader 
+          icon={Award}
+          title={t('myCertificates')}
+          description={t('viewYourCertificates')}
+          gradient="from-secondary to-accent"
+        />
 
         {/* Search */}
-        <Card className="card-elegant">
+        <Card className="glass-card border-primary/10 animate-fade-in-up">
+          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
+                <Search className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-foreground">{t('searchCertificates')}</CardTitle>
+            </div>
+          </CardHeader>
           <CardContent className="pt-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-primary" />
               <Input
-                placeholder={(t('searchCertificates') as any) || 'Search by subject name or certificate number...'}
+                placeholder={t('searchCertificates')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="input-modern pl-10"
@@ -177,52 +184,65 @@ export default function MyCertificatesPage() {
 
         {/* Eligible Subjects (Can Issue Certificate) */}
         {eligibleSubjects.length > 0 && (
-          <Card className="card-elegant border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
-            <CardHeader>
-              <CardTitle className="font-display text-gradient flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                {(t('eligibleForCertificates') as any) || 'Eligible for Certificates'}
-              </CardTitle>
+          <Card className="glass-card border-secondary/30 bg-gradient-to-l from-secondary/5 to-accent/5 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-l from-secondary/10 to-accent/10 border-b border-secondary/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-secondary to-accent rounded-xl shadow-lg animate-pulse">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="font-display text-foreground">{t('eligibleForCertificates')}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-3">
-                {eligibleSubjects.map((item) => {
+                {eligibleSubjects.map((item, index) => {
                   const eligibility = item.eligibility || {};
                   return (
                     <div
                       key={item.subject_id}
-                      className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800"
+                      className="flex items-center justify-between p-4 glass-card border-secondary/30 hover:border-secondary/50 transition-all animate-fade-in-up"
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">{item.subject_name}</h3>
-                        <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                          <p>
-                            {(t('lessonsCompleted') as any) || 'Lessons'}: {eligibility.lessons_completed || 0} / {eligibility.lessons_total || 0}
-                          </p>
-                          <p>
-                            {(t('quizzesGraded') as any) || 'Quizzes'}: {eligibility.quizzes_graded || 0} / {eligibility.quizzes_total || 0}
-                          </p>
-                          <p className="font-medium text-emerald-600 dark:text-emerald-400 mt-2">
-                            {(t('finalScore') as any) || 'Final Score'}: {eligibility.final_score ? parseFloat(eligibility.final_score).toFixed(1) : '0.0'} / 100
-                            {' - '}
-                            {eligibility.grade || '-'}
-                          </p>
+                        <h3 className="font-semibold text-lg mb-3 text-foreground">{item.subject_name}</h3>
+                        <div className="text-sm text-muted-foreground space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="info" className="gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {t('lessonsCompleted')}: {eligibility.lessons_completed || 0} / {eligibility.lessons_total || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="accent" className="gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {t('quizzesGraded')}: {eligibility.quizzes_graded || 0} / {eligibility.quizzes_total || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="gold" className="gap-1">
+                              <Award className="h-3 w-3" />
+                              {t('finalScore')}: {eligibility.final_score ? parseFloat(eligibility.final_score).toFixed(1) : '0.0'} / 100
+                              {' - '}
+                              {eligibility.grade || '-'}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                       <Button
-                        className="btn-gradient ml-4"
+                        variant="default"
+                        className="ml-4 transition-all duration-300 hover:scale-105"
                         onClick={() => handleIssueCertificate(item.subject_id, item.subject_name)}
                         disabled={issuing === item.subject_id}
                       >
                         {issuing === item.subject_id ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            {(t('issuing') as any) || 'Issuing...'}
+                            {t('issuing')}
                           </>
                         ) : (
                           <>
                             <Award className="h-4 w-4 mr-2" />
-                            {(t('issueCertificate') as any) || 'Issue Certificate'}
+                            {t('issueCertificate')}
                           </>
                         )}
                       </Button>
@@ -236,64 +256,85 @@ export default function MyCertificatesPage() {
 
         {/* Certificates Grid */}
         {filteredCertificates.length === 0 ? (
-          <Card className="card-elegant">
-            <CardContent className="py-12">
-              <div className="text-center animate-fade-in">
+          <Card className="glass-card border-primary/10">
+            <CardContent className="py-12 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+              
+              <div className="text-center animate-fade-in relative z-10">
                 <div className="relative inline-block mb-4">
-                  <Award className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+                  <div className="relative p-6 bg-gradient-to-br from-secondary/10 to-accent/10 rounded-2xl border border-secondary/20">
+                    <Award className="h-16 w-16 mx-auto text-secondary animate-float" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
-                  {(t('noCertificates') as any) || 'No certificates yet'}
+                <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
+                <p className="text-lg font-semibold text-foreground font-display mb-2">
+                  {t('noCertificates')}
                 </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
-                  {(t('completeLessonsAndQuizzes') as any) || 'Complete all lessons and quizzes to earn certificates'}
+                <p className="text-sm text-muted-foreground font-sans">
+                  {t('completeLessonsAndQuizzes')}
                 </p>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCertificates.map((cert) => {
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in-up">
+            {filteredCertificates.map((cert, index) => {
               const subjectName = subjects[cert.subject_id]?.subject_name || '';
               return (
-                <Card key={cert.id} className="card-hover overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
+                <Card key={cert.id} className="glass-card-hover border-secondary/30 overflow-hidden group" style={{ animationDelay: `${index * 50}ms` }}>
+                  <CardHeader className="bg-gradient-to-l from-secondary/5 to-accent/5 border-b border-secondary/10 pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="relative flex-shrink-0">
+                        <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                        <div className="relative p-2.5 bg-gradient-to-br from-secondary to-accent rounded-xl shadow-lg">
+                          <Award className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-display font-semibold line-clamp-2 mb-2">
+                        <CardTitle className="text-lg font-display font-semibold line-clamp-2 mb-2 text-foreground group-hover:text-secondary transition-colors">
                           {subjectName}
                         </CardTitle>
                         <div className="flex items-center gap-2 mb-2">
                           {getGradeBadge(cert.grade, cert.final_score)}
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                          {(t('certificateNumber') as any) || 'Certificate #'}: {cert.certificate_number}
+                        <p className="text-xs text-muted-foreground font-mono">
+                          <span className="font-semibold">{t('certificateNumber')}:</span> {cert.certificate_number}
                         </p>
                       </div>
-                      <Award className="h-8 w-8 text-amber-500 flex-shrink-0" />
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0 space-y-3">
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
-                      <p className="mb-1">
-                        <span className="font-medium">{(t('finalScore') as any) || 'Final Score'}:</span>{' '}
-                        {cert.final_score.toFixed(1)} / 100
-                      </p>
-                      <p>
-                        <span className="font-medium">{(t('completionDate') as any) || 'Completion Date'}:</span>{' '}
-                        {new Date(cert.completion_date).toLocaleDateString('ar-LB', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="text-sm space-y-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Award className="h-4 w-4 text-secondary flex-shrink-0" />
+                        <span>
+                          <span className="font-semibold">{t('finalScore')}:</span>{' '}
+                          {cert.final_score.toFixed(1)} / 100
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>
+                          <span className="font-semibold">{t('completionDate')}:</span>{' '}
+                          {new Date(cert.completion_date).toLocaleDateString('ar-LB', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
                     </div>
                     <Button
-                      className="btn-gradient w-full"
+                      variant="default"
+                      className="w-full transition-all duration-300 hover:scale-105"
                       onClick={() => router.push(`/dashboard/certificates/${cert.id}/view`)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      {(t('viewCertificate') as any) || 'View Certificate'}
+                      {t('viewCertificate')}
                     </Button>
                   </CardContent>
                 </Card>

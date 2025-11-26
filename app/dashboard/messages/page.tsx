@@ -7,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { LoadingInline } from '@/components/LoadingSpinner';
+import { LoadingInline, SimplePageLoading } from '@/components/LoadingSpinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -154,9 +154,7 @@ export default function MessagesPage() {
   if (authLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <LoadingInline text={t('loading')} size="default" />
-        </div>
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }
@@ -172,66 +170,88 @@ export default function MessagesPage() {
           description={t('messagesDescription')}
         />
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4 animate-fade-in-up">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
+          {/* Total Messages */}
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalMessages')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <MessageSquare className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('allMessages')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Bell className="h-4 w-4" />
+
+          {/* Unread Messages */}
+          <Card className="glass-card-hover border-primary/10 hover:border-warning/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('unreadMessages')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-warning to-warning/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Bell className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-amber-600">{stats.unread}</div>
+              <div className="text-3xl font-bold text-warning font-display">{stats.unread}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('pending')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
+
+          {/* Read Messages */}
+          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('readMessages')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.read}</div>
+              <div className="text-3xl font-bold text-success font-display">{stats.read}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('completed')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+
+          {/* Today Messages */}
+          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('todayMessages')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.today}</div>
+              <div className="text-3xl font-bold text-info font-display">{stats.today}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('today')}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Send Notification Card (for admins/teachers) */}
+        {/* ✨ Send Notification Card - Islamic Design */}
         {canSend && (
-          <Card className="card-hover glass-strong">
-            <CardHeader>
+          <Card className="glass-card border-primary/10 overflow-hidden">
+            <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
               <div className="flex items-center justify-between">
-                <CardTitle className="font-display flex items-center gap-2">
-                  <Send className="h-5 w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-3 text-primary">
+                  <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                    <Send className="h-5 w-5 text-white" />
+                  </div>
                   {t('sendNotification')}
                 </CardTitle>
                 <Button 
                   onClick={() => setIsDialogOpen(true)}
                   size="sm"
+                  className="shadow-lg"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {t('newMessage')}
@@ -241,62 +261,80 @@ export default function MessagesPage() {
           </Card>
         )}
 
-        {/* Messages List */}
-        <Card className="card-hover glass-strong animate-fade-in-up delay-200">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
-              <Bell className="h-5 w-5 text-amber-600" />
-              {t('messagesAndAlerts')} ({items.length})
+        {/* ✨ Messages List - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-warning to-warning/80 rounded-lg">
+                <Bell className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-primary font-display">{t('messagesAndAlerts')} ({items.length})</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loading ? (
               <div className="py-8">
                 <LoadingInline text={t('loadingMessages')} size="default" />
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <Bell className="h-20 w-20 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 font-display mb-2">
+              <div className="text-center py-16 px-4 animate-fade-in">
+                {/* Empty State - Enhanced Design */}
+                <div className="relative inline-block mb-6">
+                  {/* Decorative Background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-full blur-2xl scale-150 animate-pulse" />
+                  
+                  {/* Icon Container */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl border-2 border-primary/20">
+                    <Bell className="h-16 w-16 mx-auto text-primary animate-float" />
+                  </div>
+                </div>
+                
+                {/* Text Content */}
+                <h3 className="text-xl font-bold text-foreground font-display mb-2">
                   {t('noMessages')}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                <p className="text-muted-foreground max-w-md mx-auto">
                   {t('noMessagesDescription')}
                 </p>
+                
+                {/* Decorative Line */}
+                <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
-              <div className="space-y-3">
-                {items.map((n) => (
+              <div className="p-6 space-y-4">
+                {items.map((n, index) => (
                   <div 
                     key={n.id} 
                     className={`
-                      p-4 rounded-xl border transition-all duration-200
+                      p-4 rounded-xl border transition-all duration-200 animate-fade-in-up group
                       ${n.read_at 
-                        ? 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50' 
-                        : 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 shadow-md'
+                        ? 'glass-card border-primary/10' 
+                        : 'border-warning/30 bg-gradient-to-r from-warning/5 to-warning/10 shadow-md ring-1 ring-warning/20'
                       }
-                      hover:shadow-lg hover:scale-[1.01]
+                      hover:shadow-xl hover:scale-[1.01]
                     `}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {!n.read_at && (
-                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                            <Badge variant="warning" className="gap-1">
+                              <Bell className="h-3 w-3" />
                               {t('new' as TranslationKey)}
                             </Badge>
                           )}
-                          <h4 className="font-semibold font-sans text-base line-clamp-1">
+                          <h4 className="font-semibold text-foreground text-base line-clamp-1 group-hover:text-primary transition-colors">
                             {n.title}
                           </h4>
                         </div>
                         {n.body && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-3">
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
                             {n.body}
                           </p>
                         )}
-                        <div className="flex items-center gap-3 mt-3 text-xs text-slate-500 dark:text-slate-400">
-                          <Clock className="h-3 w-3" />
+                        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3 text-primary" />
                           <span>{new Date(n.created_at).toLocaleString(dateLocale)}</span>
                         </div>
                       </div>
@@ -306,7 +344,7 @@ export default function MessagesPage() {
                             variant="outline" 
                             size="sm" 
                             onClick={() => onRead(n.id)}
-                            className="h-8 text-xs"
+                            className="h-8 text-xs border-success/30 text-success hover:bg-success/10"
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
                             {t('markAsRead')}
@@ -339,7 +377,7 @@ export default function MessagesPage() {
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="h-8 text-xs"
+                                className="h-8 text-xs border-primary/30 text-primary hover:bg-primary/10"
                                 type="button"
                                 onClick={async (e) => {
                                   e.preventDefault();
@@ -390,7 +428,7 @@ export default function MessagesPage() {
                                     toast.error(t('errorOpeningLink'));
                                   }
                                 }}
-                                className="h-8 text-xs"
+                                className="h-8 text-xs border-info/30 text-info hover:bg-info/10"
                                 type="button"
                               >
                                 <ExternalLink className="h-3 w-3 mr-1" />

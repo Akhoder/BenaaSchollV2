@@ -7,14 +7,15 @@ import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TranslationKey } from '@/lib/translations';
-import { LoadingInline } from '@/components/LoadingSpinner';
+import { LoadingInline, SimplePageLoading } from '@/components/LoadingSpinner';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Trash2, Edit, Clock, MapPin, Users, School, Video, Link as LinkIcon, FileText, TrendingUp } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Trash2, Edit, Clock, MapPin, Users, School, Video, Link as LinkIcon, FileText, TrendingUp, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -253,9 +254,7 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <LoadingInline text={t('loading')} size="default" />
-        </div>
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }
@@ -271,59 +270,81 @@ export default function SchedulePage() {
           description={t('scheduleDescription')}
         />
 
-        {/* Stats Cards */}
+        {/* ✨ Stats Cards - Islamic Design */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4 animate-fade-in-up">
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
+          {/* Total Events */}
+          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('totalEvents')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('thisWeek')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+
+          {/* Today Events */}
+          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('todayEvents')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-blue-600">{stats.today}</div>
+              <div className="text-3xl font-bold text-info font-display">{stats.today}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('today')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+
+          {/* Upcoming Events */}
+          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('upcomingEvents')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-emerald-600">{stats.upcoming}</div>
+              <div className="text-3xl font-bold text-success font-display">{stats.upcoming}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('upcoming')}</p>
             </CardContent>
           </Card>
-          <Card className="card-hover glass-strong">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <Video className="h-4 w-4" />
+
+          {/* Online Events */}
+          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">
                 {t('onlineEvents')}
               </CardTitle>
+              <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                <Video className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-display text-purple-600">{stats.online}</div>
+              <div className="text-3xl font-bold text-accent font-display">{stats.online}</div>
+              <p className="text-xs text-muted-foreground mt-1">{t('virtual')}</p>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="card-hover glass-strong">
-          <CardHeader>
+        {/* ✨ Week View Card - Islamic Design */}
+        <Card className="glass-card border-primary/10 overflow-hidden">
+          <CardHeader className="border-b border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <CardTitle className="font-display flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-3 text-primary">
+                <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">
+                  <Calendar className="h-5 w-5 text-white" />
+                </div>
                 {t('weekView')}
               </CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
@@ -332,17 +353,19 @@ export default function SchedulePage() {
                   size="icon" 
                   onClick={() => setWeekStart(addDays(weekStart, -7))}
                   aria-label={t('previousWeek')}
+                  className="border-primary/20 hover:bg-primary/10"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="px-3 py-1.5 text-sm font-sans bg-slate-100 dark:bg-slate-800 rounded-md">
+                <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
                   {formatRange(weekStart, dateLocale)}
-                </div>
+                </Badge>
                 <Button 
                   variant="outline" 
                   size="icon" 
                   onClick={() => setWeekStart(addDays(weekStart, 7))}
                   aria-label={t('nextWeek')}
+                  className="border-primary/20 hover:bg-primary/10"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -353,7 +376,7 @@ export default function SchedulePage() {
                       resetForm(); 
                       setIsDialogOpen(true); 
                     }}
-                    className="ml-2"
+                    className="ml-2 shadow-lg"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {t('addEvent')}
@@ -691,40 +714,46 @@ interface FiltersProps {
 
 function Filters({ classes, teachers, filters, onChange, t }: FiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-3 mb-4">
+    <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 rounded-xl bg-gradient-to-l from-primary/5 to-secondary/5 border border-primary/10">
       <div className="w-full md:w-64">
-        <Label className="text-sm font-sans flex items-center gap-2">
-          <School className="h-4 w-4" />
+        <Label className="text-sm font-medium flex items-center gap-2 text-foreground mb-2">
+          <School className="h-4 w-4 text-info" />
           {t('class')}
         </Label>
         <Select value={filters.class_id} onValueChange={(v) => onChange({ ...filters, class_id: v })}>
-          <SelectTrigger className="mt-1">
+          <SelectTrigger className="h-11 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
             <SelectValue placeholder={t('all')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('all')}</SelectItem>
             {classes.map((c: any) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.class_name}
+                <div className="flex items-center gap-2">
+                  <School className="h-4 w-4 text-info" />
+                  {c.class_name}
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="w-full md:w-64">
-        <Label className="text-sm font-sans flex items-center gap-2">
-          <Users className="h-4 w-4" />
+        <Label className="text-sm font-medium flex items-center gap-2 text-foreground mb-2">
+          <Users className="h-4 w-4 text-accent" />
           {t('teacher')}
         </Label>
         <Select value={filters.teacher_id} onValueChange={(v) => onChange({ ...filters, teacher_id: v })}>
-          <SelectTrigger className="mt-1">
+          <SelectTrigger className="h-11 border-primary/20 focus:border-primary bg-background/50 backdrop-blur-sm">
             <SelectValue placeholder={t('all')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('all')}</SelectItem>
             {teachers.map((t: any) => (
               <SelectItem key={t.id} value={t.id}>
-                {t.full_name}
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-accent" />
+                  {t.full_name}
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
@@ -752,11 +781,11 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: W
   const getEventColor = (mode: string) => {
     switch (mode) {
       case 'online':
-        return 'border-l-4 border-l-purple-500 bg-purple-50 dark:bg-purple-950/20';
+        return 'border-l-4 border-l-accent bg-accent/5';
       case 'hybrid':
-        return 'border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20';
+        return 'border-l-4 border-l-info bg-info/5';
       default:
-        return 'border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-950/20';
+        return 'border-l-4 border-l-success bg-success/5';
     }
   };
 
@@ -775,62 +804,62 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: W
           <div 
             key={d.toISOString()} 
             className={`
-              border rounded-xl p-3 md:p-4 transition-all duration-200
+              border rounded-xl p-3 md:p-4 transition-all duration-300 animate-fade-in-up
               ${isTodayDate 
-                ? 'bg-primary/5 dark:bg-primary/10 border-primary/30 shadow-md' 
-                : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
+                ? 'bg-gradient-to-br from-primary/10 to-secondary/5 border-primary/30 shadow-lg ring-2 ring-primary/20' 
+                : 'glass-card border-primary/10'
               }
-              hover:shadow-lg hover:scale-[1.02]
+              hover:shadow-xl hover:scale-[1.02]
             `}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className={`
               text-sm font-semibold mb-3 font-display flex items-center justify-between
-              ${isTodayDate ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}
+              ${isTodayDate ? 'text-primary' : 'text-foreground'}
             `}>
               <span className="text-xs uppercase tracking-wider">
                 {d.toLocaleDateString(dateLocale, { weekday: 'short' })}
               </span>
-              <span className={`
-                px-2 py-0.5 rounded-md text-xs font-bold
-                ${isTodayDate 
-                  ? 'bg-primary text-white' 
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                }
-              `}>
+              <Badge 
+                variant={isTodayDate ? 'default' : 'secondary'}
+                className="px-2 py-0.5 text-xs font-bold"
+              >
                 {d.getDate()}
-              </span>
+              </Badge>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-sans">
+            <div className="text-xs text-muted-foreground mb-3 font-sans">
               {d.toLocaleDateString(dateLocale, { month: 'short' })}
             </div>
             <div className="space-y-2 min-h-[100px]">
               {eventsForDay.length === 0 && (
-                <div className="text-xs text-slate-400 dark:text-slate-500 text-center py-6">
+                <div className="text-xs text-muted-foreground text-center py-6 opacity-60">
                   {t('noEvents')}
                 </div>
               )}
-              {eventsForDay.map((e: ScheduleEvent) => (
+              {eventsForDay.map((e: ScheduleEvent, eventIndex: number) => (
                 <div 
                   key={e.id} 
                   className={`
-                    p-2.5 rounded-lg border transition-all duration-200
+                    p-3 rounded-lg border transition-all duration-200
                     ${getEventColor(e.mode)}
-                    hover:shadow-md hover:scale-[1.02]
-                    overflow-hidden
+                    hover:shadow-md hover:scale-[1.02] group
+                    overflow-hidden animate-fade-in
                   `}
+                  style={{ animationDelay: `${(index * 50) + (eventIndex * 30)}ms` }}
                 >
-                  <div className="text-sm font-semibold font-sans line-clamp-1">
+                  <div className="text-sm font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                     {e.title}
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mt-1.5">
-                    <Clock className="h-3 w-3 flex-shrink-0" />
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1.5">
+                    <Clock className="h-3 w-3 flex-shrink-0 text-primary" />
                     <span className="truncate">
                     {new Date(e.start_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} - {new Date(e.end_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   {(e.class_name || e.room || e.teacher_name) && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2">
-                      {[e.class_name, e.room, e.teacher_name].filter(Boolean).join(' • ')}
+                    <div className="text-xs text-muted-foreground mt-1.5 line-clamp-2 flex items-center gap-1">
+                      <MapPin className="h-3 w-3 flex-shrink-0 text-accent" />
+                      <span>{[e.class_name, e.room, e.teacher_name].filter(Boolean).join(' • ')}</span>
                     </div>
                   )}
                   {e.mode === 'online' && e.zoom_url && (
@@ -838,29 +867,29 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: W
                       href={e.zoom_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 mt-1.5 font-medium"
+                      className="text-xs text-accent hover:text-accent/80 hover:underline flex items-center gap-1.5 mt-2 font-medium bg-accent/10 px-2 py-1.5 rounded-md transition-colors"
                     >
                       <Video className="h-3 w-3" />
                       {t('joinMeeting')}
                     </a>
                   )}
                   {canEdit && (
-                    <div className="flex flex-col gap-1.5 mt-2.5">
+                    <div className="flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-border/50">
                       <div className="flex gap-1.5 flex-wrap">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => onEdit(e)}
-                          className="h-7 text-xs px-2 flex-1 min-w-0"
+                          className="h-7 text-xs px-2 flex-1 min-w-0 border-primary/20 hover:bg-primary/10 hover:text-primary"
                         >
                           <Edit className="h-3 w-3 mr-1 flex-shrink-0" />
                           <span className="truncate">{t('edit')}</span>
                         </Button>
                         <Button 
-                          variant="destructive" 
+                          variant="outline" 
                           size="sm" 
                           onClick={() => onDelete(e.id)}
-                          className="h-7 text-xs px-2 flex-1 min-w-0"
+                          className="h-7 text-xs px-2 flex-1 min-w-0 border-error/30 text-error hover:bg-error/10"
                         >
                           <Trash2 className="h-3 w-3 mr-1 flex-shrink-0" />
                           <span className="truncate">{t('delete')}</span>
@@ -874,8 +903,9 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: W
                             const dateStr = new Date(e.start_at).toISOString().slice(0, 10);
                             window.location.href = `/dashboard/attendance?classId=${e.class_id}&date=${dateStr}`;
                           }}
-                          className="h-7 text-xs px-2 w-full"
+                          className="h-7 text-xs px-2 w-full border-success/30 text-success hover:bg-success/10"
                         >
+                          <CheckCircle className="h-3 w-3 mr-1" />
                           <span className="truncate">{t('recordAttendance')}</span>
                         </Button>
                       )}
