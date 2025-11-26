@@ -24,7 +24,8 @@ import {
   ChevronDown,
   ChevronRight,
   Bot,
-  BarChart3
+  BarChart3,
+  Clock
 } from 'lucide-react';
 import { IntelligentSearch } from '@/components/IntelligentSearch';
 import Link from 'next/link';
@@ -109,6 +110,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: t('general'),
       items: [
         { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
+        { name: t('prayerTimes'), href: '/dashboard/prayer-times', icon: Clock, roles: ['admin', 'teacher', 'student', 'supervisor'] },
         { name: t('messages'), href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
         { name: t('announcements'), href: '/dashboard/announcements', icon: FileText, roles: ['admin', 'teacher', 'student', 'supervisor'] },
       ],

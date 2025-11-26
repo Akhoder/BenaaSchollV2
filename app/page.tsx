@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import Link from 'next/link';
+import { PrayerTimesLanding } from '@/components/PrayerTimesLanding';
 
 // ✨ Islamic Geometric Pattern Component
 const IslamicPattern = ({ className = '' }: { className?: string }) => (
@@ -278,6 +279,12 @@ export default function UltraModernLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ✨ Islamic Divider */}
+      <IslamicDivider />
+
+      {/* ✨ Prayer Times Section - مواقيت الصلاة */}
+      <PrayerTimesLanding />
 
       {/* ✨ Islamic Divider */}
       <IslamicDivider />

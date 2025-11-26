@@ -64,6 +64,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import { PrayerTimesCard } from '@/components/PrayerTimesCard';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -1131,6 +1132,11 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
             </Link>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Prayer Times Card - مواقيت الصلاة */}
+      <div className="mb-6">
+        <PrayerTimesCard />
       </div>
 
       {/* Upcoming Assignments - Enhanced */}
@@ -2755,6 +2761,13 @@ export default function DashboardPage() {
                 </div>
               </div>
             </section>
+
+            {/* ============================================
+                Prayer Times Section - مواقيت الصلاة
+                ============================================ */}
+            <section className="space-y-6">
+              <PrayerTimesCard />
+            </section>
           </div>
         )}
 
@@ -3373,19 +3386,26 @@ export default function DashboardPage() {
 
         {/* Teacher Dashboard - لوحة المعلم */}
         {profile?.role === 'teacher' && (
-          <TeacherDashboardSection
-            t={t}
-            stats={{
-              classCount: teacherClassCount,
-              studentCount: teacherStudentCount,
-              scheduleCount: todayEvents.length,
-            }}
-            todayEvents={todayEvents}
-            teacherClasses={teacherClasses}
-            loadingSchedule={loadingSchedule}
-            loadingTeacherData={loadingTeacherData}
-            dateLocale={dateLocale}
-          />
+          <>
+            <TeacherDashboardSection
+              t={t}
+              stats={{
+                classCount: teacherClassCount,
+                studentCount: teacherStudentCount,
+                scheduleCount: todayEvents.length,
+              }}
+              todayEvents={todayEvents}
+              teacherClasses={teacherClasses}
+              loadingSchedule={loadingSchedule}
+              loadingTeacherData={loadingTeacherData}
+              dateLocale={dateLocale}
+            />
+            
+            {/* Prayer Times Card - مواقيت الصلاة */}
+            <div className="mt-6">
+              <PrayerTimesCard />
+            </div>
+          </>
         )}
 
         {/* Supervisor Dashboard - لوحة المشرف */}

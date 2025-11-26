@@ -9,7 +9,8 @@ import {
   School,
   FileText,
   MessageSquare,
-  Home
+  Home,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,12 @@ export function MobileBottomNav() {
         href: '/dashboard',
         icon: LayoutDashboard,
         label: t('dashboard'),
+        roles: ['admin', 'teacher', 'student', 'supervisor']
+      },
+      {
+        href: '/dashboard/prayer-times',
+        icon: Clock,
+        label: t('prayerTimes'),
         roles: ['admin', 'teacher', 'student', 'supervisor']
       },
     ];
