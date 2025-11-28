@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
@@ -14,13 +14,18 @@ import { FontLoader } from '@/components/FontLoader';
 // Get base URL from environment variable or use default
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://benaa-school.bolt.host';
 
+export const viewport: Viewport = {
+  themeColor: '#115E3C', // Deep Islamic Emerald
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: 'مدرسة البناء العلمي | Madrasat Al-Binaa Al-Ilmi',
   description: 'مدرسة إسلامية لنشر العلوم الشرعية والتربوية - Islamic school for spreading religious and educational sciences',
   manifest: '/manifest.json',
-  themeColor: '#115E3C', // Deep Islamic Emerald
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
