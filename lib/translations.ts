@@ -135,7 +135,6 @@ export const translations = {
     pendingReports: 'Pending reports',
     schedule: 'Schedule',
     scheduleDescription: 'View and manage your weekly schedule',
-    prayerTimes: 'Prayer Times',
     prayerTimesDescription: 'View daily prayer times for Tripoli, Lebanon',
     weekView: 'Week View',
     previousWeek: 'Previous Week',
@@ -988,7 +987,6 @@ export const translations = {
     pendingReports: 'التقارير المعلقة',
     schedule: 'الجدول',
     scheduleDescription: 'عرض وإدارة الجدول الأسبوعي',
-    prayerTimes: 'مواقيت الصلاة',
     prayerTimesDescription: 'عرض مواقيت الصلاة اليومية لطرابلس - لبنان',
     weekView: 'عرض الأسبوع',
     previousWeek: 'الأسبوع السابق',
@@ -1674,7 +1672,6 @@ export const translations = {
     imageUploaded: 'تم رفع الصورة بنجاح',
     clickToUpload: 'انقر لرفع الصورة',
     // مواقيت الصلاة
-    prayerTimes: 'مواقيت الصلاة',
     nextPrayer: 'الصلاة القادمة',
     fajr: 'الفجر',
     sunrise: 'الشروق',
@@ -2464,7 +2461,6 @@ export const translations = {
     imageUploaded: 'Image téléchargée avec succès',
     clickToUpload: 'Cliquez pour télécharger l\'image',
     // Heures de prière
-    prayerTimes: 'Heures de prière',
     nextPrayer: 'Prochaine prière',
     fajr: 'Fajr',
     sunrise: 'Lever du soleil',

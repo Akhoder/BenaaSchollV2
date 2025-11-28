@@ -527,7 +527,7 @@ export default function TeachersPage() {
             <CardContent>
               <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('totalTeachersInSchool')}
+                {t('totalTeachers')}
               </p>
             </CardContent>
           </Card>

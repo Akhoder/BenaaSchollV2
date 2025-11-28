@@ -10,7 +10,7 @@ export default function ScheduleLoading() {
         text="جاري تحميل الجدول..."
         statsCount={4}
         contentType="grid"
-        contentGridCount={7}
+        contentRows={7}
       />
     </DashboardLayout>
   );

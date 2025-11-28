@@ -123,7 +123,7 @@ export default function GradesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={t('loadingGrades')} />
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }

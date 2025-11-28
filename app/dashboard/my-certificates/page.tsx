@@ -144,7 +144,7 @@ export default function MyCertificatesPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={t('loadingCertificates')} />
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }

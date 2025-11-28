@@ -37,7 +37,7 @@ import { SkipLink } from '@/components/KeyboardNavigation';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SecurityIndicator } from '@/components/SecurityIndicators';
 import { cn } from '@/lib/utils';
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback, useEffect } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface DashboardLayoutProps {
@@ -62,6 +62,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { t, language, setLanguage } = useLanguage();
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // Organized navigation with groups for better UX
   const navigationGroups: NavGroup[] = [
@@ -167,34 +173,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const NavItems = memo(() => {
     return (
     <>
-      {filteredGroupsMemo.map((group) => {
+      {filteredGroupsMemo.map((group, groupIndex) => {
         const isGroupOpen = openGroups[group.title] ?? true; // Default to open
         const hasMultipleItems = group.items.length > 1;
+        const hasActiveItem = group.items.some(item => mostSpecificMatch === item.href);
 
         return (
-          <div key={group.title} className="mb-2">
+          <div key={group.title} className={cn(
+            "mb-3",
+            groupIndex > 0 && "pt-3 border-t border-border/50"
+          )}>
             {hasMultipleItems ? (
               <Collapsible open={isGroupOpen} onOpenChange={() => toggleGroup(group.title)}>
                 <CollapsibleTrigger className={cn(
-                  'w-full flex items-center justify-between px-3 py-2 rounded-lg',
-                  'text-xs font-semibold uppercase tracking-wider',
+                  'w-full flex items-center justify-between px-3 py-2.5 rounded-lg mb-1',
+                  'text-xs font-bold uppercase tracking-wider',
                   'text-muted-foreground hover:text-foreground',
-                  'transition-colors'
+                  'transition-all duration-200',
+                  'hover:bg-muted/30',
+                  hasActiveItem && 'text-primary font-extrabold'
                 )}>
-                  <span>{group.title}</span>
+                  <span className="flex items-center gap-2">
+                    <span className={cn(
+                      "w-1 h-4 rounded-full transition-all duration-200",
+                      hasActiveItem ? "bg-primary" : "bg-muted-foreground/30"
+                    )} />
+                    <span>{group.title}</span>
+                  </span>
                   {language === 'ar' ? (
                     <ChevronDown className={cn(
-                      'h-4 w-4 transition-transform',
+                      'h-4 w-4 transition-transform duration-200',
                       isGroupOpen && 'rotate-180'
                     )} />
                   ) : (
                     <ChevronRight className={cn(
-                      'h-4 w-4 transition-transform',
+                      'h-4 w-4 transition-transform duration-200',
                       isGroupOpen && 'rotate-90'
                     )} />
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 mt-1">
+                <CollapsibleContent className={cn(
+                  "space-y-1.5 mt-1.5 overflow-hidden",
+                  "data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up"
+                )}>
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     // Use the most specific match found across all groups
@@ -207,26 +228,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         prefetch={true}
                         className={cn(
                           'group flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative',
-                          'hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))]',
-                          'hover:shadow-md hover:-translate-y-0.5',
+                          'hover:bg-primary/10 dark:hover:bg-primary/10',
+                          'hover:shadow-sm hover:scale-[1.02]',
                           'min-h-[44px]', // Touch-friendly
-                          isActive && 'bg-[hsl(var(--primary))] text-white shadow-lg border-2 border-[hsl(var(--primary))] dark:border-[hsl(var(--primary))]',
-                          !isActive && 'text-[hsl(var(--foreground))]'
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                          isActive && 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md',
+                          !isActive && 'text-foreground'
                         )}
                         aria-current={isActive ? 'page' : undefined}
                         aria-label={item.name}
                       >
+                        {/* Active indicator bar */}
+                        {isActive && (
+                          <div className={cn(
+                            "absolute w-1 h-8 bg-white/30",
+                            language === 'ar' ? 'left-0 rounded-r-full' : 'right-0 rounded-l-full'
+                          )} />
+                        )}
                         <Icon 
                           className={cn(
-                            'h-5 w-5 transition-colors flex-shrink-0',
-                            isActive ? 'text-white' : 'text-[hsl(var(--primary))] group-hover:text-[hsl(var(--primary-hover))]'
+                            'h-5 w-5 transition-all duration-200 flex-shrink-0',
+                            isActive ? 'text-white scale-110' : 'text-primary group-hover:text-primary/80 group-hover:scale-110'
                           )} 
                           aria-hidden="true"
                         />
                         <span className={cn(
-                          'font-medium transition-colors text-sm sm:text-base',
-                          isActive ? 'text-white' : 'text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))]'
+                          'font-medium transition-all duration-200 text-sm sm:text-base flex-1',
+                          isActive ? 'text-white font-semibold' : 'text-foreground group-hover:text-primary'
                         )}>{item.name}</span>
+                        {isActive && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-xl opacity-50" />
+                        )}
                       </Link>
                     );
                   })}
@@ -240,30 +272,55 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 const isActive = mostSpecificMatch === item.href;
 
                 return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    prefetch={true}
-                    className={cn(
-                      'group flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative',
-                      'hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))]',
-                      'hover:shadow-md hover:-translate-y-0.5',
-                      isActive && 'bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] text-white shadow-lg',
-                      !isActive && 'text-[hsl(var(--foreground))]'
-                    )}
-                  >
-                    <Icon className={cn(
-                      'h-5 w-5 transition-colors flex-shrink-0',
-                      isActive ? 'text-white' : 'text-[hsl(var(--primary))] group-hover:text-[hsl(var(--primary-hover))]'
-                    )} />
-                    <span className={cn(
-                      'font-medium transition-colors text-sm sm:text-base',
-                      isActive ? 'text-white' : 'text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))]'
-                    )}>{item.name}</span>
-                    {isActive && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-hover))] rounded-xl opacity-0 group-hover:opacity-10 transition-opacity" />
-                    )}
-                  </Link>
+                  <div key={item.name} className="mb-1">
+                    <div className={cn(
+                      "px-3 py-2 mb-1.5"
+                    )}>
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+                      )}>
+                        <span className={cn(
+                          "w-1 h-4 rounded-full",
+                          isActive ? "bg-primary" : "bg-muted-foreground/30"
+                        )} />
+                        <span>{group.title}</span>
+                      </span>
+                    </div>
+                    <Link
+                      href={item.href}
+                      prefetch={true}
+                      className={cn(
+                        'group flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 relative',
+                        'hover:bg-primary/10 dark:hover:bg-primary/10',
+                        'hover:shadow-sm hover:scale-[1.02]',
+                        'min-h-[44px]',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                        isActive && 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md',
+                        !isActive && 'text-foreground'
+                      )}
+                      aria-current={isActive ? 'page' : undefined}
+                      aria-label={item.name}
+                    >
+                      {/* Active indicator bar */}
+                      {isActive && (
+                        <div className={cn(
+                          "absolute w-1 h-8 bg-white/30",
+                          language === 'ar' ? 'left-0 rounded-r-full' : 'right-0 rounded-l-full'
+                        )} />
+                      )}
+                      <Icon className={cn(
+                        'h-5 w-5 transition-all duration-200 flex-shrink-0',
+                        isActive ? 'text-white scale-110' : 'text-primary group-hover:text-primary/80 group-hover:scale-110'
+                      )} />
+                      <span className={cn(
+                        'font-medium transition-all duration-200 text-sm sm:text-base flex-1',
+                        isActive ? 'text-white font-semibold' : 'text-foreground group-hover:text-primary'
+                      )}>{item.name}</span>
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-xl opacity-50" />
+                      )}
+                    </Link>
+                  </div>
                 );
               })
             )}
@@ -287,50 +344,114 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start gap-3">
-              <Sheet>
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild className="lg:hidden">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="hover:bg-[hsl(var(--primary-light))] dark:hover:bg-[hsl(var(--primary-light))] min-h-[48px] min-w-[48px]"
+                    className={cn(
+                      "hover:bg-primary/10 dark:hover:bg-primary/10",
+                      "min-h-[48px] min-w-[48px]",
+                      "transition-all duration-200",
+                      "active:scale-95",
+                      "rounded-xl"
+                    )}
                     aria-label={language === 'ar' ? 'فتح القائمة' : 'Open menu'}
                   >
-                    <Menu className="h-6 w-6 text-[hsl(var(--primary))]" aria-hidden="true" />
+                    <Menu className="h-6 w-6 text-primary transition-transform duration-200 group-hover:rotate-90" aria-hidden="true" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent 
                   side={language === 'ar' ? 'right' : 'left'} 
-                  className="w-72 p-0 bg-card/98 dark:bg-card/95 backdrop-blur-xl border-primary/20"
+                  className={cn(
+                    "w-[85vw] max-w-sm p-0",
+                    "backdrop-blur-xl",
+                    "border-primary/20 shadow-2xl",
+                    "overflow-hidden"
+                  )}
+                  style={{
+                    backgroundColor: 'hsl(var(--card))',
+                  }}
                   aria-label={language === 'ar' ? 'القائمة الرئيسية' : 'Main menu'}
                 >
-                  <div className="flex h-full flex-col gap-2 p-4">
-                    {/* Logo Section with Golden Accent */}
-                    <div className="flex items-center gap-3 px-3 py-4 border-b-2 border-secondary/30 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl mb-2">
-                      <div className="overflow-hidden rounded-xl border-2 border-secondary/40 shadow-lg ring-2 ring-primary/10">
-                        <OptimizedImage
-                          src="/icons/logo.jpg"
-                          alt={language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
-                          width={48}
-                          height={48}
-                          className="w-12 h-12"
-                          priority
-                        />
+                  <div className="flex h-full flex-col relative">
+                    {/* Decorative top accent */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
+                    
+                    {/* User Profile Section - Mobile */}
+                    <div className="px-4 pt-6 pb-4 border-b border-border/50 bg-gradient-to-br from-primary/5 via-secondary/5 to-transparent">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Avatar className="h-12 w-12 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                          <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-base font-semibold">
+                            {profile?.full_name?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground text-sm truncate">{profile?.full_name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-lg font-display font-bold text-primary leading-tight">
-                          {language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
-                        </span>
-                        <span className="text-xs text-secondary font-medium">
-                          {language === 'ar' ? 'البداوي - طرابلس' : 'Al-Beddawi - Tripoli'}
-                        </span>
+                      
+                      {/* Logo Section */}
+                      <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-muted/30 dark:bg-card/50 border border-primary/10">
+                        <div className="overflow-hidden rounded-lg border border-secondary/30 shadow-sm">
+                          <OptimizedImage
+                            src="/icons/logo.jpg"
+                            alt={language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8"
+                            priority
+                          />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-sm font-display font-bold text-primary leading-tight truncate">
+                            {language === 'ar' ? 'مدرسة البناء العلمي' : 'Benaa School'}
+                          </span>
+                          <span className="text-[10px] text-secondary font-medium truncate">
+                            {language === 'ar' ? 'البداوي - طرابلس' : 'Al-Beddawi - Tripoli'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <nav 
-                      className="flex-1 space-y-1 pt-4"
-                      aria-label={language === 'ar' ? 'التنقل' : 'Navigation'}
-                    >
-                      <NavItems />
-                    </nav>
+                    
+                    {/* Navigation Items with improved scrollbar */}
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/30 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding hover:[&::-webkit-scrollbar-thumb]:bg-primary/50">
+                      <nav 
+                        className="space-y-1" 
+                        dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        aria-label={language === 'ar' ? 'التنقل' : 'Navigation'}
+                      >
+                        <NavItems />
+                      </nav>
+                    </div>
+                    
+                    {/* Bottom gradient fade */}
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-card/98 to-transparent pointer-events-none" />
+                    
+                    {/* Quick Actions Footer - Mobile */}
+                    <div className="px-4 py-3 border-t border-border/50 bg-muted/30">
+                      <div className="flex items-center justify-between gap-2">
+                        <Link 
+                          href="/dashboard/settings/profile" 
+                          prefetch={true}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-primary/10 transition-colors flex-1 justify-center"
+                        >
+                          <UserCircle className="h-4 w-4" />
+                          <span>{t('editProfile')}</span>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={signOut}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-700 transition-colors"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span className="hidden sm:inline">{t('signOut')}</span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -440,7 +561,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ✨ Enhanced Sidebar with Islamic Design */}
       <aside 
         className={cn(
-          "fixed top-0 z-40 w-64 h-screen pt-20 transition-transform",
+          "fixed top-0 z-40 w-64 h-screen pt-20 transition-transform duration-300 ease-in-out",
           "bg-card/98 dark:bg-card/95 backdrop-blur-xl",
           "border-primary/10 shadow-xl shadow-primary/5",
           language === 'ar' ? 'right-0 translate-x-full lg:translate-x-0 border-l-2' : 'left-0 -translate-x-full lg:translate-x-0 border-r-2'
@@ -450,15 +571,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Decorative top accent */}
         <div className="absolute top-20 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
         
-        <div className="h-full px-3 pb-4 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+        {/* Sidebar content with improved scrollbar */}
+        <div className="h-full px-4 pb-6 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/30 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding hover:[&::-webkit-scrollbar-thumb]:bg-primary/50">
           <nav 
-            className="space-y-1 pt-2" 
+            className="space-y-1 pt-4" 
             dir={language === 'ar' ? 'rtl' : 'ltr'}
             aria-label={language === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'}
           >
             <NavItems />
           </nav>
         </div>
+        
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/98 to-transparent pointer-events-none" />
       </aside>
 
       <main className={cn(

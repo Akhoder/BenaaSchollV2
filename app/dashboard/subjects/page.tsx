@@ -337,7 +337,7 @@ export default function SubjectsPage() {
     return (
       <DashboardLayout>
         <PageLoading
-          text={t('loadingSubjects')}
+          text={t('loading')}
           statsCount={4}
           contentType="table"
           contentRows={5}

@@ -557,7 +557,7 @@ export default function UsersPage() {
             <CardContent>
               <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('allUsers')}
+                {t('users')}
               </p>
             </CardContent>
           </Card>
@@ -575,7 +575,7 @@ export default function UsersPage() {
             <CardContent>
               <div className="text-3xl font-bold text-error font-display">{stats.admins}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('administrators')}
+                {t('admin')}
               </p>
             </CardContent>
           </Card>

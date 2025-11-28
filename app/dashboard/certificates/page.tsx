@@ -200,7 +200,7 @@ export default function CertificatesPage() {
     return (
       <DashboardLayout>
         <PageLoading
-          text={t('loadingCertificates')}
+          text={t('loading')}
           statsCount={4}
           contentType="table"
           contentRows={6}
@@ -225,7 +225,7 @@ export default function CertificatesPage() {
           <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('totalCertificates')}
+                {t('certificates')}
               </CardTitle>
               <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
                 <Award className="h-5 w-5 text-white" />
@@ -236,7 +236,7 @@ export default function CertificatesPage() {
                 {stats.total}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('allCertificates')}
+                {t('certificates')}
               </p>
             </CardContent>
           </Card>
@@ -256,7 +256,7 @@ export default function CertificatesPage() {
                 {stats.published}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('publishedCertificates')}
+                {t('published')}
               </p>
             </CardContent>
           </Card>
@@ -276,7 +276,7 @@ export default function CertificatesPage() {
                 {stats.issued}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('issuedCertificates')}
+                {t('issued')}
               </p>
             </CardContent>
           </Card>
@@ -296,7 +296,7 @@ export default function CertificatesPage() {
                 {stats.autoIssued}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t('autoIssuedCertificates')}
+                {t('auto')}
               </p>
             </CardContent>
           </Card>

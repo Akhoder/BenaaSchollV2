@@ -511,7 +511,7 @@ export default function AttendanceReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-success font-display">{summaryStats.totalPresent}</div>
-                <p className="text-xs text-muted-foreground mt-1">{t('totalAttendances')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('attendance')}</p>
               </CardContent>
             </Card>
 
@@ -527,7 +527,7 @@ export default function AttendanceReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-error font-display">{summaryStats.totalAbsent}</div>
-                <p className="text-xs text-muted-foreground mt-1">{t('totalAbsences')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('absent')}</p>
               </CardContent>
             </Card>
 

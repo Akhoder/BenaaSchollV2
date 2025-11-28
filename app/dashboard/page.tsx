@@ -2361,7 +2361,7 @@ export default function DashboardPage() {
     return (
       <DashboardLayout>
         <PageLoading
-          text={t('loadingDashboard')}
+          text={t('loading')}
           showStats={true}
           statsCount={4}
           contentType="grid"

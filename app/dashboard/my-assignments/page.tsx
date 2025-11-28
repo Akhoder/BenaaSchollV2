@@ -97,7 +97,7 @@ export default function MyAssignmentsPage() {
       if (submission.status === 'graded') {
         return (
           <Badge variant="success" className="gap-1">
-            <CheckCircle className="h-3 w-3" /> {t('graded')}: {submission.score}/{assignment.total_points}
+            <CheckCircle className="h-3 w-3" /> {t('gradedOn')}: {submission.score}/{assignment.total_points}
           </Badge>
         );
       }
@@ -117,7 +117,7 @@ export default function MyAssignmentsPage() {
     }
     return (
       <Badge variant="warning" className="gap-1">
-        <Clock className="h-3 w-3" /> {t('pending')}
+        <Clock className="h-3 w-3" /> {t('status')}
       </Badge>
     );
   };
@@ -125,7 +125,7 @@ export default function MyAssignmentsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={t('loadingAssignments')} />
+        <SimplePageLoading text={t('loading')} />
       </DashboardLayout>
     );
   }
@@ -140,7 +140,7 @@ export default function MyAssignmentsPage() {
         <PageHeader 
           icon={FileText}
           title={t('myAssignments')}
-          description={t('viewAndSubmitAssignments')}
+          description={t('assignments')}
           gradient="from-primary to-accent"
         />
 
@@ -160,8 +160,8 @@ export default function MyAssignmentsPage() {
                   </div>
                 </div>
                 <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
-                <h3 className="text-xl font-semibold text-foreground font-display mb-2">{t('noAssignments')}</h3>
-                <p className="text-muted-foreground font-sans">{t('noAssignmentsDescription')}</p>
+                <h3 className="text-xl font-semibold text-foreground font-display mb-2">{t('assignments')}</h3>
+                <p className="text-muted-foreground font-sans">{t('noGradesDescription')}</p>
               </div>
             </CardContent>
           </Card>
@@ -205,7 +205,7 @@ export default function MyAssignmentsPage() {
                         <div className="flex items-center gap-2.5 text-muted-foreground">
                           <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                           <span className="flex-1">
-                            <span className="font-semibold">{t('dueDate')}:</span>{' '}
+                            <span className="font-semibold">{t('end')}:</span>{' '}
                             <span className={isOverdue ? 'text-destructive font-medium' : ''}>
                               {new Date(assignment.due_date).toLocaleDateString()}
                             </span>
@@ -216,8 +216,8 @@ export default function MyAssignmentsPage() {
                       <div className="flex items-center gap-2.5 text-muted-foreground">
                         <FileText className="h-4 w-4 text-accent flex-shrink-0" />
                         <span>
-                          <span className="font-semibold">{t('points')}:</span> {assignment.total_points} | 
-                          <span className="font-semibold"> {t('weight')}:</span> {assignment.grade_weight}%
+                          <span className="font-semibold">{t('scoreLabel')}:</span> {assignment.total_points} | 
+                          <span className="font-semibold"> {t('grade')}:</span> {assignment.grade_weight}%
                         </span>
                       </div>
                       {submission && (
@@ -243,7 +243,7 @@ export default function MyAssignmentsPage() {
                       className="w-full transition-all duration-300 hover:scale-105"
                       onClick={() => router.push(`/dashboard/assignments/${assignment.id}/submit`)}
                     >
-                      {submission ? t('viewSubmission') : t('submitWork')}
+                      {submission ? t('view') : t('submit')}
                     </Button>
                   </CardContent>
                 </Card>

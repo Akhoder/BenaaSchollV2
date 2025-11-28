@@ -284,7 +284,7 @@ export default function SchedulePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('thisWeek')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('weekView')}</p>
             </CardContent>
           </Card>
 
@@ -300,7 +300,7 @@ export default function SchedulePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-info font-display">{stats.today}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('today')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('todayEvents')}</p>
             </CardContent>
           </Card>
 
@@ -332,7 +332,7 @@ export default function SchedulePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-accent font-display">{stats.online}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('virtual')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('onlineEvents')}</p>
             </CardContent>
           </Card>
         </div>
