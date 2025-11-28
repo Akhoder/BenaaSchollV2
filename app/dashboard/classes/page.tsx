@@ -60,7 +60,7 @@ import {
   MoreVertical,
   Eye,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, uploadClassImage } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -133,6 +133,39 @@ export default function ClassesPage() {
     teacher_id: '',
     supervisor_id: '',
   });
+
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    // Reset input
+    e.target.value = '';
+    
+    try {
+      setIsUploading(true);
+      if (!profile?.id) return;
+      
+      const { data, error } = await uploadClassImage(file, profile.id);
+      
+      if (error) {
+        console.error('Upload error:', error);
+        toast.error(t('failedToUploadImage' as TranslationKey));
+        return;
+      }
+      
+      if (data?.publicUrl) {
+        setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
+        toast.success(t('imageUploadedSuccessfully' as TranslationKey));
+      }
+    } catch (err) {
+      console.error('Unexpected upload error:', err);
+      toast.error(t('unexpectedError'));
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const formatDateForInput = (value?: string | null) => {
     if (!value) return '';
@@ -963,28 +996,70 @@ export default function ClassesPage() {
                 </Select>
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload */}
               <div>
-                <Label htmlFor="image_url" className="text-sm font-medium font-sans">{t('classImageUrlOptional')}</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  className="mt-1 font-sans"
-                  disabled={isViewing}
-                />
-                {formData.image_url && (
-                  <div className="mt-2">
-                    <OptimizedImage
-                      src={formData.image_url}
-                      alt={t('classPreview' as TranslationKey)}
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 rounded-lg border"
-                    />
+                <Label className="text-sm font-medium font-sans">{t('classImage' as TranslationKey)}</Label>
+                <div className="mt-2 flex items-start gap-4">
+                  {formData.image_url ? (
+                    <div className="relative group">
+                      <OptimizedImage
+                        src={formData.image_url}
+                        alt={t('classPreview' as TranslationKey)}
+                        width={100}
+                        height={100}
+                        className="w-24 h-24 rounded-lg object-cover border"
+                      />
+                      {!isViewing && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setFormData({ ...formData, image_url: '' })}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
+                      <Image className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 space-y-2">
+                    {!isViewing && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isUploading}
+                            onClick={() => document.getElementById('class-image-upload')?.click()}
+                          >
+                            {isUploading ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Image className="h-4 w-4 mr-2" />
+                            )}
+                            {t('uploadImage' as TranslationKey)}
+                          </Button>
+                          <input
+                            id="class-image-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {t('imageUploadHint' as TranslationKey) || 'Recommended: 800x600px, Max: 5MB'}
+                        </p>
+                      </>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Objectives */}

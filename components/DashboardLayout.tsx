@@ -25,7 +25,8 @@ import {
   ChevronRight,
   Bot,
   BarChart3,
-  Clock
+  Clock,
+  Globe
 } from 'lucide-react';
 import { IntelligentSearch } from '@/components/IntelligentSearch';
 import Link from 'next/link';
@@ -491,6 +492,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <IntelligentSearch className="w-48" />
               </div>
               <ThemeToggle />
+
+              <Link href="/" target="_blank">
+                <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-primary/10" title={language === 'ar' ? 'زيارة الموقع' : 'Visit Website'}>
+                  <Globe className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                </Button>
+              </Link>
               
               <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
                 <SelectTrigger className="w-24 sm:w-28 h-9 border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] transition-colors text-sm">

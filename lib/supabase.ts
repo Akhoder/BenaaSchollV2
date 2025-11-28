@@ -680,8 +680,73 @@ export async function uploadSubjectImage(file: File, userId: string) {
   return { data: { path, publicUrl: pub.publicUrl }, error: null };
 }
 
+// ============================================
+// CLASS IMAGE UPLOAD FUNCTIONS
+// ============================================
+
+export async function uploadClassImage(file: File, userId: string) {
+  const bucket = 'class-images';
+  const ext = file.name.split('.').pop() || 'jpg';
+  
+  // Validate file type (images only)
+  const allowedExt = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+  if (!allowedExt.includes(ext.toLowerCase())) {
+    return { data: null, error: new Error('Unsupported file type. Only images are allowed (PNG, JPG, JPEG, GIF, WEBP)') } as any;
+  }
+  
+  // Validate file size (max 5MB)
+  const maxBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxBytes) {
+    return { data: null, error: new Error('File too large (max 5MB)') } as any;
+  }
+  
+  // Generate unique filename
+  const uid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? (crypto as any).randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const path = `${userId}/${uid}.${ext.toLowerCase()}`;
+  
+  const contentTypeByExt: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const contentType = file.type || contentTypeByExt[ext.toLowerCase()] || 'image/jpeg';
+  
+  // Upload file
+  const { data, error } = await (supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType,
+  }) as any);
+  
+  if (error) {
+    return { data: null, error: new Error(`Upload failed: ${error.message || 'Unknown error'}`) } as any;
+  }
+  
+  // Get public URL
+  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { data: { path, publicUrl: pub.publicUrl }, error: null };
+}
+
 export async function deleteSubjectImage(imageUrl: string) {
   const bucket = 'subject-images';
+  // Extract path from URL
+  const urlParts = imageUrl.split('/');
+  const pathIndex = urlParts.findIndex(part => part === bucket);
+  if (pathIndex === -1) {
+    return { data: null, error: new Error('Invalid image URL') } as any;
+  }
+  const path = urlParts.slice(pathIndex + 1).join('/');
+  
+  const { data, error } = await supabase.storage.from(bucket).remove([path]);
+  return { data, error };
+}
+
+export async function deleteClassImage(imageUrl: string) {
+  const bucket = 'class-images';
   // Extract path from URL
   const urlParts = imageUrl.split('/');
   const pathIndex = urlParts.findIndex(part => part === bucket);
@@ -969,7 +1034,7 @@ export async function getConversationMessages(conversationId: string, limit = 50
 export async function sendMessage(
   conversationId: string,
   content: string,
-  messageType: 'text' | 'file' | 'image' = 'text',
+  message_type: 'text' | 'file' | 'image' = 'text',
   fileUrl?: string
 ) {
   const { data: userRes } = await supabase.auth.getUser();
@@ -982,7 +1047,7 @@ export async function sendMessage(
       conversation_id: conversationId,
       sender_id: uid,
       content,
-      message_type: messageType,
+      message_type,
       file_url: fileUrl || null
     })
     .select()

@@ -89,12 +89,9 @@ export default function UltraModernLandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
+  }, []);
 
-  if (loading || (user && !loading)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-mesh islamic-pattern">
         <div className="text-center space-y-4">
@@ -153,17 +150,28 @@ export default function UltraModernLandingPage() {
 
             {/* CTA Buttons */}
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button variant="ghost" className="hidden sm:flex">
-                  تسجيل الدخول
-                </Button>
-              </Link>
-              <Link href="/register">
-                <button className="btn-primary">
-                  ابدأ الآن
-                  <ArrowRight className="w-5 h-5 mr-2" />
-                </button>
-              </Link>
+              {user ? (
+                <Link href="/dashboard">
+                  <Button className="btn-primary">
+                    لوحة التحكم
+                    <ArrowRight className="w-5 h-5 mr-2" />
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" className="hidden sm:flex">
+                      تسجيل الدخول
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <button className="btn-primary">
+                      ابدأ الآن
+                      <ArrowRight className="w-5 h-5 mr-2" />
+                    </button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -545,18 +553,29 @@ export default function UltraModernLandingPage() {
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center pt-4">
-            <Link href="/register">
-              <button className="btn-primary text-lg px-12 py-4 shadow-glow-primary">
-                <Star className="w-5 h-5 ml-2" />
-                سجل مجاناً
-              </button>
-            </Link>
-            <Link href="/login">
-              <button className="btn-glass text-lg px-12 py-4">
-                تسجيل الدخول
-                <ArrowRight className="w-5 h-5 mr-2" />
-              </button>
-            </Link>
+            {user ? (
+              <Link href="/dashboard">
+                <button className="btn-primary text-lg px-12 py-4 shadow-glow-primary">
+                  <Rocket className="w-5 h-5 ml-2" />
+                  الانتقال إلى لوحة التحكم
+                </button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/register">
+                  <button className="btn-primary text-lg px-12 py-4 shadow-glow-primary">
+                    <Star className="w-5 h-5 ml-2" />
+                    سجل مجاناً
+                  </button>
+                </Link>
+                <Link href="/login">
+                  <button className="btn-glass text-lg px-12 py-4">
+                    تسجيل الدخول
+                    <ArrowRight className="w-5 h-5 mr-2" />
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -621,7 +640,7 @@ export default function UltraModernLandingPage() {
               <ul className="space-y-3 text-sm">
                 <li className="flex items-center gap-2">
                   <span className="text-secondary">📍</span>
-                  <span className="text-white/80">البداوي - طرابلس، ليبيا</span>
+                  <span className="text-white/80">البداوي - طرابلس، لبنان</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-secondary">📧</span>

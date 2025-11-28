@@ -67,7 +67,7 @@ export function OptimizedImage({
       };
 
   return (
-    <div className={cn('relative overflow-hidden', !fill && className)}>
+    <div className={cn('relative overflow-hidden', fill && 'w-full h-full', !fill && className)}>
       {loading && (
         <div className="absolute inset-0 bg-muted animate-pulse" />
       )}

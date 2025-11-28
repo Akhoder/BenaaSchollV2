@@ -64,7 +64,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
 import { usePrefetch } from '@/hooks/usePrefetch';
-import { PrayerTimesCard } from '@/components/PrayerTimesCard';
+import { DashboardPrayerTimes } from '@/components/DashboardPrayerTimes';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -1134,10 +1134,6 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
         </Card>
       </div>
 
-      {/* Prayer Times Card - مواقيت الصلاة */}
-      <div className="mb-6">
-        <PrayerTimesCard />
-      </div>
 
       {/* Upcoming Assignments - Enhanced */}
       {loadingAssignments ? (
@@ -2511,6 +2507,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Prayer Times - مواقيت الصلاة */}
+        <DashboardPrayerTimes />
+
         {/* Admin Dashboard - لوحة المدير */}
         {profile?.role === 'admin' && (
           <div className="space-y-8">
@@ -2762,12 +2761,6 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* ============================================
-                Prayer Times Section - مواقيت الصلاة
-                ============================================ */}
-            <section className="space-y-6">
-              <PrayerTimesCard />
-            </section>
           </div>
         )}
 
@@ -3401,10 +3394,6 @@ export default function DashboardPage() {
               dateLocale={dateLocale}
             />
             
-            {/* Prayer Times Card - مواقيت الصلاة */}
-            <div className="mt-6">
-              <PrayerTimesCard />
-            </div>
           </>
         )}
 
