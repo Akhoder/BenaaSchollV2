@@ -84,7 +84,7 @@ export function PublishedClassesGrid() {
       try {
         const { data, error } = await fetchMyClassEnrollments();
         if (data) {
-          const ids = new Set(data.map((e: any) => e.class_id));
+          const ids = new Set<string>(data.map((e: any) => e.class_id as string));
           setEnrolledClassIds(ids);
         }
       } catch (error) {

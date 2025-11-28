@@ -1023,7 +1023,7 @@ export default function ClassesPage() {
                     </div>
                   ) : (
                     <div className="w-24 h-24 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
-                      <Image className="h-8 w-8 text-muted-foreground/50" />
+                      <Image className="h-8 w-8 text-muted-foreground/50" aria-label={t('classImage' as TranslationKey) || "Class Image"} />
                     </div>
                   )}
                   
@@ -1041,7 +1041,7 @@ export default function ClassesPage() {
                             {isUploading ? (
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             ) : (
-                              <Image className="h-4 w-4 mr-2" />
+                              <Image className="h-4 w-4 mr-2" aria-label={t('uploadImage' as TranslationKey) || "Upload Image"} />
                             )}
                             {t('uploadImage' as TranslationKey)}
                           </Button>
