@@ -9,9 +9,16 @@ import {
   Globe, Brain, Target, Clock, MessageSquare, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from '@/components/ui/accordion';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import Link from 'next/link';
 import { PrayerTimesLanding } from '@/components/PrayerTimesLanding';
+import { PublishedClassesGrid } from '@/components/PublishedClassesGrid';
 
 // ✨ Islamic Geometric Pattern Component
 const IslamicPattern = ({ className = '' }: { className?: string }) => (
@@ -59,9 +66,6 @@ const BismillahHeader = ({ className = '' }: { className?: string }) => (
   <div className={`text-center py-6 ${className}`}>
     <p className="text-4xl md:text-5xl text-primary font-amiri leading-relaxed animate-fade-in-up">
       ﷽
-    </p>
-    <p className="text-sm text-muted-foreground mt-2 animate-fade-in-up delay-200">
-      بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
     </p>
   </div>
 );
@@ -143,9 +147,8 @@ export default function UltraModernLandingPage() {
             {/* Nav Links */}
             <div className="hidden md:flex items-center gap-2">
               <a href="#features" className="nav-link-ultra">المميزات</a>
-              <a href="#courses" className="nav-link-ultra">الدورات</a>
+              <a href="#subjects" className="nav-link-ultra">الدورات</a>
               <a href="#testimonials" className="nav-link-ultra">الآراء</a>
-              <a href="#pricing" className="nav-link-ultra">الأسعار</a>
             </div>
 
             {/* CTA Buttons */}
@@ -188,22 +191,7 @@ export default function UltraModernLandingPage() {
               واللغة العربية من خلال إصداراتٍ احترافيةٍ، يشرحها نخبةٌ من أهل الاختصاص، وأنت في بيتك، وأنت في أي مكان.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-4 justify-center pt-4 animate-fade-in-up delay-200">
-              <Link href="/register">
-                <button className="btn-primary text-lg px-8 py-4 shadow-glow-primary">
-                  سجل الآن
-                </button>
-              </Link>
-              <Link href="#about">
-                <button className="btn-glass text-lg px-8 py-4">
-                  تحميل المنهج
-                </button>
-              </Link>
-              <button className="btn-outline-gold text-lg px-8 py-4">
-                أبلغني عند فتح التسجيل
-              </button>
-            </div>
+       
           </div>
         </div>
       </section>
@@ -211,8 +199,8 @@ export default function UltraModernLandingPage() {
       {/* ✨ Islamic Divider */}
       <IslamicDivider />
 
-      {/* Stats Section with Golden Accents */}
-      <section className="relative py-12 bg-card border-y border-secondary/20">
+      {/* ✨ Stats Section / Features */}
+      <section id="features" className="relative py-12 bg-card border-y border-secondary/20">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
             {/* Stat 1 */}
@@ -295,99 +283,84 @@ export default function UltraModernLandingPage() {
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
             <h2 className="text-3xl md:text-5xl font-bold text-foreground font-display">
-              البرنامج الدراسي
+              الدورات المتاحة
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground">
-              برنامج مدرسة البناء العلمي يوفر سبعة مجالات علميّة للمشاركين فيه لتعزيز فهمٍ وسطيّ صحيح متدرجٌ 
-              للإسلام مقترنٌ بالدليل وبأدوات عصريّة وأسلوب سهل وممتع.
+              تصفح الدورات المتاحة حالياً في مدرسة البناء العلمي وقم بالتسجيل للبدء في رحلتك التعليمية
             </p>
           </div>
 
-          {/* ✨ Enhanced Subjects Grid with Golden Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Subject 1: العقيدة */}
-            <GoldenCard className="animate-fade-in-up" delay="">
-              <div className="icon-frame-islamic w-fit">
-                <Star className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-primary font-display">العقيدة</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                ستتعرف على مبادئ علم العقيدة وفق منهج أهل السنة والجماعة بطريقة ميسرة وسهلة خالية من الحشو والمخالفات.
-              </p>
-            </GoldenCard>
+          {/* ✨ Published Classes Grid */}
+          <div className="animate-fade-in-up delay-200">
+             <PublishedClassesGrid />
+          </div>
+        </div>
+      </section>
 
-            {/* Subject 2: السيرة */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-100">
-              <div className="icon-frame-islamic w-fit">
-                <BookOpen className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="text-2xl font-bold text-accent font-display">السيرة</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                ستتعرف بشكل مختصر على السيرة النبوية كاملة من الولادة إلى الوفاة، ثم تنتقل إلى الشمائل والمعاملات.
-              </p>
-            </GoldenCard>
+      {/* ✨ Islamic Divider */}
+      <IslamicDivider />
 
-            {/* Subject 3: الفقه */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-200">
-              <div className="icon-frame-islamic w-fit">
-                <Brain className="w-8 h-8 text-secondary" />
-              </div>
-              <h3 className="text-2xl font-bold text-secondary font-display">الفقه</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                ستتعرف على أبواب العبادات كلها، بدءًا بالطهارة، وانتهاء بالحج، ثم المعاملات المالية وفقه الأسرة.
-              </p>
-            </GoldenCard>
+      {/* ✨ Testimonials Section - الآراء */}
+      <section id="testimonials" className="relative py-20 bg-background">
+        <IslamicPattern className="opacity-50" />
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground font-display">
+              ماذا يقول طلابنا
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground">
+              تجارب حقيقية من طلاب مدرسة البناء العلمي
+            </p>
+          </div>
 
-            {/* Subject 4: التفسير */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-300">
-              <div className="icon-frame-islamic w-fit">
-                <FileText className="w-8 h-8 text-success" />
-              </div>
-              <h3 className="text-2xl font-bold text-success font-display">التفسير</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                بعد مدخل لعلم التفسير، ستعرف تفسير سورة الفاتحة، وآية الكرسي، وخواتيم سورة البقرة، وجزء عم كاملاً.
-              </p>
-            </GoldenCard>
+          <div className="grid md:grid-cols-3 gap-6">
+             {/* Testimonial 1 */}
+             <GoldenCard className="animate-fade-in-up">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                        أ
+                    </div>
+                    <div>
+                        <h4 className="font-bold">أحمد محمد</h4>
+                        <p className="text-sm text-muted-foreground">طالب في المستوى الأول</p>
+                    </div>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                    "برنامج رائع جداً، ساعدني كثيراً في فهم أساسيات العلوم الشرعية بطريقة ميسرة ومنظمة."
+                </p>
+             </GoldenCard>
+             
+             {/* Testimonial 2 */}
+             <GoldenCard className="animate-fade-in-up" delay="delay-100">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-xl">
+                        س
+                    </div>
+                    <div>
+                        <h4 className="font-bold">سارة أحمد</h4>
+                        <p className="text-sm text-muted-foreground">طالبة في المستوى الثاني</p>
+                    </div>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                    "المنصة سهلة الاستخدام والمحتوى عالي الجودة. أنصح كل من يريد تعلم دينه بالانضمام."
+                </p>
+             </GoldenCard>
 
-            {/* Subject 5: الحديث */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-400">
-              <div className="icon-frame-islamic w-fit">
-                <MessageSquare className="w-8 h-8 text-warning" />
-              </div>
-              <h3 className="text-2xl font-bold text-warning font-display">الحديث</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                بعد مدخل مختصر لعلم الحديث ستبحر مع مجموعة من الأحاديث النبوية التي تمثل أصول الشريعة والأخلاق والآداب.
-              </p>
-            </GoldenCard>
-
-            {/* Subject 6: التربية */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-500">
-              <div className="icon-frame-islamic w-fit">
-                <Target className="w-8 h-8 text-info" />
-              </div>
-              <h3 className="text-2xl font-bold text-info font-display">التربية</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                منهج متكامل تتعرف من خلاله على الحقوق والواجبات، ثم تنتقل في رحلة إيمانية مع أعمال القلوب وأمراضه.
-              </p>
-            </GoldenCard>
-
-            {/* Subject 7: اللغة العربية */}
-            <GoldenCard className="animate-fade-in-up" delay="delay-600">
-              <div className="icon-frame-islamic w-fit">
-                <Award className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-primary font-display">اللغة العربية</h3>
-              <span className="badge-gold text-xs">مادة أساسية</span>
-              <p className="text-muted-foreground leading-relaxed">
-                بعد مدخل مختصر عن اللغة العربية، ستتعرف على أبواب النحو كاملة بشكل إبداعي، مع الأمثلة والتطبيقات.
-              </p>
-            </GoldenCard>
+             {/* Testimonial 3 */}
+             <GoldenCard className="animate-fade-in-up" delay="delay-200">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold text-xl">
+                        م
+                    </div>
+                    <div>
+                        <h4 className="font-bold">محمد علي</h4>
+                        <p className="text-sm text-muted-foreground">طالب في المستوى الثالث</p>
+                    </div>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                    "تنوع المواد وطريقة الشرح المميزة جعلتني أستمر في الدراسة بشغف."
+                </p>
+             </GoldenCard>
           </div>
         </div>
       </section>
@@ -421,6 +394,72 @@ export default function UltraModernLandingPage() {
           
           {/* Decorative Line */}
           <div className="w-24 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent mx-auto mt-4" />
+        </div>
+      </section>
+
+      {/* ✨ Islamic Divider */}
+      <IslamicDivider />
+
+      {/* ✨ FAQ Section - الأسئلة الشائعة */}
+      <section className="relative py-20 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-4xl relative z-10">
+          <div className="text-center mb-12 space-y-4 animate-fade-in-up">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-display">
+              الأسئلة الشائعة
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              إجابات على أكثر الأسئلة شيوعاً حول برنامج مدرسة البناء العلمي
+            </p>
+          </div>
+
+          <div className="glass-card p-6 md:p-8 rounded-2xl animate-fade-in-up delay-100">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1" className="border-b-primary/10">
+                <AccordionTrigger className="text-lg font-bold text-primary hover:no-underline hover:text-secondary text-right">
+                  هل البرنامج مجاني بالكامل؟
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                  نعم، برنامج مدرسة البناء العلمي مجاني بالكامل، ولا توجد أي رسوم للتسجيل أو الدراسة أو الحصول على الشهادات.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="border-b-primary/10">
+                <AccordionTrigger className="text-lg font-bold text-primary hover:no-underline hover:text-secondary text-right">
+                  ما هي شروط الالتحاق بالبرنامج؟
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                  لا توجد شروط معقدة للالتحاق. البرنامج متاح لكل راغب في تعلم العلم الشرعي، بغض النظر عن العمر أو الخلفية التعليمية.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="border-b-primary/10">
+                <AccordionTrigger className="text-lg font-bold text-primary hover:no-underline hover:text-secondary text-right">
+                  هل توجد شهادات معتمدة؟
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                  نعم، يحصل الطالب على شهادة إتمام لكل مستوى يجتازه بنجاح، بالإضافة إلى شهادة تخرج نهائية عند إتمام كامل البرنامج.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="border-b-primary/10">
+                <AccordionTrigger className="text-lg font-bold text-primary hover:no-underline hover:text-secondary text-right">
+                  هل الدروس مباشرة أم مسجلة؟
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                  الدروس مسجلة ويمكن مشاهدتها في أي وقت يناسبك، مع وجود لقاءات دورية مباشرة للإجابة على الأسئلة والاستفسارات.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="border-b-0">
+                <AccordionTrigger className="text-lg font-bold text-primary hover:no-underline hover:text-secondary text-right">
+                  كيف يمكنني التواصل مع المشرفين؟
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                  يمكنك التواصل عبر مجموعات التليجرام الخاصة بالبرنامج، أو من خلال صفحة "تواصل معنا" في الموقع.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         </div>
       </section>
 

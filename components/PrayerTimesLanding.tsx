@@ -1,10 +1,8 @@
 'use client';
 
 /**
- * مكون مواقيت الصلاة لصفحة الهبوط
- * Prayer Times Component for Landing Page
- * 
- * نسخة مخصصة لصفحة الهبوط مع تصميم عصري وأنيمشن متقدم
+ * مكون مواقيت الصلاة لصفحة الهبوط - تصميم مدمج
+ * Prayer Times Component for Landing Page - Compact Design
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -17,14 +15,12 @@ import {
   Sunset, 
   Stars,
   MapPin,
-  Calendar,
-  ChevronRight
+  Calendar
 } from 'lucide-react';
 import { 
   getTodayPrayerTimes, 
   getNextPrayer,
   formatGregorianDateAr,
-  formatGregorianDateEn,
   convertToHijri,
   type PrayerTime 
 } from '@/lib/prayerTimes';
@@ -36,7 +32,6 @@ export const PrayerTimesLanding = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hijriDate, setHijriDate] = useState(convertToHijri());
   
-  // استخدام useRef للاحتفاظ بالصلاة القادمة بشكل مستقر
   const stableNextPrayerRef = useRef<ReturnType<typeof getNextPrayer> | null>(null);
   const lastUpdateRef = useRef<number>(0);
 
@@ -51,7 +46,6 @@ export const PrayerTimesLanding = () => {
     }
     setLoading(false);
 
-    // تحديث كل دقيقة
     const interval = setInterval(() => {
       const now = new Date();
       setCurrentDate(now);
@@ -62,13 +56,11 @@ export const PrayerTimesLanding = () => {
         const timeSinceLastUpdate = Date.now() - lastUpdateRef.current;
         const hasChanged = stableNextPrayerRef.current?.nameAr !== currentNextPrayer?.nameAr;
         
-        // تحديث فقط إذا تغيرت الصلاة بشكل واضح (أكثر من دقيقتين)
         if (hasChanged && timeSinceLastUpdate > 120000) {
           stableNextPrayerRef.current = currentNextPrayer;
           lastUpdateRef.current = Date.now();
           setNextPrayer(currentNextPrayer);
         } else {
-          // خلاف ذلك، احتفظ بالصلاة القادمة السابقة للاستقرار
           setNextPrayer(stableNextPrayerRef.current);
         }
       }
@@ -77,265 +69,110 @@ export const PrayerTimesLanding = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const formatTime12 = (time24: string) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'م' : 'ص';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${minutes} ${ampm}`;
+  };
+
   if (loading || !prayerTimes || !nextPrayer) return null;
 
   const prayerIcons = {
-    fajr: <Moon className="w-6 h-6" />,
-    sunrise: <Sunrise className="w-6 h-6" />,
-    dhuhr: <Sun className="w-6 h-6" />,
-    asr: <CloudSun className="w-6 h-6" />,
-    maghrib: <Sunset className="w-6 h-6" />,
-    isha: <Stars className="w-6 h-6" />,
+    fajr: <Moon className="w-5 h-5" />,
+    sunrise: <Sunrise className="w-5 h-5" />,
+    dhuhr: <Sun className="w-5 h-5" />,
+    asr: <CloudSun className="w-5 h-5" />,
+    maghrib: <Sunset className="w-5 h-5" />,
+    isha: <Stars className="w-5 h-5" />,
   };
 
   const prayers = [
-    { key: 'fajr', nameAr: 'الفجر', name: 'Fajr', time: prayerTimes.fajr },
-    { key: 'sunrise', nameAr: 'الشروق', name: 'Sunrise', time: prayerTimes.sunrise },
-    { key: 'dhuhr', nameAr: 'الظهر', name: 'Dhuhr', time: prayerTimes.dhuhr },
-    { key: 'asr', nameAr: 'العصر', name: 'Asr', time: prayerTimes.asr },
-    { key: 'maghrib', nameAr: 'المغرب', name: 'Maghrib', time: prayerTimes.maghrib },
-    { key: 'isha', nameAr: 'العشاء', name: 'Isha', time: prayerTimes.isha },
+    { key: 'fajr', nameAr: 'الفجر', time: prayerTimes.fajr },
+    { key: 'sunrise', nameAr: 'الشروق', time: prayerTimes.sunrise },
+    { key: 'dhuhr', nameAr: 'الظهر', time: prayerTimes.dhuhr },
+    { key: 'asr', nameAr: 'العصر', time: prayerTimes.asr },
+    { key: 'maghrib', nameAr: 'المغرب', time: prayerTimes.maghrib },
+    { key: 'isha', nameAr: 'العشاء', time: prayerTimes.isha },
   ];
 
   return (
-    <section className="relative py-20 overflow-hidden">
-      {/* خلفية متدرجة */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950"></div>
+    <section className="relative py-10 overflow-hidden">
+      {/* Compact Background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5"></div>
       
-      {/* نقاط الخلفية */}
-      <div className="absolute inset-0 opacity-5 dark:opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle, currentColor 2px, transparent 2px)',
-          backgroundSize: '40px 40px'
-        }}></div>
-      </div>
-
-      {/* دوائر متحركة في الخلفية */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-200 dark:bg-emerald-800 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-40 right-10 w-72 h-72 bg-teal-200 dark:bg-teal-800 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-cyan-200 dark:bg-cyan-800 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* العنوان */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-medium mb-4">
-            <Clock className="w-4 h-4" />
-            <span>مواقيت الصلاة اليوم</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-black mb-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
-            أوقات الصلاة
-          </h2>
-          
-          {/* الموقع والتاريخ */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 flex-wrap">
-            {/* الموقع */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg shadow-sm">
-              <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-bold text-slate-800 dark:text-slate-200">طرابلس، لبنان</span>
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+        {/* Compact Header */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+               <Clock className="w-6 h-6" />
             </div>
-            
-            {/* التاريخ الميلادي */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg shadow-sm">
-              <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {formatGregorianDateAr(currentDate)}
-              </span>
-            </div>
-            
-            {/* التاريخ الهجري - محسوب لليوم */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg shadow-sm">
-              <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              <span className="font-bold text-slate-800 dark:text-slate-200 font-arabic">
-                {hijriDate.day} {hijriDate.monthName} {hijriDate.year} هـ
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* الصلاة القادمة - بطاقة كبيرة */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8 group">
-              <div className="relative p-8 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white rounded-3xl shadow-2xl shadow-emerald-500/40 overflow-hidden transform transition-all duration-500 hover:scale-105">
-                {/* خلفية متحركة */}
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute top-0 -left-4 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-pulse"></div>
-                  <div className="absolute bottom-0 -right-4 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-pulse animation-delay-2000"></div>
-                </div>
-
-                {/* نقطة مضيئة */}
-                <span className="absolute top-6 right-6 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-white"></span>
+            <div>
+              <h2 className="text-2xl font-bold font-display text-primary">مواقيت الصلاة</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  طرابلس، ليبيا
                 </span>
-
-                <div className="relative">
-                  {/* الأيقونة */}
-                  <div className="mb-6 inline-flex p-4 bg-white/20 backdrop-blur-sm rounded-2xl">
-                    <Moon className="w-12 h-12 animate-pulse" />
-                  </div>
-
-                  {/* النص */}
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium uppercase tracking-wider opacity-90 mb-2">
-                        الصلاة القادمة
-                      </p>
-                      <h3 className="text-5xl font-black mb-2 drop-shadow-lg">
-                        {nextPrayer.nameAr}
-                      </h3>
-                      <p className="text-xl font-medium opacity-90">
-                        {nextPrayer.name}
-                      </p>
-                    </div>
-
-                    <div className="pt-6 border-t border-white/20">
-                      <p className="text-sm font-medium opacity-90 mb-2">الوقت</p>
-                      <p className="text-6xl font-black drop-shadow-lg mb-2">
-                        {nextPrayer.time}
-                      </p>
-                      <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                        <Clock className="w-5 h-5" />
-                        <span className="text-lg font-bold">
-                          بعد {nextPrayer.timeRemaining}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <span>•</span>
+                <span className="font-arabic">
+                  {hijriDate.day} {hijriDate.monthName} {hijriDate.year} هـ
+                </span>
               </div>
             </div>
           </div>
-
-          {/* جميع الصلوات */}
-          <div className="lg:col-span-2">
-            <div className="grid sm:grid-cols-2 gap-4">
-              {prayers.map((prayer, index) => {
-                // استخدام الصلاة القادمة المستقرة لتجنب الوميض
-                const isNext = stableNextPrayerRef.current?.nameAr === prayer.nameAr;
-                
-                return (
-                  <div
-                    key={prayer.key}
-                    style={{
-                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
-                    }}
-                  >
-                    <div className={`
-                      group relative p-6 rounded-2xl transition-all duration-500 cursor-pointer
-                      ${isNext 
-                        ? 'bg-white/90 dark:bg-slate-800/90 shadow-xl ring-2 ring-emerald-500 scale-105' 
-                        : 'bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg hover:scale-105'
-                      }
-                      backdrop-blur-sm
-                    `}>
-                      {/* مؤشر للصلاة القادمة */}
-                      {isNext && (
-                        <div className="absolute -top-2 -right-2 flex h-5 w-5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500"></span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className={`
-                          p-3 rounded-xl transition-all duration-500 group-hover:rotate-12 group-hover:scale-110
-                          ${isNext 
-                            ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg' 
-                            : 'bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50 text-emerald-600 dark:text-emerald-400'
-                          }
-                        `}>
-                          {prayerIcons[prayer.key as keyof typeof prayerIcons]}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className={`
-                            text-2xl font-black mb-1
-                            ${isNext 
-                              ? 'text-emerald-600 dark:text-emerald-400' 
-                              : 'text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
-                            }
-                          `}>
-                            {prayer.nameAr}
-                          </h4>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                            {prayer.name}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <p className={`
-                          text-3xl font-black font-mono
-                          ${isNext 
-                            ? 'text-emerald-600 dark:text-emerald-400' 
-                            : 'text-slate-700 dark:text-slate-300'
-                          }
-                        `}>
-                          {prayer.time.substring(0, 5)}
-                        </p>
-                        {isNext && (
-                          <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-sm font-bold animate-pulse">
-                            <span>التالي</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* خط تزييني */}
-                      <div className={`
-                        absolute bottom-0 left-0 right-0 h-1 rounded-full transition-all duration-500
-                        ${isNext 
-                          ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500' 
-                          : 'bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent opacity-0 group-hover:opacity-100'
-                        }
-                      `}></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          
+          {/* Next Prayer Timer - Compact */}
+          <div className="flex items-center gap-3 bg-background/80 backdrop-blur-sm border border-primary/10 px-4 py-2 rounded-full shadow-sm">
+            <span className="text-sm text-muted-foreground">الصلاة القادمة:</span>
+            <span className="font-bold text-primary">{nextPrayer.nameAr}</span>
+            <span className="w-px h-4 bg-border"></span>
+            <span className="font-mono font-bold text-secondary dir-ltr">
+               {nextPrayer.timeRemaining}
+            </span>
           </div>
         </div>
+
+        {/* Horizontal Prayer Strip */}
+        <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-lg border border-primary/10 p-2 overflow-hidden">
+           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+             {prayers.map((prayer) => {
+               const isNext = stableNextPrayerRef.current?.nameAr === prayer.nameAr;
+               
+               return (
+                 <div 
+                   key={prayer.key}
+                   className={`
+                     relative flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300
+                     ${isNext 
+                       ? 'bg-gradient-to-b from-primary to-primary/90 text-white shadow-md scale-105 z-10' 
+                       : 'hover:bg-primary/5 text-muted-foreground hover:text-primary'
+                     }
+                   `}
+                 >
+                   {isNext && (
+                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full animate-pulse border-2 border-white"></span>
+                   )}
+                   
+                   <div className={`mb-1 ${isNext ? 'text-white' : 'text-current'}`}>
+                     {prayerIcons[prayer.key as keyof typeof prayerIcons]}
+                   </div>
+                   
+                   <span className="text-sm font-bold mb-1">{prayer.nameAr}</span>
+                   
+                   <span className={`text-sm font-mono ${isNext ? 'text-white/90' : ''}`}>
+                     {formatTime12(prayer.time)}
+                   </span>
+                 </div>
+               );
+             })}
+           </div>
+        </div>
       </div>
-
-      {/* CSS للـ animations */}
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </section>
   );
 };
-
