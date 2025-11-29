@@ -64,7 +64,6 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
 import { usePrefetch } from '@/hooks/usePrefetch';
-import { DashboardPrayerTimes } from '@/components/DashboardPrayerTimes';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -190,36 +189,44 @@ const TeacherDashboardSection = memo(function TeacherDashboardSection({
         </p>
       </div>
 
-      {/* Enhanced Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        <StatCard
-          title={t('myClasses')}
-          value={stats.classCount}
-          icon={School}
-          description={t('classesYouTeach')}
-          gradient="from-blue-500 to-cyan-500"
-        />
-        <StatCard
-          title={t('myStudents')}
-          value={stats.studentCount}
-          icon={Users}
-          description={t('totalStudents')}
-          gradient="from-purple-500 to-pink-500"
-        />
-        <StatCard
-          title={t('schedule')}
-          value={stats.scheduleCount}
-          icon={Calendar}
-          description={t('classesToday')}
-          gradient="from-amber-500 to-orange-500"
-        />
-        <StatCard
-          title={t('averagePerClass')}
-          value={avgStudentsPerClass}
-          icon={BarChart3}
-          description={t('studentsPerClass')}
-          gradient="from-emerald-500 to-teal-500"
-        />
+      {/* Enhanced Statistics Cards - Mobile Horizontal Scroll */}
+      <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 mb-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('myClasses')}
+            value={stats.classCount}
+            icon={School}
+            description={t('classesYouTeach')}
+            gradient="from-blue-500 to-cyan-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('myStudents')}
+            value={stats.studentCount}
+            icon={Users}
+            description={t('totalStudents')}
+            gradient="from-purple-500 to-pink-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('schedule')}
+            value={stats.scheduleCount}
+            icon={Calendar}
+            description={t('classesToday')}
+            gradient="from-amber-500 to-orange-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('averagePerClass')}
+            value={avgStudentsPerClass}
+            icon={BarChart3}
+            description={t('studentsPerClass')}
+            gradient="from-emerald-500 to-teal-500"
+          />
+        </div>
       </div>
 
       {/* Performance Metrics Section */}
@@ -757,36 +764,44 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
         </p>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        <StatCard
-          title={t('myClasses')}
-          value={stats.enrolledClasses}
-          icon={School}
-          description={t('enrolledClasses')}
-          gradient="from-blue-500 to-cyan-500"
-        />
-        <StatCard
-          title={t('averageGrade')}
-          value={stats.averageGrade !== null ? `${stats.averageGrade}%` : '—'}
-          icon={Award}
-          description={t('currentAverage')}
-          gradient="from-emerald-500 to-teal-500"
-        />
-        <StatCard
-          title={t('attendance')}
-          value={stats.attendanceRate !== null ? `${stats.attendanceRate}%` : '—'}
-          icon={CheckCircle2}
-          description={t('attendanceRate')}
-          gradient="from-amber-500 to-orange-500"
-        />
-        <StatCard
-          title={t('todayEvents')}
-          value={stats.todayEventsCount}
-          icon={Clock}
-          description={t('eventsToday')}
-          gradient="from-purple-500 to-pink-500"
-        />
+      {/* Statistics Cards - Mobile Horizontal Scroll */}
+      <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 mb-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('myClasses')}
+            value={stats.enrolledClasses}
+            icon={School}
+            description={t('enrolledClasses')}
+            gradient="from-blue-500 to-cyan-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('averageGrade')}
+            value={stats.averageGrade !== null ? `${stats.averageGrade}%` : '—'}
+            icon={Award}
+            description={t('currentAverage')}
+            gradient="from-emerald-500 to-teal-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('attendance')}
+            value={stats.attendanceRate !== null ? `${stats.attendanceRate}%` : '—'}
+            icon={CheckCircle2}
+            description={t('attendanceRate')}
+            gradient="from-amber-500 to-orange-500"
+          />
+        </div>
+        <div className="min-w-[280px] snap-center">
+          <StatCard
+            title={t('todayEvents')}
+            value={stats.todayEventsCount}
+            icon={Clock}
+            description={t('eventsToday')}
+            gradient="from-purple-500 to-pink-500"
+          />
+        </div>
       </div>
 
       {/* Performance Metrics Section */}
@@ -2506,9 +2521,6 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-
-        {/* Prayer Times - مواقيت الصلاة */}
-        <DashboardPrayerTimes />
 
         {/* Admin Dashboard - لوحة المدير */}
         {profile?.role === 'admin' && (

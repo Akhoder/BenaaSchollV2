@@ -28,6 +28,7 @@ import {
   Loader2,
   Save,
   UserCircle,
+  Lock,
 } from 'lucide-react';
 
 export default function ProfileSettingsPage() {
@@ -65,6 +66,11 @@ export default function ProfileSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Password change
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -117,6 +123,43 @@ export default function ProfileSettingsPage() {
     setAvatarPreview(null);
     setAvatarUrl('');
   }, []);
+
+  const handlePasswordUpdate = useCallback(async () => {
+    if (!newPassword) {
+      toast.error(t('passwordRequired' as TranslationKey));
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error(t('passwordTooShort' as TranslationKey));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error(t('passwordsDoNotMatch' as TranslationKey));
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        console.error(error);
+        toast.error(t('failedToUpdatePassword' as TranslationKey));
+        return;
+      }
+
+      toast.success(t('passwordUpdatedSuccessfully' as TranslationKey));
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error(err);
+      toast.error(t('unexpectedError' as TranslationKey));
+    } finally {
+      setUpdatingPassword(false);
+    }
+  }, [newPassword, confirmPassword, t]);
 
   const handleSave = useCallback(async () => {
     if (!profile) return;
@@ -456,6 +499,60 @@ export default function ProfileSettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Password Change Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              {t('securitySettings' as TranslationKey)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">{t('newPassword' as TranslationKey)}</label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="mt-1"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">{t('confirmNewPassword' as TranslationKey)}</label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={handlePasswordUpdate}
+                disabled={updatingPassword || !newPassword}
+                variant="outline"
+                className="min-w-[120px]"
+              >
+                {updatingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('updating' as TranslationKey)}
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    {t('updatePassword' as TranslationKey)}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Save Button */}
         <div className="flex justify-end gap-4">

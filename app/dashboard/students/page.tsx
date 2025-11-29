@@ -447,8 +447,8 @@ export default function StudentsPage() {
           )}
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+        {/* ✨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 animate-fade-in-up -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
           {statsConfig.map((stat, index) => {
             const Icon = stat.icon;
             const gradients = [
@@ -465,22 +465,24 @@ export default function StudentsPage() {
             ];
             const textColors = ['text-primary', 'text-success', 'text-secondary', 'text-accent'];
             return (
-              <Card key={stat.title} className={`glass-card-hover ${borderColors[index % 4]} transition-all duration-300`}>
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`p-2.5 bg-gradient-to-br ${gradients[index % 4]} rounded-xl shadow-lg`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-3xl font-bold font-display ${textColors[index % 4]}`}>
-                    {stat.value}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 font-sans">{stat.subtitle}</p>
-                </CardContent>
-              </Card>
+              <div key={stat.title} className="min-w-[240px] snap-center md:min-w-0">
+                <Card className={`glass-card-hover ${borderColors[index % 4]} transition-all duration-300 h-full`}>
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground font-sans whitespace-nowrap">
+                      {stat.title}
+                    </CardTitle>
+                    <div className={`p-2.5 bg-gradient-to-br ${gradients[index % 4]} rounded-xl shadow-lg`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-3xl font-bold font-display ${textColors[index % 4]}`}>
+                      {stat.value}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-sans">{stat.subtitle}</p>
+                  </CardContent>
+                </Card>
+              </div>
             );
           })}
         </div>

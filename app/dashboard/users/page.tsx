@@ -542,97 +542,107 @@ export default function UsersPage() {
           </Button>
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
+        {/* ✨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-5 md:overflow-visible md:pb-0 animate-fade-in-up -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
           {/* Total Users */}
-          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('totalUsers')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('users')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {t('totalUsers')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('users')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Admins */}
-          <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('admin')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-error font-display">{stats.admins}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('admin')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-error/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {t('admin')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-error to-error/80 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Shield className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-error font-display">{stats.admins}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('admin')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Teachers */}
-          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('teacher')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <User className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-info font-display">{stats.teachers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('teachers')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {t('teacher')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-info font-display">{stats.teachers}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('teachers')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Students */}
-          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('student')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-success font-display">{stats.students}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('students')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {t('student')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-success font-display">{stats.students}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('students')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Supervisors */}
-          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('supervisor')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent font-display">{stats.supervisors}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('supervisors')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {t('supervisor')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Shield className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-accent font-display">{stats.supervisors}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('supervisors')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* ✨ Search and Filter Card - Islamic Design */}

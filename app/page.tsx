@@ -89,12 +89,24 @@ export default function UltraModernLandingPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [shouldShowContent, setShouldShowContent] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Handle mobile redirection logic
+    if (!loading) {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        router.replace(user ? '/dashboard' : '/login');
+      } else {
+        setShouldShowContent(true);
+      }
+    }
+  }, [loading, user, router]);
 
-  if (loading) {
+  // Show loading state while checking device or authenticating
+  if (loading || !shouldShowContent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-mesh islamic-pattern">
         <div className="text-center space-y-4">

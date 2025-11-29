@@ -86,7 +86,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('myAssignments'), href: '/dashboard/my-assignments', icon: FileText, roles: ['student'] },
         { name: t('myCertificates'), href: '/dashboard/my-certificates', icon: Award, roles: ['student'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['student'] },
-        { name: 'AI Assistant', href: '/dashboard/ai-assistant', icon: Bot, roles: ['student'] },
+        { name: t('aiAssistant'), href: '/dashboard/ai-assistant', icon: Bot, roles: ['student'] },
       ],
       roles: ['student']
     },
@@ -99,7 +99,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: t('quizzes'), href: '/dashboard/quizzes', icon: FileText, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('certificates'), href: '/dashboard/certificates', icon: Award, roles: ['admin', 'teacher', 'supervisor'] },
         { name: t('grades'), href: '/dashboard/grades', icon: FileText, roles: ['teacher'] },
-        { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
+        { name: t('analytics'), href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'teacher'] },
       ],
       roles: ['admin', 'teacher', 'supervisor']
     },
@@ -117,7 +117,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: t('general'),
       items: [
         { name: t('schedule'), href: '/dashboard/schedule', icon: Calendar, roles: ['admin', 'teacher', 'student'] },
-        { name: t('prayerTimes'), href: '/dashboard/prayer-times', icon: Clock, roles: ['admin', 'teacher', 'student', 'supervisor'] },
         { name: t('messages'), href: '/dashboard/messages', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'supervisor'] },
         { name: t('announcements'), href: '/dashboard/announcements', icon: FileText, roles: ['admin', 'teacher', 'student', 'supervisor'] },
       ],
