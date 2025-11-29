@@ -1467,3 +1467,28 @@ input[type="tel"] {
 .corner-decoration.top-right { @apply top-0 right-0 rotate-90; }
 .corner-decoration.bottom-right { @apply bottom-0 right-0 rotate-180; }
 .corner-decoration.bottom-left { @apply bottom-0 left-0 -rotate-90; }
+
+/* ============================================
+   📱 MOBILE CLEANUP
+   ============================================ */
+@media (max-width: 768px) {
+  .islamic-pattern::before,
+  .arabesque-pattern::before,
+  .star-pattern::before,
+  .floating-orb,
+  .bg-dots {
+    display: none !important;
+  }
+  
+  /* Simplify gradients on mobile */
+  .bg-gradient-mesh {
+    background-image: none !important;
+    background-color: hsl(var(--background));
+  }
+  
+  /* Reduce padding for glass cards on mobile */
+  .glass-card,
+  .glass-card-hover {
+    padding: 1rem !important;
+  }
+}

@@ -633,8 +633,8 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium font-sans">{t('email')}</label>
                 <Input value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} className="mt-1 font-sans" />
               </div>
-                <div className="grid grid-cols-2 gap-4">
-              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <label className="text-sm font-medium font-sans">
                       {t('phone')} ({t('optional')})
                     </label>
@@ -662,7 +662,7 @@ export default function StudentsPage() {
                 </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium font-sans">{t('gender' as TranslationKey)}</label>
                     <Select value={createGender} onValueChange={(v) => setCreateGender(v as 'male' | 'female' | '')}>
@@ -694,7 +694,7 @@ export default function StudentsPage() {
               {/* Student-specific fields */}
               <div className="space-y-4 border-t pt-4">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('studentInformation' as TranslationKey)}</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium font-sans">{t('parentName' as TranslationKey)}</label>
                     <Input value={createParentName} onChange={(e) => setCreateParentName(e.target.value)} className="mt-1 font-sans" />
@@ -922,7 +922,7 @@ export default function StudentsPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="bg-primary/5 rounded-lg p-3">
                           <p className="text-muted-foreground text-xs">{t('enrolled')}</p>
                           <p className="text-lg font-semibold text-primary">{s.enrolled_classes ?? 0}</p>
@@ -1232,7 +1232,7 @@ export default function StudentsPage() {
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('basicInformation' as TranslationKey)}</h3>
-                <form id="edit-student-form" className="grid grid-cols-2 gap-4">
+                <form id="edit-student-form" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                       <label className="text-sm font-medium font-sans">{t('fullName')}</label>
                     <Input name="full_name" defaultValue={selectedStudent.full_name} className="mt-1 font-sans" />
@@ -1241,7 +1241,7 @@ export default function StudentsPage() {
                       <label className="text-sm font-medium font-sans">{t('email')}</label>
                       <Input name="email" defaultValue={selectedStudent.email} className="mt-1 font-sans" disabled />
                   </div>
-                <div className="grid grid-cols-2 gap-4 col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-2">
                   <div>
                         <label className="text-sm font-medium font-sans">{t('phone')}</label>
                     <Input name="phone" defaultValue={selectedStudent.phone} className="mt-1 font-sans" />
@@ -1262,7 +1262,7 @@ export default function StudentsPage() {
                     </Select>
                   </div>
                 </div>
-                    <div className="grid grid-cols-2 gap-4 col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-2">
                       <div>
                         <label className="text-sm font-medium font-sans">{t('gender' as TranslationKey)}</label>
                         <Select value={editGender} onValueChange={(v) => setEditGender(v as 'male' | 'female' | '')}>
@@ -1284,7 +1284,7 @@ export default function StudentsPage() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-2">
                       <div>
                         <label className="text-sm font-medium font-sans">{t('dateOfBirth' as TranslationKey)}</label>
                         <Input 
@@ -1301,7 +1301,7 @@ export default function StudentsPage() {
                 {/* Student-specific fields */}
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 font-sans">{t('studentInformation' as TranslationKey)}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium font-sans">{t('parentName' as TranslationKey)}</label>
                       <Input 

@@ -393,6 +393,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           <p className="text-xs text-muted-foreground capitalize">{t(profile?.role || 'student')}</p>
                         </div>
                       </div>
+
+                      {/* Search - Mobile Sidebar */}
+                      <div className="mb-3">
+                        <IntelligentSearch className="w-full" />
+                      </div>
                       
                       {/* Logo Section */}
                       <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-muted/30 dark:bg-card/50 border border-primary/10">
@@ -432,12 +437,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-card/98 to-transparent pointer-events-none" />
                     
                     {/* Quick Actions Footer - Mobile */}
-                    <div className="px-4 py-3 border-t border-border/50 bg-muted/30">
+                    <div className="px-4 py-3 border-t border-border/50 bg-muted/30 space-y-3">
+                      {/* Theme & Language Controls */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <ThemeToggle />
+                          <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
+                            <SelectTrigger className="w-20 h-9 border-[hsl(var(--border))] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en">EN</SelectItem>
+                              <SelectItem value="ar">AR</SelectItem>
+                              <SelectItem value="fr">FR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Link href="/" target="_blank">
+                          <Button variant="ghost" size="icon" className="h-9 w-9" title={language === 'ar' ? 'زيارة الموقع' : 'Visit Website'}>
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </Link>
+                      </div>
+
                       <div className="flex items-center justify-between gap-2">
                         <Link 
                           href="/dashboard/settings/profile" 
                           prefetch={true}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-primary/10 transition-colors flex-1 justify-center"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-primary/10 transition-colors flex-1 justify-center bg-background border border-border/50 shadow-sm"
                         >
                           <UserCircle className="h-4 w-4" />
                           <span>{t('editProfile')}</span>
@@ -446,7 +473,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           variant="ghost"
                           size="sm"
                           onClick={signOut}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-700 transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-700 transition-colors bg-background border border-red-100 dark:border-red-900/30 shadow-sm"
                         >
                           <LogOut className="h-4 w-4" />
                           <span className="hidden sm:inline">{t('signOut')}</span>
@@ -488,10 +515,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="md:hidden">
-                <IntelligentSearch className="w-48" />
+              <div className="hidden md:block">
+                <ThemeToggle />
               </div>
-              <ThemeToggle />
 
               <Link href="/" target="_blank">
                 <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-primary/10" title={language === 'ar' ? 'زيارة الموقع' : 'Visit Website'}>
@@ -499,16 +525,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Button>
               </Link>
               
-              <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-                <SelectTrigger className="w-24 sm:w-28 h-9 border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] transition-colors text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">EN</SelectItem>
-                  <SelectItem value="ar">AR</SelectItem>
-                  <SelectItem value="fr">FR</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="hidden md:block">
+                <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
+                  <SelectTrigger className="w-24 sm:w-28 h-9 border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] transition-colors text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">EN</SelectItem>
+                    <SelectItem value="ar">AR</SelectItem>
+                    <SelectItem value="fr">FR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

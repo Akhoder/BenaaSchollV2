@@ -22,7 +22,7 @@ import { PublishedClassesGrid } from '@/components/PublishedClassesGrid';
 
 // ✨ Islamic Geometric Pattern Component
 const IslamicPattern = ({ className = '' }: { className?: string }) => (
-  <div className={`absolute inset-0 pointer-events-none overflow-hidden ${className}`}>
+  <div className={`absolute inset-0 pointer-events-none overflow-hidden hidden md:block ${className}`}>
     {/* Geometric Stars */}
     <svg className="absolute top-10 right-10 w-32 h-32 text-secondary/20 animate-spin-slow" viewBox="0 0 100 100">
       <polygon points="50,5 61,40 98,40 68,62 79,97 50,75 21,97 32,62 2,40 39,40" fill="currentColor"/>
@@ -51,12 +51,15 @@ const IslamicPattern = ({ className = '' }: { className?: string }) => (
 
 // ✨ Islamic Divider Component
 const IslamicDivider = ({ className = '' }: { className?: string }) => (
-  <div className={`relative py-8 ${className}`}>
-    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-secondary to-transparent" />
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+  <div className={`relative py-4 md:py-8 ${className}`}>
+    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-secondary to-transparent opacity-50" />
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 hidden md:flex">
       <span className="text-secondary text-2xl">✦</span>
       <span className="text-primary text-3xl">۞</span>
       <span className="text-secondary text-2xl">✦</span>
+    </div>
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden">
+      <div className="w-1.5 h-1.5 rounded-full bg-secondary/50" />
     </div>
   </div>
 );
@@ -76,7 +79,7 @@ const GoldenCard = ({ children, className = '', delay = '' }: { children: React.
     {/* Golden glow effect */}
     <div className="absolute -inset-1 bg-gradient-to-r from-secondary via-primary to-secondary rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500" />
     {/* Card content */}
-    <div className="relative glass-card p-8 space-y-4 border-2 border-transparent group-hover:border-secondary/40 transition-all duration-300">
+    <div className="relative glass-card p-6 md:p-8 space-y-4 border-2 border-transparent group-hover:border-secondary/40 transition-all duration-300">
       {children}
     </div>
   </div>
@@ -106,8 +109,8 @@ export default function UltraModernLandingPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* ✨ Enhanced Floating Orbs Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* ✨ Enhanced Floating Orbs Background - Hidden on Mobile */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
         <div className="absolute w-[600px] h-[600px] top-0 left-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-3xl animate-float-slow" />
         <div className="absolute w-[500px] h-[500px] top-1/4 right-0 translate-x-1/2 rounded-full bg-secondary/20 blur-3xl animate-float-slow delay-500" />
         <div className="absolute w-[400px] h-[400px] bottom-1/4 right-1/4 rounded-full bg-accent/15 blur-3xl animate-float delay-1000" />
@@ -178,23 +181,23 @@ export default function UltraModernLandingPage() {
       </nav>
 
       {/* ✨ Hero Section with Islamic Patterns */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
+      <section className="relative py-12 md:py-24 overflow-hidden">
         {/* Islamic Geometric Patterns */}
         <IslamicPattern />
         
         <div className="container mx-auto px-4 max-w-6xl relative z-10">
           {/* ✨ Bismillah Header */}
-          <BismillahHeader className="mb-8" />
+          <BismillahHeader className="mb-4 md:mb-8" />
           
-          <div className="text-center space-y-8 animate-fade-in-up">
+          <div className="text-center space-y-6 md:space-y-8 animate-fade-in-up">
             {/* Main Headline */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold leading-tight">
               <span className="block text-primary mb-2 font-display">برنامج مدرسة البناء العلمي</span>
               <span className="block text-foreground font-display">ما لا يسع المسلم جهله</span>
             </h1>
 
             {/* Description */}
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-4xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-4xl mx-auto px-4 md:px-0">
               ابدأ رحلتك التعليمية مع برنامج مدرسة البناء العلمي، عبر الإنترنت، وتعلَّم مبادئَ العلومِ الشرعية 
               واللغة العربية من خلال إصداراتٍ احترافيةٍ، يشرحها نخبةٌ من أهل الاختصاص، وأنت في بيتك، وأنت في أي مكان.
             </p>
@@ -208,44 +211,44 @@ export default function UltraModernLandingPage() {
       <IslamicDivider />
 
       {/* ✨ Stats Section / Features */}
-      <section id="features" className="relative py-12 bg-card border-y border-secondary/20">
+      <section id="features" className="relative py-8 md:py-12 bg-card border-y border-secondary/20">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
             {/* Stat 1 */}
-            <div className="text-center space-y-2 animate-fade-in-up group">
-              <div className="text-3xl md:text-4xl font-bold text-primary group-hover:text-secondary transition-colors">4 مستويات</div>
-              <div className="text-sm md:text-base text-muted-foreground">مدة البرنامج (عامين)</div>
+            <div className="text-center space-y-1 md:space-y-2 animate-fade-in-up group">
+              <div className="text-2xl md:text-4xl font-bold text-primary group-hover:text-secondary transition-colors">4 مستويات</div>
+              <div className="text-xs md:text-base text-muted-foreground">مدة البرنامج (عامين)</div>
             </div>
 
             {/* Stat 2 */}
-            <div className="text-center space-y-2 animate-fade-in-up delay-100 group">
-              <div className="text-3xl md:text-4xl font-bold text-secondary group-hover:text-primary transition-colors">12 أسبوعاً</div>
-              <div className="text-sm md:text-base text-muted-foreground">مدة المستوى الواحد</div>
+            <div className="text-center space-y-1 md:space-y-2 animate-fade-in-up delay-100 group">
+              <div className="text-2xl md:text-4xl font-bold text-secondary group-hover:text-primary transition-colors">12 أسبوعاً</div>
+              <div className="text-xs md:text-base text-muted-foreground">مدة المستوى الواحد</div>
             </div>
 
             {/* Stat 3 */}
-            <div className="text-center space-y-2 animate-fade-in-up delay-200 group">
-              <div className="text-3xl md:text-4xl font-bold text-success group-hover:text-secondary transition-colors">مجاناً</div>
-              <div className="text-sm md:text-base text-muted-foreground">عبر الإنترنت</div>
+            <div className="text-center space-y-1 md:space-y-2 animate-fade-in-up delay-200 group">
+              <div className="text-2xl md:text-4xl font-bold text-success group-hover:text-secondary transition-colors">مجاناً</div>
+              <div className="text-xs md:text-base text-muted-foreground">عبر الإنترنت</div>
             </div>
 
             {/* Stat 4 */}
-            <div className="text-center space-y-2 animate-fade-in-up delay-300 group">
-              <div className="text-3xl md:text-4xl font-bold text-secondary group-hover:text-primary transition-colors">15 ساعة</div>
-              <div className="text-sm md:text-base text-muted-foreground">أسبوعياً</div>
+            <div className="text-center space-y-1 md:space-y-2 animate-fade-in-up delay-300 group">
+              <div className="text-2xl md:text-4xl font-bold text-secondary group-hover:text-primary transition-colors">15 ساعة</div>
+              <div className="text-xs md:text-base text-muted-foreground">أسبوعياً</div>
             </div>
 
             {/* Stat 5 */}
-            <div className="text-center space-y-2 animate-fade-in-up delay-400 col-span-2 md:col-span-1 group">
-              <div className="text-3xl md:text-4xl font-bold text-primary group-hover:text-secondary transition-colors">18 يناير</div>
-              <div className="text-sm md:text-base text-muted-foreground">بداية الدورة التالية</div>
+            <div className="text-center space-y-1 md:space-y-2 animate-fade-in-up delay-400 col-span-2 md:col-span-1 group">
+              <div className="text-2xl md:text-4xl font-bold text-primary group-hover:text-secondary transition-colors">18 يناير</div>
+              <div className="text-xs md:text-base text-muted-foreground">بداية الدورة التالية</div>
             </div>
           </div>
 
           {/* CTA Button */}
           <div className="text-center mt-8">
             <Link href="/register">
-              <button className="btn-primary text-lg px-12 py-4 animate-fade-in-up delay-500 shadow-glow-primary">
+              <button className="btn-primary text-base md:text-lg px-8 md:px-12 py-3 md:py-4 animate-fade-in-up delay-500 shadow-glow-primary w-full md:w-auto">
                 سجل الآن
               </button>
             </Link>

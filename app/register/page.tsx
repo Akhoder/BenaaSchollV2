@@ -128,47 +128,52 @@ export default function UltraModernRegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-background">
-      {/* Floating Orbs Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden bg-background relative">
+      {/* Floating Orbs Background - Hidden on Mobile */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
         <div className="orb-primary w-96 h-96 -top-20 -right-20" />
         <div className="orb-accent w-96 h-96 top-1/2 -left-20" />
         <div className="orb-secondary w-96 h-96 -bottom-20 right-1/3" />
       </div>
 
-      {/* Gradient Mesh & Dots */}
-      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
-      <div className="fixed inset-0 bg-dots pointer-events-none opacity-30" />
+      {/* Gradient Mesh & Dots - Simplified on Mobile */}
+      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none hidden md:block" />
+      <div className="fixed inset-0 bg-dots pointer-events-none opacity-30 hidden md:block" />
+
+      {/* Mobile Theme Toggle */}
+      <div className="absolute top-4 left-4 z-50 lg:hidden">
+        <ThemeToggle />
+      </div>
 
       {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8 relative z-10">
         <div className="w-full max-w-md">
           {/* Glass Card */}
-          <div className="glass-card p-8 space-y-8 animate-fade-in-up">
+          <div className="glass-card p-6 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
             {/* Header */}
             <div className="text-center space-y-4">
               {/* Logo */}
               <div className="inline-flex items-center justify-center animate-bounce-in">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-3xl blur-2xl opacity-40" />
-                  <div className="relative glass-card p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
+                  <div className="relative glass-card p-4 md:p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
                     <OptimizedImage
                       src="/icons/logo.jpg"
                       alt="مدرسة البناء العلمي"
                       width={64}
                       height={64}
                       priority 
-                      className="w-32 h-32 object-contain"
+                      className="w-24 h-24 md:w-32 md:h-32 object-contain"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Title */}
-              <h1 className="text-4xl font-bold">
+              <h1 className="text-3xl md:text-4xl font-bold">
                 <span className="text-primary">انضم إلينا!</span>
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base md:text-lg text-muted-foreground">
                 أنشئ حسابك وابدأ رحلتك التعليمية
               </p>
             </div>

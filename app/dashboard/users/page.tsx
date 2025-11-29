@@ -976,7 +976,7 @@ export default function UsersPage() {
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('basicInformation' as TranslationKey)}</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">{t('fullName')}</label>
                     <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
@@ -991,7 +991,7 @@ export default function UsersPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">{t('role')}</label>
                     <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
@@ -1011,7 +1011,7 @@ export default function UsersPage() {
                     <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">{t('gender' as TranslationKey)}</label>
                     <Select value={editGender} onValueChange={(v) => setEditGender(v as 'male' | 'female' | '')}>
@@ -1029,7 +1029,7 @@ export default function UsersPage() {
                     <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} className="mt-1" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">{t('dateOfBirth' as TranslationKey)}</label>
                     <Input 
@@ -1046,7 +1046,7 @@ export default function UsersPage() {
               {(editRole === 'teacher') && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('teacherInformation' as TranslationKey)}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">{t('specialization' as TranslationKey)}</label>
                       <Input value={editSpecialization} onChange={(e) => setEditSpecialization(e.target.value)} className="mt-1" />
@@ -1087,7 +1087,7 @@ export default function UsersPage() {
               {(editRole === 'student') && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('studentInformation' as TranslationKey)}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">{t('parentName' as TranslationKey)}</label>
                       <Input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} className="mt-1" />
@@ -1108,7 +1108,7 @@ export default function UsersPage() {
               {(editRole === 'admin' || editRole === 'supervisor') && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('administrativeInformation' as TranslationKey)}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">{t('appointmentDate' as TranslationKey)}</label>
                       <Input 
