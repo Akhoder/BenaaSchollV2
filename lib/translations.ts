@@ -819,7 +819,7 @@ export const translations = {
     imageUploadHint: 'PNG, JPG, GIF or WEBP. Max 5MB',
     invalidImageFile: 'Invalid image file. Please select an image file.',
     imageTooLarge: 'Image is too large. Maximum size is 5MB.',
-    uploading: 'Uploading...',
+    // uploading: 'Uploading...', // Duplicate key removed
     // Security
     securitySettings: 'Security Settings',
     passwordRequired: 'Password is required',
@@ -828,10 +828,10 @@ export const translations = {
     passwordUpdatedSuccessfully: 'Password updated successfully',
     updatePassword: 'Update Password',
     confirmNewPassword: 'Confirm New Password',
-    saving: 'Saving...',
-    saveChanges: 'Save Changes',
-    unexpectedError: 'An unexpected error occurred',
-    failedToSave: 'Failed to save changes',
+    // saving: 'Saving...', // Duplicate key removed
+    // saveChanges: 'Save Changes', // Duplicate key removed
+    // unexpectedError: 'An unexpected error occurred', // Duplicate key removed
+    // failedToSave: 'Failed to save changes', // Duplicate key removed
     failedToUpdatePassword: 'Failed to update password',
     failedToUploadAvatar: 'Failed to upload avatar',
     editProfile: 'Edit Profile',
@@ -1674,7 +1674,7 @@ export const translations = {
     imageUploadHint: 'PNG, JPG, GIF أو WEBP. الحد الأقصى 5MB',
     invalidImageFile: 'ملف صورة غير صالح. يرجى اختيار ملف صورة.',
     imageTooLarge: 'الصورة كبيرة جداً. الحد الأقصى 5MB.',
-    uploading: 'جاري التحميل...',
+    // uploading: 'جاري التحميل...', // Duplicate key removed
     // Security
     securitySettings: 'إعدادات الأمان',
     passwordRequired: 'كلمة المرور مطلوبة',
@@ -1683,10 +1683,10 @@ export const translations = {
     passwordUpdatedSuccessfully: 'تم تحديث كلمة المرور بنجاح',
     updatePassword: 'تحديث كلمة المرور',
     confirmNewPassword: 'تأكيد كلمة المرور الجديدة',
-    saving: 'جاري الحفظ...',
-    saveChanges: 'حفظ التغييرات',
-    unexpectedError: 'حدث خطأ غير متوقع',
-    failedToSave: 'فشل في حفظ التغييرات',
+    // saving: 'جاري الحفظ...', // Duplicate key removed
+    // saveChanges: 'حفظ التغييرات', // Duplicate key removed
+    // unexpectedError: 'حدث خطأ غير متوقع', // Duplicate key removed
+    // failedToSave: 'فشل في حفظ التغييرات', // Duplicate key removed
     failedToUpdatePassword: 'فشل في تحديث كلمة المرور',
     failedToUploadAvatar: 'فشل رفع الصورة الشخصية',
     editProfile: 'تعديل الملف الشخصي',
@@ -2478,7 +2478,7 @@ export const translations = {
     imageUploadHint: 'PNG, JPG, GIF ou WEBP. Max 5MB',
     invalidImageFile: 'Fichier image invalide. Veuillez sélectionner un fichier image.',
     imageTooLarge: 'L\'image est trop grande. La taille maximale est de 5MB.',
-    uploading: 'Téléchargement...',
+    // uploading: 'Téléchargement...', // Duplicate key removed
     // Security
     securitySettings: 'Paramètres de sécurité',
     passwordRequired: 'Le mot de passe est requis',
@@ -2487,10 +2487,10 @@ export const translations = {
     passwordUpdatedSuccessfully: 'Mot de passe mis à jour avec succès',
     updatePassword: 'Mettre à jour le mot de passe',
     confirmNewPassword: 'Confirmer le nouveau mot de passe',
-    saving: 'Enregistrement...',
-    saveChanges: 'Enregistrer les modifications',
-    unexpectedError: 'Une erreur inattendue s\'est produite',
-    failedToSave: 'Échec de l\'enregistrement des modifications',
+    // saving: 'Enregistrement...', // Duplicate key removed
+    // saveChanges: 'Enregistrer les modifications', // Duplicate key removed
+    // unexpectedError: 'Une erreur inattendue s\'est produite', // Duplicate key removed
+    // failedToSave: 'Échec de l\'enregistrement des modifications', // Duplicate key removed
     failedToUpdatePassword: 'Échec de la mise à jour du mot de passe',
     failedToUploadAvatar: 'Échec du téléchargement de l\'avatar',
     editProfile: 'Modifier le profil',

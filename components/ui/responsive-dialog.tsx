@@ -148,6 +148,7 @@ export function ResponsiveDialogFooter({
 
 export function ResponsiveDialogClose({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof DrawerClose>) {
   const { isDesktop } = React.useContext(ResponsiveDialogContext)
@@ -164,9 +165,12 @@ export function ResponsiveDialogClose({
     // Safest is to rely on the `open` prop control for dialogs in this codebase usually.
     // But DrawerClose is useful. 
     // If we want to use it in Dialog, we might need to import from @radix-ui/react-dialog if not in ui/dialog.
-    return <div className={className} {...props} /> 
+    
+    // Fix: Cast props to any to avoid type incompatibility between DrawerClose props and div props
+    // This is safe because we're just passing standard HTML attributes usually
+    return <div className={className} {...(props as any)}>{children}</div>
   }
 
-  return <DrawerClose className={className} {...props} />
+  return <DrawerClose className={className} {...props}>{children}</DrawerClose>
 }
 
