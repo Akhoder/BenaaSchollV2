@@ -63,6 +63,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatsSkeleton } from '@/components/SkeletonLoaders';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { usePrefetch } from '@/hooks/usePrefetch';
 
 type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
@@ -2364,6 +2365,25 @@ export default function DashboardPage() {
     return relativeTimeFormatter.format(-diffDays, 'day');
   }, [relativeTimeFormatter, t]);
 
+  const handleRefresh = useCallback(async () => {
+    if (!profile) return;
+    
+    const promises = [fetchStats()];
+    
+    if (profile.role === 'student') {
+      promises.push(
+        loadStudentData(),
+        loadStudentSchedule(),
+        loadStudentStats(),
+        loadUpcomingAssignments()
+      );
+    } else if (profile.role === 'teacher') {
+      promises.push(loadTeacherData());
+    }
+    
+    await Promise.all(promises);
+  }, [profile, fetchStats, loadStudentData, loadStudentSchedule, loadStudentStats, loadUpcomingAssignments, loadTeacherData]);
+
   // ============================================
   // RENDER - عرض المكون
   // ============================================
@@ -2388,7 +2408,8 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="space-y-6 animate-fade-in">
         {/* ✅ Compact Hero Section - قسم الترحيب المدمج */}
         <div className="relative overflow-hidden rounded-2xl border border-border/50 shadow-lg bg-gradient-to-br from-primary/5 via-accent/3 to-secondary/5">
           {/* Subtle Background Pattern */}
@@ -3459,7 +3480,8 @@ export default function DashboardPage() {
             </Card>
           </>
         )}
-      </div>
+        </div>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }

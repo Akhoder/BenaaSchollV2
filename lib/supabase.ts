@@ -259,27 +259,67 @@ export async function fetchMyEnrolledClassesWithDetails() {
   const enrolledMap = new Map(enrollments.map((e) => [e.class_id, e.enrolled_at]));
   
   // Get classes details
-  const { data: classes, error: cErr } = await supabase
+  const { data: classesRaw, error: cErr } = await supabase
     .from('classes')
-    .select('id, class_name, teacher_id, level, image_url, teacher:profiles!teacher_id(full_name)')
+    .select('id, class_name, teacher_id, level, image_url')
     .in('id', classIds);
   
   if (cErr) return { data: [], error: cErr };
+
+  // Fetch teachers manually to avoid inner join issues if teacher is missing/null
+  const teacherIds = [...new Set((classesRaw || []).map((c: any) => c.teacher_id).filter(Boolean))];
+  let teachersMap = new Map();
   
-  const enriched = (classes || []).map((cls: any) => ({
+  if (teacherIds.length > 0) {
+    const { data: teachers } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', teacherIds);
+      
+    if (teachers) {
+      teachersMap = new Map(teachers.map((t: any) => [t.id, t]));
+    }
+  }
+  
+  const enriched = (classesRaw || []).map((cls: any) => ({
     ...cls,
     enrolled_at: enrolledMap.get(cls.id) || null,
+    teacher: cls.teacher_id ? teachersMap.get(cls.teacher_id) : null,
   }));
   
   return { data: enriched, error: null };
 }
 
 export async function fetchSubjectsForClass(classId: string) {
-  return await supabase
+  const { data: subjects, error } = await supabase
     .from('class_subjects')
-    .select('id, subject_name, teacher_id, created_at, updated_at, description, objectives, reference_url, image_url, teacher:profiles!teacher_id(id, full_name, avatar_url)')
+    .select('id, subject_name, teacher_id, created_at, updated_at, description, objectives, reference_url, image_url')
     .eq('class_id', classId)
     .order('created_at', { ascending: false });
+
+  if (error) return { data: [], error };
+
+  // Fetch teachers manually
+  const teacherIds = [...new Set((subjects || []).map((s: any) => s.teacher_id).filter(Boolean))];
+  let teachersMap = new Map();
+  
+  if (teacherIds.length > 0) {
+    const { data: teachers } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', teacherIds);
+      
+    if (teachers) {
+      teachersMap = new Map(teachers.map((t: any) => [t.id, t]));
+    }
+  }
+  
+  const enriched = (subjects || []).map((subj: any) => ({
+    ...subj,
+    teacher: subj.teacher_id ? teachersMap.get(subj.teacher_id) : null
+  }));
+
+  return { data: enriched, error: null };
 }
 
 export async function fetchAssignmentsForSubject(subjectId: string) {

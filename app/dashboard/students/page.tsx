@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -37,13 +37,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogDescription as DialogDescription,
+  ResponsiveDialogFooter as DialogFooter,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+} from '@/components/ui/responsive-dialog';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { uploadUserAvatar } from '@/lib/supabase';
@@ -127,7 +128,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  // ✅ PERFORMANCE: Debounce search to reduce re-renders
+  // âœ… PERFORMANCE: Debounce search to reduce re-renders
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -167,6 +168,22 @@ export default function StudentsPage() {
   const [editParentPhone, setEditParentPhone] = useState('');
   const [editEmergencyContact, setEditEmergencyContact] = useState('');
   const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'notEnrolled'>('all');
+  const [fabVisible, setFabVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < 50 || currentScrollY < lastScrollY) {
+        setFabVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setFabVisible(false);
+      }
+      setLastScrollY(currentScrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
   const languageOptions = useMemo(
     () => [
       { value: 'en' as Language, label: t('languageEnglish') },
@@ -204,13 +221,13 @@ export default function StudentsPage() {
     if (!profile) return;
     
     try {
-      // ✅ PERFORMANCE: Only show loading if no cached data
+      // âœ… PERFORMANCE: Only show loading if no cached data
       const { data: allStudents, error, fromCache } = await getStudentsOptimized(
         profile.role || 'student', 
         profile.id
       );
       
-      // ✅ OPTIMISTIC LOADING: Don't show loading if data is from cache
+      // âœ… OPTIMISTIC LOADING: Don't show loading if data is from cache
       if (!fromCache) {
         setLoading(true);
       }
@@ -225,7 +242,7 @@ export default function StudentsPage() {
       }
       
       if (allStudents && allStudents.length > 0) {
-        // ✅ OPTIMIZED: Single query for all enrollments
+        // âœ… OPTIMIZED: Single query for all enrollments
         const studentIds = allStudents.map((s: any) => s.id);
         const { data: allEnrollments, error: enrollError } = await supabase
           .from('student_enrollments')
@@ -262,7 +279,7 @@ export default function StudentsPage() {
     }
   }, [profile]);
 
-  // ✅ PERFORMANCE: Fetch students immediately when authorized
+  // âœ… PERFORMANCE: Fetch students immediately when authorized
   useEffect(() => {
     if (isAuthorized && profile) {
       // Start fetching immediately - don't wait for render
@@ -316,7 +333,7 @@ export default function StudentsPage() {
     }
   }, [t]);
 
-  // ✅ PERFORMANCE: Filter students using debounced search query
+  // âœ… PERFORMANCE: Filter students using debounced search query
   const filteredStudents = useMemo(() => {
     let result = filterBySearch(students, debouncedSearchQuery, (student) => [
       student.full_name,
@@ -407,8 +424,9 @@ export default function StudentsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
-        {/* ✨ Enhanced Header - Islamic Design */}
+      <PullToRefresh onRefresh={fetchStudents}>
+        <div className="space-y-6 animate-fade-in">
+          {/* âœ¨ Enhanced Header - Islamic Design */}
         <PageHeader 
           icon={GraduationCap}
           title={t('studentsManagement')}
@@ -439,7 +457,7 @@ export default function StudentsPage() {
           {profile?.role === 'admin' && (
             <Button 
               onClick={() => setCreateOpen(true)}
-              className="bg-secondary hover:bg-secondary/90 text-white backdrop-blur-sm border border-secondary/50 shadow-lg shadow-secondary/30 transition-all duration-300 hover:scale-105"
+              className="hidden md:flex bg-secondary hover:bg-secondary/90 text-white backdrop-blur-sm border border-secondary/50 shadow-lg shadow-secondary/30 transition-all duration-300 hover:scale-105"
             >
               <Plus className="h-4 w-4 mr-2" />
               {t('addStudent')}
@@ -447,7 +465,7 @@ export default function StudentsPage() {
           )}
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
+        {/* âœ¨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
         <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 animate-fade-in-up -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
           {statsConfig.map((stat, index) => {
             const Icon = stat.icon;
@@ -487,7 +505,7 @@ export default function StudentsPage() {
           })}
         </div>
 
-        {/* ✨ Search and Filters - Islamic Design */}
+        {/* âœ¨ Search and Filters - Islamic Design */}
         <Card className="glass-card border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -530,7 +548,7 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
-        {/* ✨ Create Student Dialog - Islamic Design */}
+        {/* âœ¨ Create Student Dialog - Islamic Design */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-lg border-primary/20">
             <DialogHeader className="border-b border-primary/10 pb-4">
@@ -807,7 +825,7 @@ export default function StudentsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* ✨ Students List - Islamic Design */}
+        {/* âœ¨ Students List - Islamic Design */}
         <Card className="glass-card border-primary/10 overflow-hidden">
           <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
             <CardTitle className="font-display text-foreground flex items-center gap-2">
@@ -844,7 +862,7 @@ export default function StudentsPage() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{s.email}</p>
-                        <p className="text-sm text-muted-foreground">{s.phone || '—'}</p>
+                        <p className="text-sm text-muted-foreground">{s.phone || 'â€”'}</p>
                       </div>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -931,7 +949,7 @@ export default function StudentsPage() {
                         </div>
                         <div className="bg-secondary/5 rounded-lg p-3">
                           <p className="text-muted-foreground text-xs">{t('avgGrade')}</p>
-                          <p className="text-lg font-semibold text-secondary">{s.average_grade ?? '—'}</p>
+                          <p className="text-lg font-semibold text-secondary">{s.average_grade ?? 'â€”'}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
@@ -977,12 +995,12 @@ export default function StudentsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-foreground">{s.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.phone || '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.phone || 'â€”'}</TableCell>
                         <TableCell>
                           <Badge variant="islamic">{s.enrolled_classes ?? 0}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="gold">{s.average_grade ?? '—'}</Badge>
+                          <Badge variant="gold">{s.average_grade ?? 'â€”'}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -1066,7 +1084,7 @@ export default function StudentsPage() {
             )}
           </CardContent>
           
-          {/* ✅ PAGINATION: Add pagination UI */}
+          {/* âœ… PAGINATION: Add pagination UI */}
           {filteredStudents.length > itemsPerPage && (
             <div className="border-t border-primary/10 p-4 bg-gradient-to-l from-primary/5 to-transparent">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1448,6 +1466,11 @@ export default function StudentsPage() {
           </DialogContent>
         </Dialog>
       </div>
+            <Button onClick={() => setCreateOpen(true)} className={cn('fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl z-50 md:hidden', 'bg-gradient-to-r from-secondary to-primary hover:from-secondary/90 hover:to-primary/90', 'text-white border-2 border-white/20', 'transition-all duration-300 transform', fabVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-32 opacity-0 scale-75')} size='icon'><Plus className='h-7 w-7' /></Button>
+      </PullToRefresh>
     </DashboardLayout>
   );
 }
+
+
+
