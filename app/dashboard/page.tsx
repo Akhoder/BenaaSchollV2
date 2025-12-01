@@ -766,7 +766,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
       </div>
 
       {/* Statistics Cards - Mobile Horizontal Scroll */}
-      <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 mb-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="min-w-[280px] snap-center">
           <StatCard
             title={t('myClasses')}
@@ -806,7 +806,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
       </div>
 
       {/* Performance Metrics Section */}
-      <div className="grid gap-4 md:grid-cols-2 mb-6">
+      <div className="hidden md:grid gap-4 md:grid-cols-2 mb-6">
         <Card className="card-elegant border-l-4 border-l-emerald-500">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base font-display text-slate-900 dark:text-white">
@@ -983,8 +983,8 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                           : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="flex-1 w-full">
                           <div className="flex items-center gap-3 mb-2">
                             <div className={`p-2 rounded-lg ${
                               isOngoing 
@@ -1036,7 +1036,7 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                         {e.zoom_url && (
                           <Button
                             size="sm"
-                            className={`transition-all duration-300 hover:scale-105 ${
+                            className={`w-full md:w-auto transition-all duration-300 hover:scale-105 ${
                               isOngoing 
                                 ? 'bg-amber-500 hover:bg-amber-600 text-white' 
                                 : 'btn-gradient'
@@ -1073,77 +1073,77 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-1 md:space-y-3 md:block">
             <Link href="/dashboard/my-assignments" prefetch={true} className="w-full">
-              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-amber-300 dark:hover:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <div className="flex items-start gap-3">
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-amber-300 dark:hover:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col justify-center">
+                <div className="flex items-center md:items-start gap-3 flex-col md:flex-row text-center md:text-left">
                   <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 group-hover:scale-110 transition-transform duration-300">
-                    <FileText className="h-4 w-4 text-amber-600" />
+                    <FileText className="h-5 w-5 md:h-4 md:w-4 text-amber-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                       {t('myAssignments')}
                     </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 hidden md:block">
                       {t('viewAssignments')}
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block" />
               </div>
             </Link>
             <Link href="/dashboard/my-classes" prefetch={true} className="w-full">
-              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <div className="flex items-start gap-3">
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col justify-center">
+                <div className="flex items-center md:items-start gap-3 flex-col md:flex-row text-center md:text-left">
                   <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50 group-hover:scale-110 transition-transform duration-300">
-                    <School className="h-4 w-4 text-blue-600" />
+                    <School className="h-5 w-5 md:h-4 md:w-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {t('myClasses')}
                     </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 hidden md:block">
                       {t('enrolledClasses')}
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block" />
               </div>
             </Link>
             <Link href="/dashboard/grades" prefetch={true} className="w-full">
-              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <div className="flex items-start gap-3">
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col justify-center">
+                <div className="flex items-center md:items-start gap-3 flex-col md:flex-row text-center md:text-left">
                   <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 group-hover:scale-110 transition-transform duration-300">
-                    <Award className="h-4 w-4 text-emerald-600" />
+                    <Award className="h-5 w-5 md:h-4 md:w-4 text-emerald-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                       {t('grades')}
                     </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 hidden md:block">
                       {t('viewGrades')}
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block" />
               </div>
             </Link>
             <Link href="/dashboard/my-certificates" prefetch={true} className="w-full">
-              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-purple-300 dark:hover:border-purple-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <div className="flex items-start gap-3">
+              <div className="group relative p-3 rounded-xl border-2 border-transparent hover:border-purple-300 dark:hover:border-purple-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col justify-center">
+                <div className="flex items-center md:items-start gap-3 flex-col md:flex-row text-center md:text-left">
                   <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50 group-hover:scale-110 transition-transform duration-300">
-                    <GraduationCap className="h-4 w-4 text-purple-600" />
+                    <GraduationCap className="h-5 w-5 md:h-4 md:w-4 text-purple-600" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-0.5 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                       {t('myCertificates')}
                     </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 hidden md:block">
                       {t('viewCertificates')}
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowRight className="h-3 w-3 text-slate-400 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block" />
               </div>
             </Link>
           </CardContent>
@@ -1215,8 +1215,8 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                           : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50'
                     } hover:shadow-lg transition-shadow`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex-1 w-full">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
                             {assignment.title}
@@ -1253,10 +1253,10 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                           </span>
                         </div>
                       </div>
-                      <Link href={`/dashboard/assignments/${assignment.id}/submit`} prefetch={true}>
+                      <Link href={`/dashboard/assignments/${assignment.id}/submit`} prefetch={true} className="w-full md:w-auto">
                         <Button 
                           size="sm" 
-                          className={`transition-all duration-300 hover:scale-105 ${
+                          className={`w-full md:w-auto transition-all duration-300 hover:scale-105 ${
                             isOverdue 
                               ? 'bg-red-500 hover:bg-red-600 text-white' 
                               : assignment.submission
@@ -1326,12 +1326,12 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
                 {publishedClasses
                   .filter((c: any) => myClassEnrollments[c.id])
                   .map((c: any) => (
-                    <Link key={c.id} href={`/dashboard/my-classes/${c.id}`} prefetch={true}>
-                      <Card className="card-hover overflow-hidden cursor-pointer group border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300">
+                    <Link key={c.id} href={`/dashboard/my-classes/${c.id}`} prefetch={true} className="min-w-[280px] snap-center md:min-w-0">
+                      <Card className="card-hover overflow-hidden cursor-pointer group border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 h-full">
                         <CardHeader className="pb-4 hover:bg-gradient-to-br hover:from-blue-50/50 hover:to-cyan-50/30 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 transition-all duration-300">
                           <div className="flex items-start gap-4">
                             <div className="relative flex-shrink-0">
@@ -1489,11 +1489,11 @@ const StudentDashboardSection = memo(function StudentDashboardSection({
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
                 {publishedClasses
                   .filter((c: any) => !myClassEnrollments[c.id])
                   .map((c: any) => (
-                    <Card key={c.id} className="border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-lg group">
+                    <Card key={c.id} className="min-w-[280px] snap-center md:min-w-0 border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-lg group h-full flex flex-col">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">

@@ -165,25 +165,26 @@ export default function MyClassesPage() {
                 <CardTitle className="text-foreground">{t('searchClasses' as TranslationKey)}</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardContent className="p-4 sm:p-6 space-y-4">
+              <div className="flex flex-col gap-4">
                 <Input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={t('searchClasses' as TranslationKey)}
-                  className="sm:max-w-sm input-modern"
+                  className="w-full input-modern"
                 />
                 {uniqueLevels.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold px-1">
                       {t('levelFilterLabel' as TranslationKey)}
                     </span>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap gap-2 scrollbar-none">
                       <Button
                         type="button"
                         variant={levelFilter === 'all' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setLevelFilter('all')}
+                        className="whitespace-nowrap flex-shrink-0"
                       >
                         {t('allLevels' as TranslationKey)}
                       </Button>
@@ -194,6 +195,7 @@ export default function MyClassesPage() {
                           variant={levelFilter === level ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setLevelFilter(level as string)}
+                          className="whitespace-nowrap flex-shrink-0"
                         >
                           {level ?? '—'}
                         </Button>
@@ -262,40 +264,38 @@ export default function MyClassesPage() {
                     className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-2xl"
                     aria-label={`${t('myClasses')} - ${cls.class_name}`}
                   >
-                    <CardHeader className="hover:bg-primary/5 transition-all duration-300 h-full">
-                      <div className="flex items-start gap-4">
+                    <CardHeader className="hover:bg-primary/5 transition-all duration-300 h-full p-4 sm:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <div className="relative flex-shrink-0">
                           <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
                           {cls.image_url ? (
-                            <img src={cls.image_url} alt={cls.class_name} className="w-20 h-20 rounded-2xl object-cover relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all" />
+                            <img src={cls.image_url} alt={cls.class_name} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all" />
                           ) : (
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all shadow-lg shadow-primary/20">
-                              <GraduationCap className="h-10 w-10 text-white" />
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all shadow-lg shadow-primary/20">
+                              <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex-1 min-w-0 pt-1">
-                          <CardTitle className="text-xl font-display font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                        <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
+                          <CardTitle className="text-lg sm:text-xl font-display font-bold text-foreground mb-1.5 sm:mb-2 group-hover:text-primary transition-colors line-clamp-2">
                             {cls.class_name}
                           </CardTitle>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="islamic" className="gap-1">
-                                <School className="h-3 w-3" />
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="islamic" className="gap-1 text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5">
+                                <School className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                 {`${t('level' as TranslationKey)} ${cls.level ?? '—'}`}
                               </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="gold" className="gap-1">
-                                <BookOpen className="h-3 w-3" />
+                              <Badge variant="gold" className="gap-1 text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5">
+                                <BookOpen className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                 {(subjectsByClass[cls.id] || []).length}{' '}
                                 {(subjectsByClass[cls.id] || []).length === 1 ? t('subject' as TranslationKey) : t('subjects' as TranslationKey)}
                               </Badge>
                             </div>
                             {cls.enrolled_at && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                                <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
                                 {t('enrolledOn' as TranslationKey)}{' '}
                                 <span className="font-medium">{new Date(cls.enrolled_at).toLocaleDateString(dateLocale)}</span>
                               </p>
@@ -305,24 +305,26 @@ export default function MyClassesPage() {
                       </div>
                     </CardHeader>
                   </Link>
-                  <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5">
-                    <div className="flex flex-wrap gap-2">
-                      <Link href={`/dashboard/my-classes/${cls.id}`} prefetch={true}>
-                        <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 hover:bg-primary/10 hover:text-primary transition-colors">
-                          <BookOpen className="h-3.5 w-3.5" />
-                          {t('viewClass' as TranslationKey)}
+                  <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 p-3 sm:p-6">
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                      <Link href={`/dashboard/my-classes/${cls.id}`} prefetch={true} className="col-span-3 sm:col-span-1">
+                        <Button variant="ghost" size="sm" className="w-full h-9 sm:h-8 gap-1.5 px-3 hover:bg-primary/10 hover:text-primary transition-colors justify-center">
+                          <BookOpen className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                          <span className="text-sm">{t('viewClass' as TranslationKey)}</span>
                         </Button>
                       </Link>
-                      <Link href={`/dashboard/my-assignments?class=${cls.id}`} prefetch={false}>
-                        <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 hover:bg-accent/10 hover:text-accent transition-colors">
-                          <FileText className="h-3.5 w-3.5" />
-                          {t('openAssignments' as TranslationKey)}
+                      <Link href={`/dashboard/my-assignments?class=${cls.id}`} prefetch={false} className="col-span-1.5 sm:col-span-1 flex-1">
+                        <Button variant="ghost" size="sm" className="w-full h-9 sm:h-8 gap-1.5 px-3 hover:bg-accent/10 hover:text-accent transition-colors justify-center">
+                          <FileText className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                          <span className="hidden sm:inline">{t('openAssignments' as TranslationKey)}</span>
+                          <span className="sm:hidden">{t('assignments' as TranslationKey)}</span>
                         </Button>
                       </Link>
-                      <Link href="/dashboard/schedule" prefetch={true}>
-                        <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 hover:bg-secondary/10 hover:text-secondary transition-colors">
-                          <CalendarIcon className="h-3.5 w-3.5" />
-                          {t('openSchedule' as TranslationKey)}
+                      <Link href="/dashboard/schedule" prefetch={true} className="col-span-1.5 sm:col-span-1 flex-1">
+                        <Button variant="ghost" size="sm" className="w-full h-9 sm:h-8 gap-1.5 px-3 hover:bg-secondary/10 hover:text-secondary transition-colors justify-center">
+                          <CalendarIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                          <span className="hidden sm:inline">{t('openSchedule' as TranslationKey)}</span>
+                          <span className="sm:hidden">{t('schedule' as TranslationKey)}</span>
                         </Button>
                       </Link>
                     </div>

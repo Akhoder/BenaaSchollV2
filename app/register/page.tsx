@@ -70,17 +70,17 @@ export default function UltraModernRegisterPage() {
     const fullNameValidation = validateName(formData.fullName);
 
     if (!fullNameValidation.isValid) {
-      toast.error(fullNameValidation.error || 'الاسم الكامل مطلوب');
+      toast.error(fullNameValidation.error || t('fullNameRequired'));
       return;
     }
 
     if (!emailValidation.isValid) {
-      toast.error(emailValidation.error || 'البريد الإلكتروني مطلوب');
+      toast.error(emailValidation.error || t('emailRequired'));
       return;
     }
 
     if (!passwordValidation.isValid) {
-      toast.error(passwordValidation.error || 'كلمة المرور مطلوبة');
+      toast.error(passwordValidation.error || t('passwordRequired'));
       return;
     }
 
@@ -96,14 +96,14 @@ export default function UltraModernRegisterPage() {
       );
       
       if (success) {
-        toast.success('تم إنشاء الحساب بنجاح!');
+        toast.success(t('registrationSuccess'));
         router.push('/dashboard');
       } else {
-        toast.error('فشل إنشاء الحساب');
+        toast.error(t('registrationError'));
       }
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء التسجيل');
+      toast.error(error.message || t('error'));
     } finally {
       setLoading(false);
     }
@@ -112,23 +112,23 @@ export default function UltraModernRegisterPage() {
   const features = [
     {
       icon: BookOpen,
-      title: 'محتوى تعليمي شامل',
-      description: 'الوصول إلى مكتبة ضخمة من الدورات'
+      title: t('comprehensiveContent'),
+      description: t('accessLibrary')
     },
     {
       icon: Users,
-      title: 'مدرسون محترفون',
-      description: 'تعلم من أفضل المعلمين'
+      title: t('expertTeachers'),
+      description: t('learnFromBest')
     },
     {
       icon: Award,
-      title: 'شهادات معتمدة',
-      description: 'احصل على شهادات معترف بها'
+      title: t('certifiedCertificates'),
+      description: t('getCertified')
     }
   ];
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-background relative">
+    <div className="min-h-screen flex bg-background relative">
       {/* Floating Orbs Background - Hidden on Mobile */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
         <div className="orb-primary w-96 h-96 -top-20 -right-20" />
@@ -159,7 +159,7 @@ export default function UltraModernRegisterPage() {
                   <div className="relative glass-card p-4 md:p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
                     <OptimizedImage
                       src="/icons/logo.jpg"
-                      alt="مدرسة البناء العلمي"
+                      alt={t('schoolName')}
                       width={64}
                       height={64}
                       priority 
@@ -171,10 +171,10 @@ export default function UltraModernRegisterPage() {
 
               {/* Title */}
               <h1 className="text-3xl md:text-4xl font-bold">
-                <span className="text-primary">انضم إلينا!</span>
+                <span className="text-primary">{t('joinUs')}</span>
               </h1>
               <p className="text-base md:text-lg text-muted-foreground">
-                أنشئ حسابك وابدأ رحلتك التعليمية
+                {t('createAccountDesc')}
               </p>
             </div>
 
@@ -183,7 +183,7 @@ export default function UltraModernRegisterPage() {
               {/* Full Name */}
               <div className="space-y-2 animate-fade-in-up delay-100">
                 <Label htmlFor="fullName" className="text-sm font-medium">
-                  الاسم الكامل
+                  {t('fullName')}
                 </Label>
                 <div className="relative">
                   <User className={cn(
@@ -200,7 +200,7 @@ export default function UltraModernRegisterPage() {
                       "input-ultra pr-12",
                       fullNameError && "border-error focus:border-error focus:ring-error/20"
                     )}
-                    placeholder="أدخل اسمك الكامل"
+                    placeholder={t('enterFullName')}
                     disabled={loading}
                     aria-invalid={!!fullNameError}
                     aria-describedby={fullNameError ? "fullName-error" : undefined}
@@ -217,7 +217,7 @@ export default function UltraModernRegisterPage() {
               {/* Email */}
               <div className="space-y-2 animate-fade-in-up delay-200">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  البريد الإلكتروني
+                  {t('email')}
                 </Label>
                 <div className="relative">
                   <Mail className={cn(
@@ -234,7 +234,7 @@ export default function UltraModernRegisterPage() {
                       "input-ultra pr-12",
                       emailError && "border-error focus:border-error focus:ring-error/20"
                     )}
-                    placeholder="example@email.com"
+                    placeholder={t('enterEmail')}
                     disabled={loading}
                     dir="ltr"
                     aria-invalid={!!emailError}
@@ -252,7 +252,7 @@ export default function UltraModernRegisterPage() {
               {/* Password */}
               <div className="space-y-2 animate-fade-in-up delay-300">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  كلمة المرور
+                  {t('password')}
                 </Label>
                 <div className="relative">
                   <Lock className={cn(
@@ -269,7 +269,7 @@ export default function UltraModernRegisterPage() {
                       "input-ultra pr-12 pl-12",
                       passwordError && "border-error focus:border-error focus:ring-error/20"
                     )}
-                    placeholder="••••••••"
+                    placeholder={t('enterPassword')}
                     disabled={loading}
                     aria-invalid={!!passwordError}
                     aria-describedby={passwordError ? "password-error" : undefined}
@@ -278,7 +278,7 @@ export default function UltraModernRegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors min-h-[48px] min-w-[48px]"
-                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -295,36 +295,16 @@ export default function UltraModernRegisterPage() {
                 ) : (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      يجب أن تكون 6 أحرف على الأقل
+                      {t('passwordMinLength')}
                     </p>
                     <p className="text-xs text-muted-foreground/80 flex items-center gap-1 mt-1">
                       <Lock className="w-3 h-3" />
-                      <span>نظامنا يتحقق من كلمات المرور المسربة لحماية حسابك</span>
+                      <span>{t('passwordSecurityCheck')}</span>
                     </p>
                   </>
                 )}
               </div>
 
-              {/* Role */}
-              <div className="space-y-2 animate-fade-in-up delay-400">
-                <Label htmlFor="role" className="text-sm font-medium">
-                  الدور
-                </Label>
-                <Select 
-                  value={formData.role} 
-                  onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  disabled={loading}
-                >
-                  <SelectTrigger className="input-ultra">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">طالب</SelectItem>
-                    <SelectItem value="teacher">معلم</SelectItem>
-                    <SelectItem value="supervisor">مشرف</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               {/* Submit Button */}
               <button
@@ -335,11 +315,11 @@ export default function UltraModernRegisterPage() {
                 {loading ? (
                   <>
                     <div className="animate-spin-slow w-5 h-5 border-2 border-white/30 border-t-white rounded-full ml-2" />
-                    جاري إنشاء الحساب...
+                    {t('loading')}
                   </>
                 ) : (
                   <>
-                    إنشاء حساب
+                    {t('signUp')}
                     <Rocket className="w-5 h-5 mr-2" />
                   </>
                 )}
@@ -348,12 +328,12 @@ export default function UltraModernRegisterPage() {
               {/* Sign In Link */}
               <div className="text-center animate-fade-in-up delay-600">
                 <p className="text-sm text-muted-foreground">
-                  لديك حساب بالفعل؟{' '}
+                  {t('alreadyHaveAccount')}{' '}
                   <Link 
                     href="/login" 
                     className="font-medium text-primary hover:text-primary-dark transition-colors"
                   >
-                    سجل دخولك
+                    {t('signIn')}
                   </Link>
                 </p>
               </div>
@@ -369,18 +349,18 @@ export default function UltraModernRegisterPage() {
           <div className="inline-flex animate-bounce-in">
             <div className="badge-gradient">
               <Sparkles className="w-4 h-4" />
-              <span>ابدأ رحلتك التعليمية</span>
+              <span>{t('startLearningJourney')}</span>
             </div>
           </div>
 
           {/* Title */}
           <h2 className="text-5xl font-bold leading-tight animate-fade-in-up delay-100 text-primary">
-            انضم إلى آلاف الطلاب
+            {t('joinThousands')}
           </h2>
 
           {/* Description */}
           <p className="text-xl text-muted-foreground leading-relaxed animate-fade-in-up delay-200">
-            ابدأ التعلم اليوم واحصل على شهادات معتمدة
+            {t('startLearningToday')}
           </p>
 
           {/* Features */}
@@ -411,15 +391,15 @@ export default function UltraModernRegisterPage() {
           <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-in-up delay-400">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">10K+</div>
-              <div className="text-sm text-muted-foreground mt-1">طالب</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('roleStudent')}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-accent">500+</div>
-              <div className="text-sm text-muted-foreground mt-1">دورة</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('course')}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-secondary">98%</div>
-              <div className="text-sm text-muted-foreground mt-1">رضا</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('satisfaction')}</div>
             </div>
           </div>
         </div>

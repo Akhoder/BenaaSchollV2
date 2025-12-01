@@ -61,12 +61,12 @@ export default function UltraModernLoginPage() {
     const passwordValidation = validatePassword(formData.password);
 
     if (!emailValidation.isValid) {
-      toast.error(emailValidation.error || 'البريد الإلكتروني مطلوب');
+      toast.error(emailValidation.error || t('emailRequired'));
       return;
     }
 
     if (!passwordValidation.isValid) {
-      toast.error(passwordValidation.error || 'كلمة المرور مطلوبة');
+      toast.error(passwordValidation.error || t('passwordRequired'));
       return;
     }
 
@@ -76,14 +76,14 @@ export default function UltraModernLoginPage() {
       const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
-        toast.error('خطأ في البريد الإلكتروني أو كلمة المرور');
+        toast.error(t('loginError'));
       } else {
-        toast.success('تم تسجيل الدخول بنجاح!');
+        toast.success(t('loginSuccess'));
         router.push('/dashboard');
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء تسجيل الدخول');
+      toast.error(error.message || t('error'));
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ export default function UltraModernLoginPage() {
 
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-background relative">
+    <div className="min-h-screen flex bg-background relative">
       {/* Floating Orbs Background - Hidden on Mobile */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
         <div className="orb-primary w-96 h-96 -top-20 -left-20" />
@@ -122,7 +122,7 @@ export default function UltraModernLoginPage() {
                   <div className="relative glass-card p-4 md:p-6 rounded-3xl border-2 border-primary/30 shadow-2xl">
                     <OptimizedImage
                       src="/icons/logo.jpg"
-                      alt="مدرسة البناء العلمي"
+                      alt={t('schoolName')}
                       width={64}
                       height={64}
                       priority 
@@ -134,10 +134,10 @@ export default function UltraModernLoginPage() {
 
               {/* Title */}
               <h1 className="text-3xl md:text-4xl font-bold">
-                <span className="text-primary">أهلاً بعودتك!</span>
+                <span className="text-primary">{t('welcomeBack')}</span>
               </h1>
               <p className="text-base md:text-lg text-muted-foreground">
-                سجل دخولك للمتابعة
+                {t('signInToContinue')}
               </p>
               
               {/* Security Indicator */}
@@ -155,7 +155,7 @@ export default function UltraModernLoginPage() {
               {/* Email */}
               <div className="space-y-2 animate-fade-in-up delay-100">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  البريد الإلكتروني
+                  {t('email')}
                 </Label>
                 <div className="relative">
                   <Mail className={cn(
@@ -172,7 +172,7 @@ export default function UltraModernLoginPage() {
                       "input-ultra pr-12",
                       emailError && "border-error focus:border-error focus:ring-error/20"
                     )}
-                    placeholder="example@email.com"
+                    placeholder={t('enterEmail')}
                     disabled={loading}
                     dir="ltr"
                     aria-invalid={!!emailError}
@@ -190,7 +190,7 @@ export default function UltraModernLoginPage() {
               {/* Password */}
               <div className="space-y-2 animate-fade-in-up delay-200">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  كلمة المرور
+                  {t('password')}
                 </Label>
                 <div className="relative">
                   <Lock className={cn(
@@ -207,7 +207,7 @@ export default function UltraModernLoginPage() {
                       "input-ultra pr-12 pl-12",
                       passwordError && "border-error focus:border-error focus:ring-error/20"
                     )}
-                    placeholder="••••••••"
+                    placeholder={t('enterPassword')}
                     disabled={loading}
                     aria-invalid={!!passwordError}
                     aria-describedby={passwordError ? "password-error" : undefined}
@@ -216,7 +216,7 @@ export default function UltraModernLoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -242,11 +242,11 @@ export default function UltraModernLoginPage() {
                 {loading ? (
                   <>
                     <div className="animate-spin-slow w-5 h-5 border-2 border-white/30 border-t-white rounded-full ml-2" />
-                    جاري تسجيل الدخول...
+                    {t('loading')}
                   </>
                 ) : (
                   <>
-                    تسجيل الدخول
+                    {t('login')}
                     <LogIn className="w-5 h-5 mr-2" />
                   </>
                 )}
@@ -255,12 +255,12 @@ export default function UltraModernLoginPage() {
               {/* Register Link */}
               <div className="text-center animate-fade-in-up delay-400">
                 <p className="text-sm text-muted-foreground">
-                  ليس لديك حساب؟{' '}
+                  {t('dontHaveAccount')}{' '}
                   <Link 
                     href="/register" 
                     className="font-medium text-primary hover:text-primary-dark transition-colors"
                   >
-                    سجل الآن
+                    {t('signUp')}
                   </Link>
                 </p>
               </div>
@@ -276,27 +276,27 @@ export default function UltraModernLoginPage() {
           <div className="inline-flex animate-bounce-in">
             <div className="badge-gradient">
               <Sparkles className="w-4 h-4" />
-              <span>منصة تعليمية متقدمة</span>
+              <span>{t('advancedPlatform')}</span>
             </div>
           </div>
 
           {/* Title */}
           <h2 className="text-5xl font-bold leading-tight animate-fade-in-up delay-100 text-primary">
-            استمتع بتجربة تعليمية فريدة
+            {t('uniqueExperience')}
           </h2>
 
           {/* Description */}
           <p className="text-xl text-muted-foreground leading-relaxed animate-fade-in-up delay-200">
-            منصة حديثة توفر أفضل الأدوات لإدارة العملية التعليمية
+            {t('platformDescription')}
           </p>
 
           {/* Features */}
           <div className="space-y-4 animate-fade-in-up delay-300">
             {[
-              'واجهة عصرية وسهلة الاستخدام',
-              'تتبع دقيق للتقدم الدراسي',
-              'تواصل مباشر مع المعلمين',
-              'شهادات معتمدة'
+              t('modernInterface'),
+              t('progressTracking'),
+              t('directCommunication'),
+              t('certifiedCertificates')
             ].map((feature, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="p-1 bg-success/20 rounded-full">
@@ -311,15 +311,15 @@ export default function UltraModernLoginPage() {
           <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-in-up delay-400">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">10K+</div>
-              <div className="text-sm text-muted-foreground mt-1">طالب</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('roleStudent')}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-accent">500+</div>
-              <div className="text-sm text-muted-foreground mt-1">دورة</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('course')}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-secondary">98%</div>
-              <div className="text-sm text-muted-foreground mt-1">رضا</div>
+              <div className="text-sm text-muted-foreground mt-1">{t('satisfaction')}</div>
             </div>
           </div>
         </div>

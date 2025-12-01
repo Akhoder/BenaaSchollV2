@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   GraduationCap,
@@ -374,6 +374,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   }}
                   aria-label={language === 'ar' ? 'القائمة الرئيسية' : 'Main menu'}
                 >
+                  <SheetTitle className="sr-only">
+                    {language === 'ar' ? 'القائمة الرئيسية' : 'Main Menu'}
+                  </SheetTitle>
+                  <SheetDescription className="sr-only">
+                    {language === 'ar' ? 'قائمة التنقل الرئيسية' : 'Main navigation menu'}
+                  </SheetDescription>
                   <div className="flex h-full flex-col relative">
                     {/* Decorative top accent */}
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />

@@ -34,12 +34,6 @@ export function MobileBottomNav() {
         label: t('dashboard'),
         roles: ['admin', 'teacher', 'student', 'supervisor']
       },
-      {
-        href: '/dashboard/prayer-times',
-        icon: Clock,
-        label: t('prayerTimes'),
-        roles: ['admin', 'teacher', 'student', 'supervisor']
-      },
     ];
 
     if (profile?.role === 'student') {

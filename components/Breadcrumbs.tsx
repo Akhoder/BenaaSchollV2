@@ -52,6 +52,9 @@ export function Breadcrumbs() {
         case 'grades':
           label = t('grades');
           break;
+        case 'my-classes':
+          label = t('myClasses');
+          break;
         case 'announcements':
           label = t('announcements');
           break;

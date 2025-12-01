@@ -5,7 +5,6 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 import { WebVitals } from '@/components/WebVitals';
-import { FeedbackWidget } from '@/components/FeedbackWidget';
 import { FontLoader } from '@/components/FontLoader';
 
 // ✅ PERFORMANCE: Optimized font loading with preconnect
@@ -76,7 +75,6 @@ export default function RootLayout({
               {children}
               <Toaster />
               <WebVitals />
-              <FeedbackWidget />
             </AuthProvider>
           </LanguageProvider>
         </ServiceWorkerProvider>

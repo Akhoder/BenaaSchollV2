@@ -271,70 +271,78 @@ export default function SchedulePage() {
         />
 
         {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 animate-fade-in-up">
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-4 md:overflow-visible md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none animate-fade-in-up">
           {/* Total Events */}
-          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('totalEvents')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('weekView')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0 h-full">
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
+                  {t('totalEvents')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary font-display">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('weekView')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Today Events */}
-          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('todayEvents')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Calendar className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-info font-display">{stats.today}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('todayEvents')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0 h-full">
+            <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
+                  {t('todayEvents')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Calendar className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-info font-display">{stats.today}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('todayEvents')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Upcoming Events */}
-          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('upcomingEvents')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-success font-display">{stats.upcoming}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('upcoming')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0 h-full">
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
+                  {t('upcomingEvents')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-success font-display">{stats.upcoming}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('upcoming')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Online Events */}
-          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('onlineEvents')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                <Video className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent font-display">{stats.online}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('onlineEvents')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0 h-full">
+            <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
+                  {t('onlineEvents')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+                  <Video className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-accent font-display">{stats.online}</div>
+                <p className="text-xs text-muted-foreground mt-1">{t('onlineEvents')}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* ✨ Week View Card - Islamic Design */}
@@ -874,42 +882,42 @@ function WeekTable({ days, events, onEdit, onDelete, canEdit, t, dateLocale }: W
                     </a>
                   )}
                   {canEdit && (
-                    <div className="flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-border/50">
-                      <div className="flex gap-1.5 flex-wrap">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => onEdit(e)}
-                          className="h-7 text-xs px-2 flex-1 min-w-0 border-primary/20 hover:bg-primary/10 hover:text-primary"
-                        >
-                          <Edit className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate">{t('edit')}</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => onDelete(e.id)}
-                          className="h-7 text-xs px-2 flex-1 min-w-0 border-error/30 text-error hover:bg-error/10"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate">{t('delete')}</span>
-                        </Button>
-                      </div>
-                      {e.class_id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const dateStr = new Date(e.start_at).toISOString().slice(0, 10);
-                            window.location.href = `/dashboard/attendance?classId=${e.class_id}&date=${dateStr}`;
-                          }}
-                          className="h-7 text-xs px-2 w-full border-success/30 text-success hover:bg-success/10"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          <span className="truncate">{t('recordAttendance')}</span>
-                        </Button>
-                      )}
+                  <div className="flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-border/50">
+                    <div className="flex gap-1.5 flex-wrap">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => onEdit(e)}
+                        className="h-8 text-xs px-3 flex-1 min-w-0 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                      >
+                        <Edit className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">{t('edit')}</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => onDelete(e.id)}
+                        className="h-8 text-xs px-3 flex-1 min-w-0 border-error/30 text-error hover:bg-error/10 transition-all active:scale-95"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">{t('delete')}</span>
+                      </Button>
                     </div>
+                    {e.class_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const dateStr = new Date(e.start_at).toISOString().slice(0, 10);
+                          window.location.href = `/dashboard/attendance?classId=${e.class_id}&date=${dateStr}`;
+                        }}
+                        className="h-8 text-xs px-3 w-full border-success/30 text-success hover:bg-success/10 transition-all active:scale-95"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                        <span className="truncate">{t('recordAttendance')}</span>
+                      </Button>
+                    )}
+                  </div>
                   )}
                 </div>
               ))}
