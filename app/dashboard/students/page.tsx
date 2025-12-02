@@ -965,42 +965,43 @@ export default function StudentsPage() {
                 ))}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <Table className="min-w-[700px] md:min-w-0">
                   <TableHeader>
                     <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-                      <TableHead className="font-semibold text-foreground">{t('fullName')}</TableHead>
-                      <TableHead className="font-semibold text-foreground">{t('email')}</TableHead>
-                      <TableHead className="font-semibold text-foreground">{t('phone')}</TableHead>
-                      <TableHead className="font-semibold text-foreground">{t('enrolled')}</TableHead>
-                      <TableHead className="font-semibold text-foreground">{t('avgGrade')}</TableHead>
-                      <TableHead className="text-right font-semibold text-foreground">{t('actions')}</TableHead>
+                      <TableHead className="font-semibold text-foreground text-xs sm:text-sm">{t('fullName')}</TableHead>
+                      <TableHead className="font-semibold text-foreground text-xs sm:text-sm hidden md:table-cell">{t('email')}</TableHead>
+                      <TableHead className="font-semibold text-foreground text-xs sm:text-sm hidden lg:table-cell">{t('phone')}</TableHead>
+                      <TableHead className="font-semibold text-foreground text-xs sm:text-sm">{t('enrolled')}</TableHead>
+                      <TableHead className="font-semibold text-foreground text-xs sm:text-sm hidden sm:table-cell">{t('avgGrade')}</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground text-xs sm:text-sm">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedStudents.map((s) => (
                       <TableRow key={s.id} className="hover:bg-primary/5 transition-colors border-b border-border/50">
-                        <TableCell className="whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 ring-2 ring-secondary/30">
+                        <TableCell className="py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Avatar className="h-8 w-8 sm:h-9 sm:w-9 ring-2 ring-secondary/30 flex-shrink-0">
                               <AvatarImage src={s.avatar_url} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold text-xs sm:text-sm">
                                 {(s.full_name||'?').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-medium text-foreground">{s.full_name}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-foreground text-sm sm:text-base truncate">{s.full_name}</div>
                               <div className="text-xs text-muted-foreground">{s.id.slice(0,8)}...</div>
+                              <div className="text-xs text-muted-foreground md:hidden mt-0.5 truncate">{s.email}</div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-foreground">{s.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.phone || 'â€”'}</TableCell>
-                        <TableCell>
-                          <Badge variant="islamic">{s.enrolled_classes ?? 0}</Badge>
+                        <TableCell className="py-3 text-foreground text-xs sm:text-sm hidden md:table-cell">{s.email}</TableCell>
+                        <TableCell className="py-3 text-muted-foreground text-xs sm:text-sm hidden lg:table-cell">{s.phone || '—'}</TableCell>
+                        <TableCell className="py-3">
+                          <Badge variant="islamic" className="text-xs">{s.enrolled_classes ?? 0}</Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="gold">{s.average_grade ?? 'â€”'}</Badge>
+                        <TableCell className="py-3 hidden sm:table-cell">
+                          <Badge variant="gold" className="text-xs">{s.average_grade ?? '—'}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>

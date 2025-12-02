@@ -512,15 +512,16 @@ export default function TeachersPage() {
           </Button>
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
+        {/* ✨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 animate-fade-in-up -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
           {/* Total Teachers */}
-          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 group h-full">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
+              <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 {t('totalTeachers')}
               </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
                 <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
@@ -531,14 +532,16 @@ export default function TeachersPage() {
               </p>
             </CardContent>
           </Card>
+          </div>
           
           {/* Active Teachers */}
-          <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group">
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-success/30 transition-all duration-300 group h-full">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
+              <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 {t('activeTeachers')}
               </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
                 <Activity className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
@@ -547,14 +550,16 @@ export default function TeachersPage() {
               <p className="text-xs text-muted-foreground mt-1">{t('last30Days')}</p>
             </CardContent>
           </Card>
+          </div>
           
           {/* New Teachers This Month */}
-          <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group">
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-info/30 transition-all duration-300 group h-full">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
+              <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 {t('newTeachersThisMonth')}
               </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+              <div className="p-2.5 bg-gradient-to-br from-info to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
@@ -563,14 +568,16 @@ export default function TeachersPage() {
               <p className="text-xs text-muted-foreground mt-1">{t('thisMonth')}</p>
             </CardContent>
           </Card>
+          </div>
           
           {/* Teachers By Language */}
-          <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group">
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-accent/30 transition-all duration-300 group h-full">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
+              <CardTitle className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                 {t('teachersByLanguage')}
               </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform">
+              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
                 <Globe className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
@@ -594,6 +601,7 @@ export default function TeachersPage() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
 
         {/* ✨ Search and Filter Card - Islamic Design */}
@@ -701,17 +709,17 @@ export default function TeachersPage() {
                 <div className="mt-6 h-1 w-24 mx-auto bg-gradient-to-r from-transparent via-secondary to-transparent rounded-full" />
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <Table className="min-w-[800px] md:min-w-0">
                   <TableHeader>
                     <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10 hover:bg-gradient-to-l hover:from-primary/10 hover:to-secondary/10">
-                      <TableHead className="font-bold text-foreground">{t('teacher')}</TableHead>
-                      <TableHead className="font-bold text-foreground">{t('email')}</TableHead>
-                      <TableHead className="font-bold text-foreground">{t('phone')}</TableHead>
-                      <TableHead className="font-bold text-foreground">{t('classesCount')}</TableHead>
-                      <TableHead className="font-bold text-foreground">{t('studentsCount')}</TableHead>
-                      <TableHead className="font-bold text-foreground">{t('languagePreference')}</TableHead>
-                      <TableHead className="font-bold text-foreground text-center">{t('actions')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm">{t('teacher')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden md:table-cell">{t('email')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden lg:table-cell">{t('phone')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm">{t('classesCount')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm">{t('studentsCount')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden lg:table-cell">{t('languagePreference')}</TableHead>
+                      <TableHead className="font-bold text-foreground text-center text-xs sm:text-sm">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -722,38 +730,39 @@ export default function TeachersPage() {
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
                         {/* Teacher with Avatar */}
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all">
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-secondary/30 group-hover:ring-primary/50 transition-all flex-shrink-0">
                               <AvatarImage src={teacher.avatar_url || ''} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold text-xs sm:text-sm">
                                 {teacher.full_name?.charAt(0).toUpperCase() || 'T'}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-semibold text-foreground">{teacher.full_name}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-foreground text-sm sm:text-base truncate">{teacher.full_name}</div>
                               <div className="text-xs text-muted-foreground">{t('teacher')}</div>
+                              <div className="text-xs text-muted-foreground md:hidden mt-0.5 truncate">{teacher.email}</div>
                             </div>
                           </div>
                         </TableCell>
 
                         {/* Email */}
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="p-1.5 bg-primary/10 rounded-lg">
-                              <Mail className="h-4 w-4 text-primary" />
+                        <TableCell className="py-3 hidden md:table-cell">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <div className="p-1.5 bg-primary/10 rounded-lg flex-shrink-0">
+                              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                             </div>
-                            <span className="text-foreground">{teacher.email}</span>
+                            <span className="text-foreground truncate">{teacher.email}</span>
                           </div>
                         </TableCell>
 
                         {/* Phone */}
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
+                        <TableCell className="py-3 hidden lg:table-cell">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
                             {teacher.phone ? (
                               <>
-                                <div className="p-1.5 bg-accent/10 rounded-lg">
-                                  <Phone className="h-4 w-4 text-accent" />
+                                <div className="p-1.5 bg-accent/10 rounded-lg flex-shrink-0">
+                                  <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
                                 </div>
                                 <span className="text-foreground">{teacher.phone}</span>
                               </>

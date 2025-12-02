@@ -328,11 +328,16 @@ export default function SubjectLessonsPage() {
       if (profile?.id) {
         try {
           // Check if auto_publish is enabled for this subject
-          const { data: subjectData } = await supabase
+          const { data: subjectData, error: subjectError } = await supabase
             .from('class_subjects')
             .select('auto_publish_certificates')
             .eq('id', currentSubjectId)
             .single();
+          
+          if (subjectError) {
+            console.warn('Error fetching subject data for certificate eligibility:', subjectError);
+            return;
+          }
           
           if (subjectData?.auto_publish_certificates) {
             // Check if certificate already exists
@@ -342,12 +347,23 @@ export default function SubjectLessonsPage() {
               .eq('student_id', profile.id)
               .eq('subject_id', currentSubjectId);
             
-            if (!certError && (!existingCerts || existingCerts.length === 0)) {
+            if (certError) {
+              console.warn('Error checking existing certificates:', certError);
+              return;
+            }
+            
+            if (!existingCerts || existingCerts.length === 0) {
               // Check eligibility
-              const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+              const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
                 p_student_id: profile.id,
                 p_subject_id: currentSubjectId,
               });
+              
+              if (eligibilityError) {
+                // RPC function might not exist or there's an error - log it but don't break the page
+                console.warn('Error checking certificate eligibility (RPC may not exist):', eligibilityError);
+                return;
+              }
               
               if (eligibility && (eligibility as any).eligible) {
                 setCertificateEligibility(eligibility);
@@ -355,7 +371,8 @@ export default function SubjectLessonsPage() {
             }
           }
         } catch (err) {
-          console.error('Error checking certificate eligibility:', err);
+          // Silently handle errors - certificate eligibility is not critical for page functionality
+          console.warn('Error in certificate eligibility check:', err);
         }
       }
     } catch (e) {
@@ -530,9 +547,9 @@ export default function SubjectLessonsPage() {
     const lessonsToShow = lessonSearchQuery || lessonStatusFilter !== 'all' ? filteredLessons : lessons;
     
     return (
-      <div className="space-y-2" ref={sidebarRef}>
+      <div className="space-y-1.5 sm:space-y-2" ref={sidebarRef} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         {lessonsToShow.length === 0 ? (
-          <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-center py-6 sm:py-8 text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-left rtl:text-right">
             {language === 'ar' ? 'لا توجد دروس مطابقة' : 'No lessons found'}
           </div>
         ) : (
@@ -548,16 +565,16 @@ export default function SubjectLessonsPage() {
             key={lesson.id}
             onClick={() => handleLessonClick(idx, lesson.id)}
             className={cn(
-              "w-full text-left p-3 rounded-xl transition-all duration-200 border-2",
+              "w-full text-left rtl:text-right p-2.5 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-200 border-2",
               isActive 
                 ? "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 border-blue-500 dark:border-blue-600 shadow-md" 
                 : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
             )}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2 sm:gap-3 rtl:flex-row-reverse">
               {/* Lesson Number */}
               <div className={cn(
-                "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow transition-all",
+                "flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm shadow transition-all",
                 isActive && "bg-blue-500 text-white shadow-lg scale-110",
                 !isActive && isLessonCompleted && "bg-emerald-500 text-white",
                 !isActive && isLessonInProgress && "bg-blue-400 text-white",
@@ -568,9 +585,9 @@ export default function SubjectLessonsPage() {
 
               {/* Lesson Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-start gap-1.5 sm:gap-2 mb-1 rtl:flex-row-reverse">
                   <h4 className={cn(
-                    "font-semibold text-sm line-clamp-2 transition-colors flex-1",
+                    "font-semibold text-xs sm:text-sm line-clamp-2 transition-colors flex-1 text-left rtl:text-right",
                     isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-900 dark:text-white"
                   )}>
                     {lesson.title}
@@ -602,41 +619,41 @@ export default function SubjectLessonsPage() {
                       className="flex-shrink-0 cursor-pointer"
                     >
                       <Badge 
-                        className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer"
+                        className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-[10px] sm:text-xs shadow-sm hover:shadow-md hover:bg-purple-200 dark:hover:bg-purple-800 transition-all cursor-pointer flex items-center gap-0.5 sm:gap-1 rtl:flex-row-reverse"
                         title={language === 'ar' ? `${quizzesByLesson[lesson.id].length} اختبار متاح لهذا الدرس - اضغط للانتقال` : `${quizzesByLesson[lesson.id].length} quiz${quizzesByLesson[lesson.id].length > 1 ? 'zes' : ''} available - Click to go to quiz`}
                       >
-                        <GraduationCap className="h-3 w-3 mr-1" />
-                        {quizzesByLesson[lesson.id].length}
+                        <GraduationCap className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span>{quizzesByLesson[lesson.id].length}</span>
                       </Badge>
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 rtl:flex-row-reverse">
                   {isLessonCompleted ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Completed
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 rtl:flex-row-reverse">
+                      <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'مكتمل' : 'Completed'}</span>
                     </span>
                   ) : isLessonInProgress ? (
-                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                      <CircleDot className="h-3 w-3" />
-                      In Progress
+                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 rtl:flex-row-reverse">
+                      <CircleDot className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span>
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1">
-                      <CircleDot className="h-3 w-3" />
-                      Not Started
+                    <span className="flex items-center gap-1 rtl:flex-row-reverse">
+                      <CircleDot className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span>
                     </span>
                   )}
                 </div>
                 {/* Lesson Progress Bar */}
                 {lessonProgress && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">{lessonProgress.progress_percentage || 0}%</span>
+                  <div className="mt-1.5 sm:mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                      <span className="text-gray-500 dark:text-gray-400 text-left rtl:text-right">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300 text-left rtl:text-right">{lessonProgress.progress_percentage || 0}%</span>
                     </div>
-                    <Progress value={lessonProgress.progress_percentage || 0} className="h-1.5" />
+                    <Progress value={lessonProgress.progress_percentage || 0} className="h-1 sm:h-1.5" />
                   </div>
                 )}
               </div>
@@ -651,39 +668,39 @@ export default function SubjectLessonsPage() {
 
   return (
     <DashboardLayout>
-      <div className="animate-fade-in">
+      <div className="animate-fade-in px-2 sm:px-3 md:px-4 lg:px-0" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         {/* Certificate Eligibility Banner */}
         {certificateEligibility && (
-          <Card className="glass-card border-secondary/30 bg-gradient-to-r from-secondary/10 to-accent/10 mb-6 shadow-xl shadow-secondary/20 animate-fade-in-up">
-            <CardContent className="pt-6 relative overflow-hidden">
+          <Card className="glass-card border-secondary/30 bg-gradient-to-r from-secondary/10 to-accent/10 mb-3 sm:mb-4 md:mb-5 lg:mb-6 shadow-xl shadow-secondary/20 animate-fade-in-up">
+            <CardContent className="pt-3 sm:pt-4 md:pt-5 lg:pt-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 px-2.5 sm:px-3 md:px-4 lg:px-6 relative overflow-hidden">
               {/* Decorative Background */}
               <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
-              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl animate-pulse"></div>
+              <div className={cn("absolute -top-10 w-32 h-32 sm:w-48 sm:h-48 bg-secondary/20 rounded-full blur-3xl animate-pulse", language === 'ar' ? '-left-10' : '-right-10')}></div>
               
-              <div className="flex items-center justify-between gap-4 relative z-10">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="relative">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 relative z-10">
+                <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
+                  <div className="relative flex-shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-full blur-lg opacity-50 animate-pulse"></div>
-                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <Sparkles className="h-6 w-6 text-white" />
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center shadow-lg">
+                      <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-foreground mb-1 font-display">
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 font-display text-left rtl:text-right">
                       {language === 'ar' ? 'شهادة جاهزة للإصدار!' : 'Certificate Ready to Issue!'}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 text-left rtl:text-right leading-relaxed">
                       {language === 'ar' 
                         ? `تهانينا! لقد أكملت جميع الدروس والاختبارات في مادة ${subject?.subject_name || ''}. يمكنك الآن إصدار شهادتك مباشرة.`
                         : `Congratulations! You've completed all lessons and quizzes for ${subject?.subject_name || ''}. You can now issue your certificate.`
                       }
                     </p>
-                    <div className="flex items-center gap-4 text-xs">
-                      <Badge variant="gold" className="gap-1">
-                        <Award className="h-3 w-3" />
-                        {language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:gap-4 text-xs">
+                      <Badge variant="gold" className="gap-1 text-xs flex items-center rtl:flex-row-reverse">
+                        <Award className="h-3 w-3 flex-shrink-0" />
+                        <span className="text-left rtl:text-right">{language === 'ar' ? 'العلامة النهائية' : 'Final Score'}: {certificateEligibility.final_score ? parseFloat(certificateEligibility.final_score).toFixed(1) : '0.0'} / 100</span>
                       </Badge>
-                      <Badge variant="success" className="font-semibold">
+                      <Badge variant="success" className="font-semibold text-xs">
                         {certificateEligibility.grade || '-'}
                       </Badge>
                     </div>
@@ -691,7 +708,7 @@ export default function SubjectLessonsPage() {
                 </div>
                 <Button
                   variant="default"
-                  className="whitespace-nowrap hover:scale-105 transition-transform"
+                  className="whitespace-nowrap hover:scale-105 transition-transform w-full sm:w-auto h-9 sm:h-10 text-xs sm:text-sm flex items-center rtl:flex-row-reverse justify-center"
                   onClick={async () => {
                     try {
                       setIssuingCertificate(true);
@@ -715,14 +732,14 @@ export default function SubjectLessonsPage() {
                 >
                   {issuingCertificate ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}
+                      <Loader2 className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}</span>
                     </>
                   ) : (
                     <>
-                      <Award className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'إصدار الشهادة' : 'Issue Certificate'}
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                      <Award className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'إصدار الشهادة' : 'Issue Certificate'}</span>
+                      <ArrowRight className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'mr-1.5 sm:mr-2 ml-0 rotate-180' : 'ml-1.5 sm:ml-2')} />
                     </>
                   )}
                 </Button>
@@ -732,28 +749,62 @@ export default function SubjectLessonsPage() {
         )}
 
         {/* Mobile Header */}
-        <div className="lg:hidden mb-4 flex items-center justify-between animate-fade-in-up">
+        <div className="lg:hidden mb-2 sm:mb-3 flex items-center justify-between gap-2 animate-fade-in-up">
           <Button 
             variant="outline"
             size="sm"
             onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
-            className="border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+            className="border-primary/30 hover:bg-primary/5 hover:border-primary/50 h-8 sm:h-9 px-2 text-xs flex items-center rtl:flex-row-reverse flex-shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {language === 'ar' ? 'رجوع' : 'Back'}
+            <ArrowLeft className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1 mr-0 rotate-180' : 'mr-1')} />
+            <span className="hidden xs:inline text-left rtl:text-right">{language === 'ar' ? 'رجوع' : 'Back'}</span>
           </Button>
           
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5">
-                <Menu className="h-4 w-4 mr-2" />
-                {language === 'ar' ? 'الدروس' : 'Lessons'}
+              <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5 h-8 sm:h-9 px-2 text-xs flex items-center rtl:flex-row-reverse flex-1 sm:flex-none">
+                <Menu className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1 mr-0' : 'mr-1')} />
+                <span className="text-left rtl:text-right">{language === 'ar' ? 'الدروس' : 'Lessons'}</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-4">
-              <div className="mb-4">
-                <h2 className="text-lg font-bold text-foreground font-display">{subject.subject_name}</h2>
-                <p className="text-sm text-muted-foreground">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+            <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-[90vw] sm:w-80 p-3 sm:p-4 overflow-y-auto" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+              <div className="mb-3 sm:mb-4 sticky top-0 bg-background z-10 pb-2 border-b">
+                <h2 className="text-sm sm:text-base font-bold text-foreground font-display text-left rtl:text-right mb-1">{subject.subject_name}</h2>
+                <p className="text-xs text-muted-foreground text-left rtl:text-right">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                {/* Search and Filter in Sheet */}
+                <div className="space-y-2 mt-3">
+                  <div className="relative">
+                    <Search className={cn("absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary", language === 'ar' ? 'right-2' : 'left-2')} />
+                    <Input
+                      placeholder={language === 'ar' ? 'بحث...' : 'Search...'}
+                      value={lessonSearchQuery}
+                      onChange={(e) => setLessonSearchQuery(e.target.value)}
+                      className={cn("h-8 text-xs", language === 'ar' ? 'pr-8 pl-2' : 'pl-8 pr-2')}
+                    />
+                    {lessonSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("absolute top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive", language === 'ar' ? 'left-1' : 'right-1')}
+                        onClick={() => setLessonSearchQuery('')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <Select value={lessonStatusFilter} onValueChange={(v) => setLessonStatusFilter(v as any)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <Filter className={cn("h-3 w-3", language === 'ar' ? 'ml-1.5 mr-0' : 'mr-1.5')} />
+                      <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ar' ? 'جميع الدروس' : 'All Lessons'}</SelectItem>
+                      <SelectItem value="completed">{language === 'ar' ? 'مكتملة' : 'Completed'}</SelectItem>
+                      <SelectItem value="in_progress">{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</SelectItem>
+                      <SelectItem value="not_started">{language === 'ar' ? 'لم تبدأ' : 'Not Started'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <LessonSidebar />
             </SheetContent>
@@ -761,78 +812,86 @@ export default function SubjectLessonsPage() {
         </div>
 
         {/* Subject Header - Mobile Only */}
-        <div className="lg:hidden relative overflow-hidden rounded-3xl p-6 mb-6 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-2xl shadow-primary/20 animate-fade-in-up">
+        <div className="lg:hidden relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 mb-3 sm:mb-4 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-xl shadow-primary/20 animate-fade-in-up">
           {/* Background Pattern */}
           <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-secondary/30 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
+          <div className={cn("absolute -top-8 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full blur-3xl animate-float", language === 'ar' ? '-left-8' : '-right-8')}></div>
+          <div className={cn("absolute -bottom-8 w-24 h-24 sm:w-32 sm:h-32 bg-secondary/30 rounded-full blur-3xl animate-float", language === 'ar' ? '-right-8' : '-left-8')} style={{animationDelay: '1s'}}></div>
           
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2.5 sm:gap-3 mb-2.5 sm:mb-3">
               {/* Subject Image */}
               {subject.image_url ? (
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-2xl blur-sm opacity-75"></div>
-                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-secondary/50 flex-shrink-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary to-accent rounded-lg sm:rounded-xl blur-sm opacity-75"></div>
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-secondary/50 flex-shrink-0 shadow-lg">
                     <img src={subject.image_url} alt={subject.subject_name} className="w-full h-full object-cover" />
                   </div>
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="absolute inset-0 bg-white/20 rounded-2xl blur-md"></div>
-                  <div className="relative w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-secondary/50 shadow-lg">
-                    <BookOpen className="h-8 w-8 text-white" />
+                  <div className="absolute inset-0 bg-white/20 rounded-lg sm:rounded-xl blur-md"></div>
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-secondary/50 shadow-lg">
+                    <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
                   </div>
                 </div>
               )}
-              <div className="flex-1">
-                <h1 className="text-2xl font-display font-bold mb-1 drop-shadow-lg">{subject.subject_name}</h1>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl font-display font-bold mb-0.5 sm:mb-1 drop-shadow-lg text-left rtl:text-right line-clamp-2">{subject.subject_name}</h1>
                 {subject.teacher?.full_name && (
-                  <div className="flex items-center gap-2 text-sm text-white/95 mb-1">
-                    <User className="h-3.5 w-3.5" />
-                    <span>{subject.teacher.full_name}</span>
+                  <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-white/95 mb-0.5 rtl:flex-row-reverse">
+                    <User className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                    <span className="truncate text-left rtl:text-right">{subject.teacher.full_name}</span>
                   </div>
                 )}
-                <p className="text-sm text-white/95">{language === 'ar' ? 'الدرس' : 'Lesson'} {activeLessonIndex + 1} {language === 'ar' ? 'من' : 'of'} {lessons.length}</p>
+                <p className="text-[10px] sm:text-xs text-white/95 text-left rtl:text-right">{language === 'ar' ? 'الدرس' : 'Lesson'} {activeLessonIndex + 1} {language === 'ar' ? 'من' : 'of'} {lessons.length}</p>
               </div>
             </div>
             
-            {/* Subject Description */}
+            {/* Subject Description - Collapsible on Mobile */}
             {subject.description && (
-              <div className="mb-3 pb-3 border-b border-white/30">
-                <p className="text-sm text-white/95 leading-relaxed">{subject.description}</p>
-              </div>
+              <details className="mb-2 sm:mb-2.5">
+                <summary className="text-[10px] sm:text-xs font-medium text-white/90 cursor-pointer list-none pb-1.5 border-b border-white/30 text-left rtl:text-right">
+                  {language === 'ar' ? 'الوصف' : 'Description'}
+                </summary>
+                <p className="text-[10px] sm:text-xs text-white/95 leading-relaxed mt-1.5 text-left rtl:text-right">{subject.description}</p>
+              </details>
             )}
             
-            {/* Objectives */}
+            {/* Objectives - Collapsible on Mobile */}
             {subject.objectives && subject.objectives.length > 0 && (
-              <div className="mb-3 pb-3 border-b border-white/30">
-                <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  {language === 'ar' ? 'الأهداف:' : 'Objectives:'}
-                </p>
-                <ul className="space-y-1.5">
-                  {subject.objectives.map((obj: string, idx: number) => (
-                    <li key={idx} className="text-sm text-white/95 flex items-start gap-2">
-                      <span className="text-secondary mt-0.5">✦</span>
-                      <span>{obj}</span>
+              <details className="mb-2 sm:mb-2.5">
+                <summary className="text-[10px] sm:text-xs font-semibold text-white cursor-pointer list-none pb-1.5 border-b border-white/30 flex items-center gap-1.5 text-left rtl:text-right rtl:flex-row-reverse">
+                  <Target className="h-3 w-3 flex-shrink-0" />
+                  {language === 'ar' ? 'الأهداف' : 'Objectives'}
+                </summary>
+                <ul className="space-y-1 mt-1.5">
+                  {subject.objectives.slice(0, 3).map((obj: string, idx: number) => (
+                    <li key={idx} className="text-[10px] sm:text-xs text-white/95 flex items-start gap-1.5 text-left rtl:text-right rtl:flex-row-reverse">
+                      <span className="text-secondary mt-0.5 flex-shrink-0">✦</span>
+                      <span className="line-clamp-2">{obj}</span>
                     </li>
                   ))}
+                  {subject.objectives.length > 3 && (
+                    <li className="text-[10px] sm:text-xs text-white/80 text-left rtl:text-right">
+                      {language === 'ar' ? `+ ${subject.objectives.length - 3} أهداف أخرى` : `+ ${subject.objectives.length - 3} more`}
+                    </li>
+                  )}
                 </ul>
-              </div>
+              </details>
             )}
             
             {/* Reference URL */}
             {subject.reference_url && (
-              <div>
+              <div className="mt-2">
                 <a
                   href={subject.reference_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-white hover:text-secondary flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2.5 inline-flex transition-all hover:bg-white/30 border border-white/20 hover:border-secondary/50"
+                  className="text-[10px] sm:text-xs text-white hover:text-secondary flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 inline-flex transition-all hover:bg-white/30 border border-white/20 hover:border-secondary/50 rtl:flex-row-reverse"
                 >
-                  <ExternalLink className="h-4 w-4" />
-                  {language === 'ar' ? 'المرجع' : 'Reference'}
+                  <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                  <span className="text-left rtl:text-right">{language === 'ar' ? 'المرجع' : 'Reference'}</span>
                 </a>
               </div>
             )}
@@ -840,7 +899,7 @@ export default function SubjectLessonsPage() {
         </div>
 
         {/* Main Layout: Split View */}
-        <div className="grid lg:grid-cols-[320px_1fr] gap-6">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-4 sm:gap-5 md:gap-6">
           {/* Sidebar - Desktop */}
           <div className="hidden lg:block">
             <div className="sticky top-24 space-y-4">
@@ -849,13 +908,13 @@ export default function SubjectLessonsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => router.push(`/dashboard/my-classes/${safeClassId}`)}
-                  className="mb-3 border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  className="mb-3 border-primary/30 hover:bg-primary/5 hover:border-primary/50 flex items-center rtl:flex-row-reverse"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {language === 'ar' ? 'رجوع' : 'Back to Subjects'}
+                  <ArrowLeft className={cn("h-4 w-4", language === 'ar' ? 'ml-2 mr-0 rotate-180' : 'mr-2')} />
+                  <span className="text-left rtl:text-right">{language === 'ar' ? 'رجوع' : 'Back to Subjects'}</span>
                 </Button>
-                <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/10">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/10" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                  <div className="flex items-center gap-3 mb-3 rtl:flex-row-reverse">
                     {/* Subject Image */}
                     {subject.image_url ? (
                       <div className="relative">
@@ -869,36 +928,36 @@ export default function SubjectLessonsPage() {
                         <BookOpen className="h-6 w-6 text-white" />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <h3 className="font-bold text-foreground text-sm font-display">{subject.subject_name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-foreground text-sm font-display text-left rtl:text-right">{subject.subject_name}</h3>
                       {subject.teacher?.full_name && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          <User className="h-3 w-3" />
-                          <span className="truncate">{subject.teacher.full_name}</span>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1 rtl:flex-row-reverse">
+                          <User className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate text-left rtl:text-right">{subject.teacher.full_name}</span>
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                      <p className="text-xs text-muted-foreground text-left rtl:text-right">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
                     </div>
                   </div>
                   
                   {/* Subject Description */}
                   {subject.description && (
                     <div className="mb-3">
-                      <p className="text-xs text-muted-foreground leading-relaxed">{subject.description}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed text-left rtl:text-right">{subject.description}</p>
                     </div>
                   )}
                   
                   {/* Objectives */}
                   {subject.objectives && subject.objectives.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-2">
-                        <Target className="h-3.5 w-3.5 text-primary" />
-                        {language === 'ar' ? 'الأهداف:' : 'Objectives:'}
+                      <p className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-2 text-left rtl:text-right rtl:flex-row-reverse">
+                        <Target className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                        <span>{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</span>
                       </p>
                       <ul className="space-y-1">
                         {subject.objectives.map((obj: string, idx: number) => (
-                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
-                            <span className="text-primary mt-0.5">✦</span>
+                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2 text-left rtl:text-right rtl:flex-row-reverse">
+                            <span className="text-primary mt-0.5 flex-shrink-0">✦</span>
                             <span>{obj}</span>
                           </li>
                         ))}
@@ -913,58 +972,58 @@ export default function SubjectLessonsPage() {
                         href={subject.reference_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-info hover:underline flex items-center gap-1"
+                        className="text-xs text-info hover:underline flex items-center gap-1 rtl:flex-row-reverse"
                       >
-                        <ExternalLink className="h-3 w-3" />
-                        {language === 'ar' ? 'المرجع' : 'Reference'}
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                        <span className="text-left rtl:text-right">{language === 'ar' ? 'المرجع' : 'Reference'}</span>
                       </a>
                     </div>
                   )}
                   {/* Subject Progress */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
-                      <span className="font-semibold text-foreground">{subjectProgress.percentage}%</span>
+                      <span className="text-muted-foreground text-left rtl:text-right">{language === 'ar' ? 'التقدم' : 'Progress'}</span>
+                      <span className="font-semibold text-foreground text-left rtl:text-right">{subjectProgress.percentage}%</span>
                     </div>
                     <Progress value={subjectProgress.percentage} className="h-2" />
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-success"></div>
-                        {subjectProgress.completed}
+                      <span className="flex items-center gap-1 rtl:flex-row-reverse">
+                        <div className="w-2 h-2 rounded-full bg-success flex-shrink-0"></div>
+                        <span className="text-left rtl:text-right">{subjectProgress.completed}</span>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-info"></div>
-                        {subjectProgress.inProgress}
+                      <span className="flex items-center gap-1 rtl:flex-row-reverse">
+                        <div className="w-2 h-2 rounded-full bg-info flex-shrink-0"></div>
+                        <span className="text-left rtl:text-right">{subjectProgress.inProgress}</span>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
-                        {subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress}
+                      <span className="flex items-center gap-1 rtl:flex-row-reverse">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground flex-shrink-0"></div>
+                        <span className="text-left rtl:text-right">{subjectProgress.total - subjectProgress.completed - subjectProgress.inProgress}</span>
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <Card className="glass-card border-primary/10 overflow-hidden">
-                <CardHeader className="pb-3 bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-                  <CardTitle className="text-sm font-semibold font-display">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
+              <Card className="glass-card border-primary/10 overflow-hidden" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <CardHeader className="pb-3 bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10 rtl:bg-gradient-to-r">
+                  <CardTitle className="text-sm font-semibold font-display text-left rtl:text-right">{language === 'ar' ? 'الدروس' : 'Lessons'}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   {/* Search and Filter */}
                   <div className="space-y-2 mt-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+                      <Search className={cn("absolute top-1/2 h-4 w-4 -translate-y-1/2 text-primary", language === 'ar' ? 'right-3' : 'left-3')} />
                       <Input
                         placeholder={language === 'ar' ? 'بحث في الدروس...' : 'Search lessons...'}
                         value={lessonSearchQuery}
                         onChange={(e) => setLessonSearchQuery(e.target.value)}
-                        className="input-modern pl-10 h-9 text-sm"
+                        className={cn("input-modern h-9 text-sm", language === 'ar' ? 'pr-10 pl-3' : 'pl-10 pr-3')}
                       />
                       {lessonSearchQuery && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
+                          className={cn("absolute top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive", language === 'ar' ? 'left-1' : 'right-1')}
                           onClick={() => setLessonSearchQuery('')}
                         >
                           <X className="h-3 w-3" />
@@ -973,7 +1032,7 @@ export default function SubjectLessonsPage() {
                     </div>
                     <Select value={lessonStatusFilter} onValueChange={(v) => setLessonStatusFilter(v as any)}>
                       <SelectTrigger className="input-modern h-9 text-sm">
-                        <Filter className="h-3.5 w-3.5 mr-2" />
+                        <Filter className={cn("h-3.5 w-3.5", language === 'ar' ? 'ml-2 mr-0' : 'mr-2')} />
                         <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -993,36 +1052,63 @@ export default function SubjectLessonsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="space-y-4">
+          <div className="space-y-2.5 sm:space-y-3 md:space-y-4 lg:space-y-6">
             {/* Lesson Header */}
             <div className="hidden lg:block">
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">
+              <div className="flex items-center justify-between mb-2 gap-3">
+                <h1 className="text-xl sm:text-2xl font-display font-bold text-gray-900 dark:text-white text-left rtl:text-right flex-1">
                   {activeLesson.title}
                 </h1>
                 <Badge className={cn(
-                  "ml-4",
+                  language === 'ar' ? 'ml-0 mr-4' : 'ml-4',
+                  isCompleted && "bg-emerald-500",
+                  isInProgress && "bg-blue-500",
+                  !progress && "bg-gray-400",
+                  "flex items-center gap-1 flex-shrink-0"
+                )}>
+                  {isCompleted ? (
+                    <><CheckCircle2 className="h-3 w-3" /> <span>{language === 'ar' ? 'مكتمل' : 'Completed'}</span></>
+                  ) : isInProgress ? (
+                    <><CircleDot className="h-3 w-3" /> <span>{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span></>
+                  ) : (
+                    <><CircleDot className="h-3 w-3" /> <span>{language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span></>
+                  )}
+                </Badge>
+              </div>
+              {activeLesson.description && (
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 text-left rtl:text-right">{activeLesson.description}</p>
+              )}
+            </div>
+            
+            {/* Mobile Lesson Header */}
+            <div className="lg:hidden">
+              <div className="flex items-start justify-between gap-2 mb-1.5 sm:mb-2">
+                <h1 className="text-base sm:text-lg md:text-xl font-display font-bold text-gray-900 dark:text-white text-left rtl:text-right flex-1 line-clamp-2">
+                  {activeLesson.title}
+                </h1>
+                <Badge className={cn(
+                  "flex items-center gap-0.5 sm:gap-1 flex-shrink-0 text-[10px] sm:text-xs",
                   isCompleted && "bg-emerald-500",
                   isInProgress && "bg-blue-500",
                   !progress && "bg-gray-400"
                 )}>
                   {isCompleted ? (
-                    <><CheckCircle2 className="h-3 w-3 mr-1" /> Completed</>
+                    <><CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> <span className="hidden xs:inline">{language === 'ar' ? 'مكتمل' : 'Completed'}</span></>
                   ) : isInProgress ? (
-                    <><CircleDot className="h-3 w-3 mr-1" /> In Progress</>
+                    <><CircleDot className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> <span className="hidden xs:inline">{language === 'ar' ? 'قيد التقدم' : 'In Progress'}</span></>
                   ) : (
-                    <><CircleDot className="h-3 w-3 mr-1" /> Not Started</>
+                    <><CircleDot className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> <span className="hidden xs:inline">{language === 'ar' ? 'لم يبدأ' : 'Not Started'}</span></>
                   )}
                 </Badge>
               </div>
               {activeLesson.description && (
-                <p className="text-gray-600 dark:text-gray-400">{activeLesson.description}</p>
+                <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 text-left rtl:text-right line-clamp-2">{activeLesson.description}</p>
               )}
             </div>
 
             {/* Video Player */}
             {embed && (
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-xl bg-black">
+              <div className="rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-lg sm:shadow-xl bg-black -mx-2 sm:mx-0">
                 <AspectRatio ratio={16 / 9}>
                   <iframe
                     src={embed}
@@ -1030,7 +1116,13 @@ export default function SubjectLessonsPage() {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     onLoad={() => handleVideoPlay(activeLesson.id)}
+                    onError={(e) => {
+                      // Silently handle iframe errors (usually from browser extensions)
+                      console.warn('Video iframe error (likely from browser extension):', e);
+                    }}
+                    title={activeLesson.title || 'Video Player'}
                   />
                 </AspectRatio>
               </div>
@@ -1038,39 +1130,39 @@ export default function SubjectLessonsPage() {
 
             {/* Lesson Actions */}
             <Card className="border-gray-200 dark:border-gray-800">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
+              <CardContent className="p-2.5 sm:p-3 md:p-4 lg:p-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-1 sm:flex-none">
                     <Button
                       variant="outline"
                       onClick={handlePrevious}
                       disabled={activeLessonIndex === 0}
-                      className="flex-1"
+                      className="flex-1 sm:flex-none h-8 sm:h-9 md:h-10 text-xs sm:text-sm flex items-center rtl:flex-row-reverse"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'السابق' : 'Previous'}
+                      <ChevronLeft className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4", language === 'ar' ? 'ml-1 sm:ml-1.5 mr-0 rotate-180' : 'mr-1 sm:mr-1.5')} />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'السابق' : 'Previous'}</span>
                     </Button>
                     <Button
                       variant="outline"
                       onClick={handleNext}
                       disabled={activeLessonIndex === lessons.length - 1}
-                      className="flex-1"
+                      className="flex-1 sm:flex-none h-8 sm:h-9 md:h-10 text-xs sm:text-sm flex items-center rtl:flex-row-reverse"
                     >
-                      {language === 'ar' ? 'التالي' : 'Next'}
-                      <ChevronRight className="h-4 w-4 ml-2" />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'التالي' : 'Next'}</span>
+                      <ChevronRight className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4", language === 'ar' ? 'mr-1 sm:mr-1.5 ml-0 rotate-180' : 'ml-1 sm:ml-1.5')} />
                     </Button>
                   </div>
                   {!isCompleted && embed && (
                     <Button
                       variant="default"
                       className={cn(
-                        "bg-gradient-to-r hover:opacity-90",
+                        "bg-gradient-to-r hover:opacity-90 h-8 sm:h-9 md:h-10 text-xs sm:text-sm flex items-center rtl:flex-row-reverse w-full sm:w-auto justify-center",
                         isInProgress ? "from-blue-600 to-cyan-600" : "from-gray-600 to-gray-700"
                       )}
                       onClick={() => handleMarkComplete(activeLesson.id)}
                     >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'تمييز كمكتمل' : 'Mark Complete'}
+                      <CheckCircle2 className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4", language === 'ar' ? 'ml-1 sm:ml-1.5 mr-0' : 'mr-1 sm:mr-1.5')} />
+                      <span className="text-left rtl:text-right">{language === 'ar' ? 'تمييز كمكتمل' : 'Mark Complete'}</span>
                     </Button>
                   )}
                 </div>
@@ -1081,61 +1173,61 @@ export default function SubjectLessonsPage() {
             <Card className="border-gray-200 dark:border-gray-800">
               <CardContent className="p-0">
                 <Tabs defaultValue="video" className="w-full">
-                  <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
-                    <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-                      <Video className="h-4 w-4 mr-2" />
-                      {language === 'ar' ? 'الفيديو' : 'Video'}
+                  <TabsList className="w-full justify-start rtl:justify-end rounded-none border-b bg-transparent p-0 h-auto overflow-x-auto scrollbar-none">
+                    <TabsTrigger value="video" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 flex items-center rtl:flex-row-reverse flex-shrink-0">
+                      <Video className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                      <span className="text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'الفيديو' : 'Video'}</span>
                     </TabsTrigger>
                     {hasAttachments && (
-                      <TabsTrigger value="resources" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-                        <FileText className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الموارد' : 'Resources'}
+                      <TabsTrigger value="resources" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 flex items-center rtl:flex-row-reverse flex-shrink-0">
+                        <FileText className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                        <span className="text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'الموارد' : 'Resources'}</span>
                       </TabsTrigger>
                     )}
                     {hasAssignments && (
-                      <TabsTrigger value="assignments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-                        <FileText className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الواجبات' : 'Assignments'}
+                      <TabsTrigger value="assignments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 flex items-center rtl:flex-row-reverse flex-shrink-0">
+                        <FileText className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                        <span className="text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'الواجبات' : 'Assignments'}</span>
                       </TabsTrigger>
                     )}
                     {(hasQuizzes || lessonQuizzes.length > 0) && (
-                      <TabsTrigger value="quizzes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-                        <GraduationCap className="h-4 w-4 mr-2" />
-                        {language === 'ar' ? 'الاختبارات' : 'Quizzes'}
+                      <TabsTrigger value="quizzes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-3 md:px-4 flex items-center rtl:flex-row-reverse flex-shrink-0">
+                        <GraduationCap className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
+                        <span className="text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'الاختبارات' : 'Quizzes'}</span>
                       </TabsTrigger>
                     )}
                   </TabsList>
 
                   {/* Video Tab */}
-                  <TabsContent value="video" className="p-6 space-y-4">
+                  <TabsContent value="video" className="p-2.5 sm:p-3 md:p-4 lg:p-6 space-y-2.5 sm:space-y-3 md:space-y-4">
                     {activeLesson.description && (
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{language === 'ar' ? 'الوصف' : 'Description'}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{activeLesson.description}</p>
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2.5 sm:p-3 md:p-4">
+                        <h3 className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-1 sm:mb-1.5 text-left rtl:text-right">{language === 'ar' ? 'الوصف' : 'Description'}</h3>
+                        <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 text-left rtl:text-right leading-relaxed">{activeLesson.description}</p>
                       </div>
                     )}
                     {/* Progress Bar for this lesson */}
                     {progress && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600 dark:text-gray-400">{language === 'ar' ? 'تقدم الدرس' : 'Lesson Progress'}</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">{progress.progress_percentage || 0}%</span>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] sm:text-xs md:text-sm">
+                          <span className="text-gray-600 dark:text-gray-400 text-left rtl:text-right">{language === 'ar' ? 'تقدم الدرس' : 'Lesson Progress'}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white text-left rtl:text-right">{progress.progress_percentage || 0}%</span>
                         </div>
-                        <Progress value={progress.progress_percentage || 0} className="h-2" />
+                        <Progress value={progress.progress_percentage || 0} className="h-1 sm:h-1.5 md:h-2" />
                       </div>
                     )}
                   </TabsContent>
 
                   {/* Resources Tab */}
                   {hasAttachments && (
-                    <TabsContent value="resources" className="p-6">
-                      <div className="space-y-4">
+                    <TabsContent value="resources" className="p-2.5 sm:p-3 md:p-4 lg:p-6">
+                      <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            {language === 'ar' ? 'موارد الدرس' : 'Lesson Resources'}
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2.5 sm:mb-3 md:mb-4 flex items-center gap-1.5 sm:gap-2 text-left rtl:text-right rtl:flex-row-reverse">
+                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>{language === 'ar' ? 'موارد الدرس' : 'Lesson Resources'}</span>
                           </h3>
-                          <div className="grid gap-3 md:grid-cols-2">
+                          <div className="grid gap-2 sm:gap-2.5 md:gap-3 md:grid-cols-2">
                             {(attachmentsByLesson[activeLesson.id] || []).map((att: any) => {
                       const type = (att.file_type || '').toLowerCase();
                       const isImage = type === 'image' || /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(att.file_url || '');
@@ -1146,25 +1238,25 @@ export default function SubjectLessonsPage() {
                           href={att.file_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-md transition-all group/att"
+                          className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-md transition-all group/att rtl:flex-row-reverse"
                         >
                           {isImage ? (
-                            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900 group-hover/att:bg-green-200 dark:group-hover/att:bg-green-800 transition-colors">
-                              <ImageIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 dark:bg-green-900 group-hover/att:bg-green-200 dark:group-hover/att:bg-green-800 transition-colors flex-shrink-0">
+                              <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
                             </div>
                           ) : isPdf ? (
-                            <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900 group-hover/att:bg-red-200 dark:group-hover/att:bg-red-800 transition-colors">
-                              <FileText className="h-4 w-4 text-red-600 dark:text-red-400" />
+                            <div className="p-1.5 sm:p-2 rounded-lg bg-red-100 dark:bg-red-900 group-hover/att:bg-red-200 dark:group-hover/att:bg-red-800 transition-colors flex-shrink-0">
+                              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
                             </div>
                           ) : (
-                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover/att:bg-gray-200 dark:group-hover/att:bg-gray-600 transition-colors">
-                              <FileText className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                            <div className="p-1.5 sm:p-2 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover/att:bg-gray-200 dark:group-hover/att:bg-gray-600 transition-colors flex-shrink-0">
+                              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-300" />
                             </div>
                           )}
-                          <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/att:text-blue-600 dark:group-hover/att:text-blue-400 truncate">
+                          <span className="flex-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/att:text-blue-600 dark:group-hover/att:text-blue-400 truncate text-left rtl:text-right">
                             {att.file_name || 'File'}
                           </span>
-                          <ExternalLink className="h-4 w-4 text-gray-400 opacity-0 group-hover/att:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 opacity-0 group-hover/att:opacity-100 transition-opacity flex-shrink-0" />
                         </a>
                       );
                     })}
@@ -1176,41 +1268,41 @@ export default function SubjectLessonsPage() {
 
                   {/* Assignments Tab */}
                   {hasAssignments && (
-                    <TabsContent value="assignments" className="p-6">
-                      <div className="space-y-4">
+                    <TabsContent value="assignments" className="p-2.5 sm:p-3 md:p-4 lg:p-6">
+                      <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            {language === 'ar' ? 'واجبات المادة' : 'Subject Assignments'}
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2.5 sm:mb-3 md:mb-4 flex items-center gap-1.5 sm:gap-2 text-left rtl:text-right rtl:flex-row-reverse">
+                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>{language === 'ar' ? 'واجبات المادة' : 'Subject Assignments'}</span>
                           </h3>
-                          <div className="grid gap-3 md:grid-cols-2">
+                          <div className="grid gap-2 sm:gap-2.5 md:gap-3 md:grid-cols-2">
                             {assignments.map((a: any) => {
                               const sub = submissions[a.id];
                               const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString() : '';
                               return (
-                                <div key={a.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{a.title}</h4>
-                                      <p className="text-xs text-muted-foreground">{dueStr && `${language === 'ar' ? 'موعد التسليم: ' : 'Due: '}${dueStr}`}</p>
+                                <div key={a.id} className="p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-1 text-left rtl:text-right">{a.title}</h4>
+                                      <p className="text-xs text-muted-foreground text-left rtl:text-right">{dueStr && `${language === 'ar' ? 'موعد التسليم: ' : 'Due: '}${dueStr}`}</p>
                                       {a.description && (
-                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
+                                        <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 sm:mt-2 line-clamp-2 text-left rtl:text-right">{a.description}</p>
                                       )}
+                                      <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
                                       {sub ? (
-                                        <div className="mt-2">
-                                          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{language === 'ar' ? 'تم التسليم' : 'Submitted'}</Badge>
+                                          <>
+                                            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs">{language === 'ar' ? 'تم التسليم' : 'Submitted'}</Badge>
                                           {sub.status === 'graded' && (
-                                            <Badge className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{sub.score}/{a.total_points}</Badge>
+                                              <Badge className={cn("bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs", language === 'ar' ? 'mr-0' : 'ml-0')}>{sub.score}/{a.total_points}</Badge>
                                           )}
-                                        </div>
+                                          </>
                                       ) : (
-                                        <div className="mt-2">
-                                          <Badge variant="outline">{language === 'ar' ? 'معلق' : 'Pending'}</Badge>
-                                        </div>
+                                          <Badge variant="outline" className="text-xs">{language === 'ar' ? 'معلق' : 'Pending'}</Badge>
                                       )}
                                     </div>
-                                    <div>
-                                      <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)}>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                      <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/assignments/${a.id}/submit`)} className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
                                         {sub ? (language === 'ar' ? 'عرض' : 'View') : (language === 'ar' ? 'تسليم' : 'Submit')}
                                       </Button>
                                     </div>
@@ -1226,26 +1318,26 @@ export default function SubjectLessonsPage() {
 
                   {/* Quizzes Tab */}
                   {(hasQuizzes || lessonQuizzes.length > 0) && (
-                    <TabsContent value="quizzes" className="p-6">
-                      <div className="space-y-6">
+                    <TabsContent value="quizzes" className="p-2.5 sm:p-3 md:p-4 lg:p-6">
+                      <div className="space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
                         {/* Lesson Quizzes */}
                         {lessonQuizzes.length > 0 && (
                           <div>
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50">
-                                <GraduationCap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 rtl:flex-row-reverse">
+                              <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex-shrink-0">
+                                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                               </div>
-                              <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-left rtl:text-right">
                                   {language === 'ar' ? 'اختبار الدرس' : 'Lesson Quiz'}
                                 </h3>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 text-left rtl:text-right">
                                   {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
                                   <span className="font-medium text-purple-600 dark:text-purple-400">{activeLesson.title}</span>
                                 </p>
                               </div>
                             </div>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-2.5 sm:gap-3 md:grid-cols-2">
                               {lessonQuizzes.map((q: any) => {
                                 const isActive = !q.end_at || new Date(q.end_at) > new Date();
                                 const isStarted = q.start_at && new Date(q.start_at) > new Date();
@@ -1260,60 +1352,60 @@ export default function SubjectLessonsPage() {
                                   <div 
                                     key={q.id} 
                                     className={cn(
-                                      "p-4 rounded-xl border-2 bg-white dark:bg-gray-800 hover:shadow-lg transition-all group",
+                                      "p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 bg-white dark:bg-gray-800 hover:shadow-lg transition-all group",
                                       isCompleted 
                                         ? "border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700" 
                                         : "border-purple-200 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-700"
                                     )}
                                   >
-                                    <div className="flex items-start justify-between gap-3 mb-3">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <h4 className="font-semibold text-gray-900 dark:text-white">{q.title}</h4>
-                                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs">
-                                            <GraduationCap className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'درس' : 'Lesson'}
+                                    <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                                          <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white text-left rtl:text-right">{q.title}</h4>
+                                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 rtl:flex-row-reverse flex-shrink-0">
+                                            <GraduationCap className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            <span>{language === 'ar' ? 'درس' : 'Lesson'}</span>
                                           </Badge>
                                           {isCompleted && (
-                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-xs">
-                                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                                              {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 rtl:flex-row-reverse flex-shrink-0">
+                                              <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                              <span>{language === 'ar' ? 'مكتمل' : 'Completed'}</span>
                                             </Badge>
                                           )}
                                         </div>
                                         {q.description && (
-                                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2 sm:mb-3 text-left rtl:text-right">
                                             {q.description}
                                           </p>
                                         )}
-                                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1.5 sm:mb-2">
                                           {q.time_limit_minutes && (
-                                            <div className="flex items-center gap-1">
-                                              <Clock className="h-3.5 w-3.5" />
-                                              <span>{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
+                                            <div className="flex items-center gap-1 rtl:flex-row-reverse">
+                                              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                                              <span className="text-left rtl:text-right">{q.time_limit_minutes} {language === 'ar' ? 'دقيقة' : 'min'}</span>
                                             </div>
                                           )}
                                           {q.attempts_allowed && (
-                                            <div className="flex items-center gap-1">
-                                              <FileText className="h-3.5 w-3.5" />
-                                              <span>
+                                            <div className="flex items-center gap-1 rtl:flex-row-reverse">
+                                              <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                                              <span className="text-left rtl:text-right">
                                                 {q.attempts_allowed} {language === 'ar' ? (q.attempts_allowed > 1 ? 'محاولات' : 'محاولة') : (q.attempts_allowed > 1 ? 'attempts' : 'attempt')}
                                               </span>
                                             </div>
                                           )}
                                         </div>
                                         {isCompleted && latestAttempt && (
-                                          <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
-                                            <div className="flex items-center justify-between">
-                                              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                          <div className="mt-1.5 sm:mt-2 p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                                            <div className="flex items-center justify-between gap-2 rtl:flex-row-reverse">
+                                              <span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 text-left rtl:text-right">
                                                 {language === 'ar' ? 'آخر نتيجة:' : 'Last Result:'}
                                               </span>
                                               {latestAttempt.score !== null && latestAttempt.score !== undefined ? (
-                                                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                                                <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 text-left rtl:text-right">
                                                   {latestAttempt.score}%
                                                 </span>
                                               ) : (
-                                                <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                <span className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 text-left rtl:text-right">
                                                   {latestAttempt.status === 'graded' 
                                                     ? (language === 'ar' ? 'تم التصحيح' : 'Graded')
                                                     : (language === 'ar' ? 'قيد التصحيح' : 'Pending')}
@@ -1321,14 +1413,14 @@ export default function SubjectLessonsPage() {
                                               )}
                                             </div>
                                             {latestAttempt.submitted_at && (
-                                              <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                              <div className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-1 text-left rtl:text-right">
                                                 {new Date(latestAttempt.submitted_at).toLocaleDateString()}
                                               </div>
                                             )}
                                           </div>
                                         )}
                                         {!isCompleted && hasRemainingAttempts && (
-                                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                          <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 text-left rtl:text-right">
                                             {language === 'ar' 
                                               ? `محاولات متبقية: ${remainingAttempts}` 
                                               : `Remaining attempts: ${remainingAttempts}`}
@@ -1336,9 +1428,10 @@ export default function SubjectLessonsPage() {
                                         )}
                                       </div>
                                     </div>
-                                    <div className="flex items-center justify-between pt-3 border-t border-purple-100 dark:border-purple-900">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-2 sm:pt-3 border-t border-purple-100 dark:border-purple-900">
                                       <Badge 
                                         className={cn(
+                                          "text-[10px] sm:text-xs flex items-center gap-1 rtl:flex-row-reverse justify-center sm:justify-start",
                                           isCompleted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && !isStarted ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
                                           isActive && isStarted ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
@@ -1347,23 +1440,23 @@ export default function SubjectLessonsPage() {
                                       >
                                         {isCompleted ? (
                                           <>
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مكتمل' : 'Completed'}
+                                            <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            <span className="text-left rtl:text-right">{language === 'ar' ? 'مكتمل' : 'Completed'}</span>
                                           </>
                                         ) : isActive && !isStarted ? (
                                           <>
-                                            <Play className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'متاح' : 'Available'}
+                                            <Play className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            <span className="text-left rtl:text-right">{language === 'ar' ? 'متاح' : 'Available'}</span>
                                           </>
                                         ) : isActive && isStarted ? (
                                           <>
-                                            <Calendar className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}
+                                            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            <span className="text-left rtl:text-right">{language === 'ar' ? 'يبدأ قريباً' : 'Starts Soon'}</span>
                                           </>
                                         ) : (
                                           <>
-                                            <Lock className="h-3 w-3 mr-1" />
-                                            {language === 'ar' ? 'مغلق' : 'Closed'}
+                                            <Lock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                            <span className="text-left rtl:text-right">{language === 'ar' ? 'مغلق' : 'Closed'}</span>
                                           </>
                                         )}
                                       </Badge>
@@ -1372,10 +1465,10 @@ export default function SubjectLessonsPage() {
                                           variant="outline" 
                                           size="sm" 
                                           onClick={() => router.push(`/dashboard/quizzes/${q.id}/result?classId=${safeClassId}&subjectId=${safeSubjectId}`)}
-                                          className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                          className="group-hover:scale-105 transition-transform border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 flex items-center rtl:flex-row-reverse w-full sm:w-auto"
                                         >
-                                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                                          {language === 'ar' ? 'عرض النتيجة' : 'View Results'}
+                                          <CheckCircle2 className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", language === 'ar' ? 'ml-1 sm:ml-1.5 mr-0' : 'mr-1 sm:mr-1.5')} />
+                                          <span className="text-left rtl:text-right">{language === 'ar' ? 'عرض النتيجة' : 'View Results'}</span>
                                         </Button>
                                       ) : (
                                         <Button 
@@ -1385,13 +1478,13 @@ export default function SubjectLessonsPage() {
                                           disabled={!hasRemainingAttempts}
                                           className={cn(
                                             hasRemainingAttempts && "bg-purple-600 hover:bg-purple-700 text-white",
-                                            "group-hover:scale-105 transition-transform"
+                                            "group-hover:scale-105 transition-transform h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 flex items-center rtl:flex-row-reverse w-full sm:w-auto"
                                           )}
                                         >
-                                          <Play className="h-3.5 w-3.5 mr-1.5" />
-                                          {hasRemainingAttempts 
+                                          <Play className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", language === 'ar' ? 'ml-1 sm:ml-1.5 mr-0' : 'mr-1 sm:mr-1.5')} />
+                                          <span className="text-left rtl:text-right">{hasRemainingAttempts 
                                             ? (language === 'ar' ? 'ابدأ الاختبار' : 'Start Quiz') 
-                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}
+                                            : (language === 'ar' ? 'لا توجد محاولات متبقية' : 'No Attempts Left')}</span>
                                         </Button>
                                       )}
                                     </div>
@@ -1405,21 +1498,21 @@ export default function SubjectLessonsPage() {
                         {/* Subject Quizzes */}
                         {hasQuizzes && (
                           <div>
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 rtl:flex-row-reverse">
+                              <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex-shrink-0">
+                                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                               </div>
-                              <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-left rtl:text-right">
                                   {language === 'ar' ? 'اختبار المادة' : 'Subject Quiz'}
                                 </h3>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 text-left rtl:text-right">
                                   {language === 'ar' ? 'اختبار لـ: ' : 'Quiz for: '}
                                   <span className="font-medium text-blue-600 dark:text-blue-400">{subject.subject_name}</span>
                                 </p>
                               </div>
                             </div>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-2.5 sm:gap-3 md:grid-cols-2">
                               {quizzes.map((q: any) => {
                                 const isActive = !q.end_at || new Date(q.end_at) > new Date();
                                 const isStarted = q.start_at && new Date(q.start_at) > new Date();
@@ -1584,13 +1677,13 @@ export default function SubjectLessonsPage() {
 
             {/* Subject Discussion */}
             <Card className="border-gray-200 dark:border-gray-800">
-              <CardHeader className="pb-2">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-xl font-semibold">
+              <CardHeader className="pb-2 px-2.5 sm:px-3 md:px-4 lg:px-6 pt-2.5 sm:pt-3 md:pt-4 lg:pt-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-left rtl:text-right">
                       {t('subjectDiscussion' as TranslationKey)}
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground text-left rtl:text-right mt-0.5 sm:mt-1">
                       {t('subjectDiscussionDescription' as TranslationKey)}
                     </p>
                   </div>
@@ -1598,12 +1691,13 @@ export default function SubjectLessonsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => router.push(`/dashboard/messages?subject=${safeSubjectId}`)}
+                    className="w-full sm:w-auto h-8 sm:h-9 text-xs sm:text-sm flex items-center rtl:flex-row-reverse justify-center mt-2 sm:mt-0"
                   >
-                    {t('viewAllDiscussions' as TranslationKey)}
+                    <span className="text-left rtl:text-right">{t('viewAllDiscussions' as TranslationKey)}</span>
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2.5 sm:px-3 md:px-4 lg:px-6 pb-2.5 sm:pb-3 md:pb-4 lg:pb-6">
                 {profile?.id && (
                   <SubjectDiscussion
                     subjectId={safeSubjectId}

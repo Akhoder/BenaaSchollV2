@@ -14,9 +14,10 @@ import { Mail, Phone, Calendar, School, BookOpen, Users, GraduationCap, ArrowLef
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TeacherProfile {
   id: string;
@@ -59,6 +60,7 @@ export default function TeacherProfilePage() {
   const router = useRouter();
   const { profile: currentProfile, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
+  const { setLabel } = useBreadcrumb();
   const teacherId = params.teacherId as string;
 
   const [teacher, setTeacher] = useState<TeacherProfile | null>(null);
@@ -70,6 +72,8 @@ export default function TeacherProfilePage() {
     totalSubjects: 0,
     totalStudents: 0,
   });
+
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!authLoading && teacherId) {
@@ -96,6 +100,11 @@ export default function TeacherProfilePage() {
       }
 
       setTeacher(teacherData as TeacherProfile);
+      
+      // Set breadcrumb label with teacher name instead of UUID
+      if (teacherData?.full_name) {
+        setLabel(teacherId, teacherData.full_name);
+      }
 
       // Load classes and subjects in parallel
       const [classSubjectsRes, classesRes, subjectsRes] = await Promise.all([
@@ -258,444 +267,312 @@ export default function TeacherProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Back Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push('/dashboard/teachers')}
-          className="mb-4 border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {language === 'ar' ? 'العودة إلى المعلمين' : 'Back to Teachers'}
-        </Button>
-
-        {/* Hero Section with Teacher Photo */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 shadow-xl shadow-primary/10 animate-fade-in-up">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 islamic-pattern-subtle opacity-10" />
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/10 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}} />
+      <div className="space-y-3 sm:space-y-4 md:space-y-6 -mx-4 sm:-mx-6 lg:-mx-8 px-3 sm:px-4 md:px-6 lg:px-8 pb-20" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        {/* Hero Banner - Mobile First */}
+        <div className="relative h-32 sm:h-40 md:h-48 lg:h-64 xl:h-80 w-full sm:w-[calc(100%+2rem)] md:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 bg-gradient-to-br from-primary/90 via-accent/80 to-secondary/90 rtl:bg-gradient-to-bl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/60 via-accent/50 to-secondary/60 rtl:from-secondary/60 rtl:via-accent/50 rtl:to-primary/60" />
+          <div className="absolute inset-0 islamic-pattern-subtle opacity-15" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/10" />
+          <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-20 md:h-24 lg:h-32 bg-gradient-to-t from-background via-background/95 to-transparent" />
           
-          <div className="relative p-8 md:p-12">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
-              {/* Teacher Photo - Large and Professional */}
-              <div className="relative flex-shrink-0 group">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/30 transition-colors" />
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-accent/40 rounded-full blur-xl opacity-50" />
-                
-                {/* Avatar with Border */}
-                <div className="relative">
-                  {teacher.avatar_url ? (
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-full blur-sm opacity-75" />
-                      <img
-                        src={teacher.avatar_url}
-                        alt={teacher.full_name}
-                        className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-2xl"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-full blur-sm opacity-75" />
-                      <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-white shadow-2xl relative">
-                        <AvatarFallback className="text-4xl md:text-5xl bg-gradient-to-br from-primary to-accent text-white font-bold">
-                          {teacher.full_name
-                            .split(' ')
-                            .map((n: string) => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
+          {/* Back Button - RTL Support */}
+        <Button
+            variant="ghost"
+          size="sm"
+            onClick={() => router.back()}
+            className="absolute top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 rtl:left-auto rtl:right-2 sm:rtl:right-3 md:rtl:right-4 lg:rtl:right-6 text-white hover:bg-white/20 hover:text-white z-10 backdrop-blur-sm h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 p-0"
+        >
+            <ArrowLeft className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5" />
+            <span className="sr-only">{language === 'ar' ? 'عودة' : 'Back'}</span>
+        </Button>
+        </div>
+
+        <div className="relative px-2 sm:px-3 md:px-4 lg:px-6 max-w-7xl mx-auto">
+          {/* Profile Header Content - Mobile First */}
+          <div className="flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 lg:gap-8 -mt-12 sm:-mt-16 md:-mt-20 lg:-mt-24 relative z-10 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
+            {/* Avatar */}
+            <div className="flex-shrink-0 mx-auto md:mx-0">
+              <div className="relative p-0.5 sm:p-1 md:p-1.5 bg-background rounded-full shadow-xl">
+                <Avatar className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 border-2 sm:border-3 md:border-4 border-background shadow-inner">
+                  <AvatarImage src={teacher.avatar_url} alt={teacher.full_name} className="object-cover" />
+                  <AvatarFallback className="text-2xl sm:text-3xl md:text-4xl bg-primary/10 text-primary font-bold">
+                    {teacher.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                    </div>
-                  )}
-                  
-                  {/* Status Badge */}
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 border-4 border-white rounded-full w-6 h-6 shadow-lg" />
+                <div className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 md:bottom-2 md:right-2 lg:bottom-3 lg:right-3 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 border-2 sm:border-3 md:border-4 border-background rounded-full" />
                 </div>
               </div>
 
-              {/* Teacher Info */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+            {/* Info - Mobile First with RTL */}
+            <div className={`flex-1 pt-0 sm:pt-1 md:pt-2 lg:pt-24 ${language === 'ar' ? 'text-right' : 'text-center md:text-left'}`}>
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-1.5 sm:mb-2 font-display leading-tight">
                       {teacher.full_name}
                     </h1>
-                    <Badge variant="default" className="text-sm px-3 py-1">
-                      <GraduationCap className="h-4 w-4 mr-1" />
-                      {language === 'ar' ? 'معلم' : 'Teacher'}
+              <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-3 md:mb-4 ${language === 'ar' ? 'justify-end' : 'justify-center md:justify-start'}`}>
+                <Badge variant="secondary" className="px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs md:text-sm font-medium">
+                  {teacher.specialization || (language === 'ar' ? 'معلم' : 'Teacher')}
                     </Badge>
-                    {teacher.gender && (
-                      <Badge variant="outline" className="text-sm px-3 py-1">
-                        <User className="h-3 w-3 mr-1" />
-                        {teacher.gender === 'male' ? (language === 'ar' ? 'ذكر' : 'Male') : (language === 'ar' ? 'أنثى' : 'Female')}
-                      </Badge>
-                    )}
+                {teacher.years_of_experience && (
+                  <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs md:text-sm text-muted-foreground bg-muted/50 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-1 rounded-full">
+                    <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 flex-shrink-0" />
+                    <span>{teacher.years_of_experience} {language === 'ar' ? 'سنوات' : 'Yrs'}</span>
                   </div>
-                  {teacher.specialization ? (
-                    <p className="text-muted-foreground text-lg font-medium">
-                      {teacher.specialization}
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground text-lg">
-                      {language === 'ar' ? 'معلم محترف في المدرسة' : 'Professional Teacher'}
-                    </p>
-                  )}
-                  {teacher.years_of_experience && (
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {teacher.years_of_experience} {language === 'ar' ? 'سنة خبرة' : 'years of experience'}
-                    </p>
                   )}
                 </div>
 
-                {/* Contact Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Mail className="h-4 w-4 text-primary" />
+              {/* Quick Actions - Mobile First */}
+              <div className={`flex items-center gap-1.5 sm:gap-2 md:gap-3 ${language === 'ar' ? 'justify-end' : 'justify-center md:justify-start'}`}>
+                <Button size="sm" className="gap-1 sm:gap-1.5 md:gap-2 shadow-sm text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-9 px-2 sm:px-3 md:px-4 flex items-center rtl:flex-row-reverse" onClick={() => window.location.href = `mailto:${teacher.email}`}>
+                  <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <span className="text-left rtl:text-right">{language === 'ar' ? 'تواصل' : 'Contact'}</span>
+                </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground mb-0.5">
-                        {language === 'ar' ? 'البريد الإلكتروني' : 'Email'}
-                      </p>
-                      <p className="text-sm font-medium truncate">{teacher.email}</p>
                     </div>
                   </div>
                   
-                  {teacher.phone && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Phone className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">
-                          {language === 'ar' ? 'الهاتف' : 'Phone'}
-                        </p>
-                        <p className="text-sm font-medium">{teacher.phone}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {teacher.address && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <MapPin className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">
-                          {language === 'ar' ? 'العنوان' : 'Address'}
-                        </p>
-                        <p className="text-sm font-medium truncate">{teacher.address}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {teacher.date_of_birth && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Calendar className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">
-                          {language === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}
-                        </p>
-                        <p className="text-sm font-medium">{formatDate(teacher.date_of_birth)}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Globe className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground mb-0.5">
-                        {language === 'ar' ? 'اللغة المفضلة' : 'Preferred Language'}
-                      </p>
-                      <p className="text-sm font-medium">{getLanguageLabel(teacher.language_preference)}</p>
-                    </div>
+          {/* Main Content Tabs - Mobile First */}
+          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="sticky top-14 sm:top-16 z-30 bg-background/95 backdrop-blur-sm pb-2 sm:pb-3 md:pb-4 pt-2 -mx-2 sm:-mx-2 md:-mx-3 px-2 sm:px-2 md:px-3">
+              <TabsList className="w-full justify-start rtl:justify-end h-auto p-0.5 sm:p-1 bg-muted/50 rounded-lg sm:rounded-xl overflow-x-auto flex-nowrap scrollbar-none">
+                <TabsTrigger value="overview" className="flex-1 min-w-[90px] sm:min-w-[100px] md:min-w-[110px] py-2 sm:py-2.5 px-2 sm:px-2.5 md:px-3 rounded-md sm:rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all text-[10px] sm:text-xs md:text-sm flex items-center justify-center rtl:flex-row-reverse gap-1 sm:gap-1.5 md:gap-2">
+                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'نظرة عامة' : 'Overview'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="classes" className="flex-1 min-w-[90px] sm:min-w-[100px] md:min-w-[110px] py-2 sm:py-2.5 px-2 sm:px-2.5 md:px-3 rounded-md sm:rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all text-[10px] sm:text-xs md:text-sm flex items-center justify-center rtl:flex-row-reverse gap-1 sm:gap-1.5 md:gap-2">
+                  <School className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'الفصول' : 'Classes'}</span>
+                  <Badge variant="secondary" className="h-3.5 sm:h-4 md:h-5 px-1 sm:px-1 md:px-1.5 text-[8px] sm:text-[9px] md:text-[10px] flex-shrink-0">{stats.totalClasses}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="subjects" className="flex-1 min-w-[90px] sm:min-w-[100px] md:min-w-[110px] py-2 sm:py-2.5 px-2 sm:px-2.5 md:px-3 rounded-md sm:rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all text-[10px] sm:text-xs md:text-sm flex items-center justify-center rtl:flex-row-reverse gap-1 sm:gap-1.5 md:gap-2">
+                  <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate text-left rtl:text-right whitespace-nowrap">{language === 'ar' ? 'المواد' : 'Subjects'}</span>
+                  <Badge variant="secondary" className="h-3.5 sm:h-4 md:h-5 px-1 sm:px-1 md:px-1.5 text-[8px] sm:text-[9px] md:text-[10px] flex-shrink-0">{stats.totalSubjects}</Badge>
+                </TabsTrigger>
+              </TabsList>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Calendar className="h-4 w-4 text-primary" />
+            <TabsContent value="overview" className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 animate-in fade-in-50 duration-500 mt-2 sm:mt-3 md:mt-4 lg:mt-6">
+              {/* Stats Grid - Mobile First */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4">
+                <div className="p-2.5 sm:p-3 md:p-3 lg:p-4 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/10 text-center">
+                  <div className="mx-auto w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full bg-primary/20 flex items-center justify-center mb-1 sm:mb-1.5 md:mb-2 text-primary">
+                    <School className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground mb-0.5">
-                        {language === 'ar' ? 'تاريخ الانضمام' : 'Joined'}
-                      </p>
-                      <p className="text-sm font-medium">{formatDate(teacher.created_at)}</p>
+                  <div className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-primary">{stats.totalClasses}</div>
+                  <div className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{language === 'ar' ? 'فصول' : 'Classes'}</div>
                     </div>
+                <div className="p-2.5 sm:p-3 md:p-3 lg:p-4 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/10 text-center">
+                  <div className="mx-auto w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full bg-accent/20 flex items-center justify-center mb-1 sm:mb-1.5 md:mb-2 text-accent">
+                    <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
                   </div>
+                  <div className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-accent">{stats.totalSubjects}</div>
+                  <div className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{language === 'ar' ? 'مواد' : 'Subjects'}</div>
                 </div>
+                <div className="p-2.5 sm:p-3 md:p-3 lg:p-4 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/10 text-center">
+                  <div className="mx-auto w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full bg-green-500/20 flex items-center justify-center mb-1 sm:mb-1.5 md:mb-2 text-green-600">
+                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
               </div>
-            </div>
+                  <div className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-green-600">{stats.totalStudents}</div>
+                  <div className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">{language === 'ar' ? 'طلاب' : 'Students'}</div>
           </div>
         </div>
 
-        {/* Bio & Qualifications Section */}
-        {(teacher.bio || teacher.qualifications || teacher.specialization) && (
-          <Card className="border-2">
-            <CardHeader className="border-b bg-muted/50">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                {language === 'ar' ? 'معلومات إضافية' : 'Additional Information'}
+              {/* Content Grid - Mobile First */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8" style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                {/* Main Column: Bio & Contact */}
+                <div className="md:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 order-2 md:order-1">
+                  <Card className="border-none shadow-sm bg-card">
+                    <CardHeader className="p-3 sm:p-4 md:p-5 lg:p-6">
+                      <CardTitle className="text-sm sm:text-base md:text-lg font-semibold flex items-center gap-1.5 sm:gap-2 text-left rtl:text-right">
+                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                        {language === 'ar' ? 'عن المعلم' : 'About Teacher'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {teacher.bio && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    {language === 'ar' ? 'نبذة عن المعلم' : 'About'}
-                  </h3>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    <CardContent className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
+                      {teacher.bio ? (
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-line text-left rtl:text-right">
                     {teacher.bio}
                   </p>
-                </div>
-              )}
-              
-              {teacher.specialization && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    {language === 'ar' ? 'التخصص' : 'Specialization'}
-                  </h3>
-                  <p className="text-sm text-foreground">
-                    {teacher.specialization}
-                  </p>
-                </div>
+                      ) : (
+                        <p className="text-sm sm:text-base text-muted-foreground italic text-left rtl:text-right">
+                          {language === 'ar' ? 'لا توجد نبذة متاحة.' : 'No biography available.'}
+                        </p>
               )}
               
               {teacher.qualifications && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                    <Award className="h-4 w-4" />
+                        <div className="pt-3 sm:pt-4 border-t border-border/50">
+                          <h4 className="text-xs sm:text-sm font-medium text-foreground mb-2 flex items-center gap-2 text-left rtl:text-right">
+                            <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent flex-shrink-0" />
                     {language === 'ar' ? 'المؤهلات' : 'Qualifications'}
-                  </h3>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                          </h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed text-left rtl:text-right">
                     {teacher.qualifications}
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
-          <StatCard
-            title={language === 'ar' ? 'الفصول' : 'Classes'}
-            value={stats.totalClasses}
-            description={`${language === 'ar' ? 'فصل دراسي' : 'class'}${stats.totalClasses !== 1 ? (language === 'ar' ? 'ات' : 'es') : ''}`}
-            icon={School}
-            gradient="from-primary to-accent"
-            color="primary"
-          />
-          <StatCard
-            title={language === 'ar' ? 'المواد' : 'Subjects'}
-            value={stats.totalSubjects}
-            description={`${language === 'ar' ? 'مادة دراسية' : 'subject'}${stats.totalSubjects !== 1 ? (language === 'ar' ? 'ات' : 's') : ''}`}
-            icon={BookOpen}
-            gradient="from-accent to-secondary"
-            color="accent"
-          />
-          <StatCard
-            title={language === 'ar' ? 'الطلاب' : 'Students'}
-            value={stats.totalStudents}
-            description={`${language === 'ar' ? 'طالب' : 'student'}${stats.totalStudents !== 1 ? (language === 'ar' ? 'ين' : 's') : ''}`}
-            icon={Users}
-            gradient="from-success to-primary"
-            color="success"
-          />
         </div>
 
-        {/* Classes Section - Enhanced */}
-        {classes.length > 0 && (
-          <Card className="glass-card border-primary/10 animate-fade-in-up">
-            <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
-                  <School className="h-5 w-5 text-white" />
-                </div>
-                {language === 'ar' ? 'الفصول التي يدرسها' : 'Classes Taught'}
-                <Badge variant="gold" className="ml-auto">
-                  {classes.length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {classes.map((cls, index) => (
-                  <Card
-                    key={cls.id}
-                    className="glass-card-hover cursor-pointer border-primary/10 transition-all group overflow-hidden"
-                    onClick={() => router.push(`/dashboard/classes`)}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="relative">
-                      {cls.image_url ? (
-                        <div className="relative h-32 overflow-hidden">
-                          <img
-                            src={cls.image_url}
-                            alt={cls.class_name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                {/* Sidebar Column: Details - Mobile First */}
+                <div className="space-y-3 sm:space-y-4 md:space-y-6 order-1 md:order-2">
+                  <Card className="border-none shadow-sm bg-muted/30">
+                    <CardHeader className="p-3 sm:p-4 md:p-5 lg:p-6 pb-2">
+                      <CardTitle className="text-xs sm:text-sm md:text-base font-semibold text-left rtl:text-right">
+                        {language === 'ar' ? 'معلومات التواصل' : 'Contact Info'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 space-y-2.5 sm:space-y-3 md:space-y-4">
+                      <div className="flex items-start gap-2 sm:gap-3 rtl:flex-row-reverse">
+                        <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground mt-0.5 sm:mt-1 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 text-left rtl:text-right">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{language === 'ar' ? 'البريد' : 'Email'}</p>
+                          <p className="text-xs sm:text-sm font-medium break-all">{teacher.email}</p>
                         </div>
-                      ) : (
-                        <div className="h-32 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                          <School className="h-12 w-12 text-primary/50" />
+                      </div>
+                      {teacher.phone && (
+                        <div className="flex items-start gap-2 sm:gap-3 rtl:flex-row-reverse">
+                          <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground mt-0.5 sm:mt-1 flex-shrink-0" />
+                          <div className="flex-1 min-w-0 text-left rtl:text-right">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{language === 'ar' ? 'الهاتف' : 'Phone'}</p>
+                            <p className="text-xs sm:text-sm font-medium">{teacher.phone}</p>
+                          </div>
                         </div>
                       )}
-                      <div className="absolute top-3 right-3">
-                        <Badge variant="islamic" className="backdrop-blur-sm">
-                          {language === 'ar' ? 'المستوى' : 'Lv.'} {cls.level}
+                      {teacher.address && (
+                        <div className="flex items-start gap-2 sm:gap-3 rtl:flex-row-reverse">
+                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground mt-0.5 sm:mt-1 flex-shrink-0" />
+                          <div className="flex-1 min-w-0 text-left rtl:text-right">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{language === 'ar' ? 'العنوان' : 'Address'}</p>
+                            <p className="text-xs sm:text-sm font-medium">{teacher.address}</p>
+                          </div>
+                </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-none shadow-sm bg-muted/30">
+                    <CardHeader className="p-3 sm:p-4 md:p-5 lg:p-6 pb-2">
+                      <CardTitle className="text-xs sm:text-sm md:text-base font-semibold text-left rtl:text-right">
+                        {language === 'ar' ? 'معلومات إضافية' : 'Details'}
+              </CardTitle>
+            </CardHeader>
+                    <CardContent className="px-3 sm:px-4 md:px-5 lg:px-6 pb-3 sm:pb-4 md:pb-5 lg:pb-6 space-y-2.5 sm:space-y-3 md:space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground text-left rtl:text-right">{language === 'ar' ? 'تاريخ الانضمام' : 'Joined'}</span>
+                        <span className="text-xs sm:text-sm font-medium text-left rtl:text-right">{formatDate(teacher.created_at)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground text-left rtl:text-right">{language === 'ar' ? 'اللغة' : 'Language'}</span>
+                        <span className="text-xs sm:text-sm font-medium text-left rtl:text-right">{getLanguageLabel(teacher.language_preference)}</span>
+                      </div>
+                      {teacher.gender && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground text-left rtl:text-right">{language === 'ar' ? 'الجنس' : 'Gender'}</span>
+                          <span className="text-xs sm:text-sm font-medium capitalize text-left rtl:text-right">
+                            {teacher.gender === 'male' 
+                              ? (language === 'ar' ? 'ذكر' : 'Male') 
+                              : (language === 'ar' ? 'أنثى' : 'Female')}
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="classes" className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in-50 duration-500 mt-2 sm:mt-3 md:mt-4 lg:mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4" style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                {classes.map((cls) => (
+                  <Card
+                    key={cls.id}
+                    className="group cursor-pointer hover:shadow-md transition-all duration-300 border-border/50 overflow-hidden active:scale-[0.98]"
+                    onClick={() => router.push(`/dashboard/classes`)}
+                  >
+                    <div className="relative h-28 sm:h-32 md:h-36 lg:h-32 bg-muted">
+                      {cls.image_url ? (
+                        <img src={cls.image_url} alt={cls.class_name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+                          <School className="h-10 w-10 sm:h-12 sm:w-12 text-primary/20" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 rtl:right-auto rtl:left-2">
+                        <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-[10px] sm:text-xs px-2 py-0.5">
+                          {language === 'ar' ? 'مستوى' : 'Lvl'} {cls.level}
                         </Badge>
                       </div>
                     </div>
-                    <CardContent className="pt-4">
-                      <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-                        {cls.class_name}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Users className="h-4 w-4 text-success" />
+                    <CardContent className="p-3 sm:p-3.5 md:p-4">
+                      <h3 className="font-bold text-sm sm:text-base md:text-lg mb-1.5 sm:mb-2 group-hover:text-primary transition-colors line-clamp-1 text-left rtl:text-right">{cls.class_name}</h3>
+                      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 text-[10px] sm:text-xs md:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 sm:gap-1.5">
+                          <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
                           <span className="font-medium">{cls.student_count}</span>
-                          <span className="text-xs">{language === 'ar' ? 'طالب' : 'students'}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <BookOpen className="h-4 w-4 text-accent" />
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-1.5">
+                          <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
                           <span className="font-medium">{cls.subject_count}</span>
-                          <span className="text-xs">{language === 'ar' ? 'مادة' : 'subjects'}</span>
-                        </span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+                {classes.length === 0 && (
+                  <div className="col-span-full py-8 sm:py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                    <School className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 opacity-20" />
+                    <p className="text-sm sm:text-base">{language === 'ar' ? 'لا توجد فصول مسجلة' : 'No classes found'}</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+                )}
+              </div>
+            </TabsContent>
 
-        {/* Subjects Section - Enhanced */}
-        {subjects.length > 0 && (
-          <Card className="glass-card border-primary/10 animate-fade-in-up">
-            <CardHeader className="bg-gradient-to-l from-accent/5 to-primary/5 border-b border-primary/10">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg">
-                  <BookOpen className="h-5 w-5 text-white" />
-                </div>
-                {language === 'ar' ? 'المواد التي يدرسها' : 'Subjects Taught'}
-                <Badge variant="gold" className="ml-auto">
-                  {subjects.length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-                      <TableHead className="font-semibold">{language === 'ar' ? 'اسم المادة' : 'Subject Name'}</TableHead>
-                      <TableHead className="font-semibold">{language === 'ar' ? 'الفصل' : 'Class'}</TableHead>
-                      <TableHead className="font-semibold">{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
-                      <TableHead className="text-right font-semibold">{language === 'ar' ? 'الإجراءات' : 'Actions'}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject, index) => {
-                      // Determine the correct route based on user role
-                      const handleSubjectClick = () => {
+            <TabsContent value="subjects" className="space-y-3 sm:space-y-4 md:space-y-6 animate-in fade-in-50 duration-500 mt-2 sm:mt-3 md:mt-4 lg:mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4" style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                {subjects.map((subject) => (
+                  <Card 
+                    key={subject.id} 
+                    className="group cursor-pointer hover:shadow-md transition-all duration-300 border-border/50 active:scale-[0.98]"
+                    onClick={() => {
                         if (currentProfile?.role === 'student') {
-                          // Students go to my-classes view
                           router.push(`/dashboard/my-classes/${subject.class_id}/subjects/${subject.id}`);
                         } else {
-                          // Teachers and admins go to lessons management
                           router.push(`/dashboard/subjects/${subject.id}/lessons`);
                         }
-                      };
-
-                      return (
-                        <TableRow 
-                          key={subject.id}
-                          className="hover:bg-primary/5 cursor-pointer transition-colors animate-fade-in-up"
-                          onClick={handleSubjectClick}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-primary" />
-                              {subject.subject_name}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <School className="h-4 w-4 text-primary" />
-                              {subject.class_name}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={subject.published ? 'success' : 'warning'}>
-                              {subject.published
-                                ? language === 'ar' ? 'منشور' : 'Published'
-                                : language === 'ar' ? 'مسودة' : 'Draft'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSubjectClick();
-                              }}
-                            >
-                              {language === 'ar' ? 'عرض' : 'View'}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                    }}
+                  >
+                    <CardContent className="p-3 sm:p-4 md:p-5">
+                      <div className="flex items-start justify-between mb-2 sm:mb-2.5 md:mb-3 gap-1.5 sm:gap-2">
+                        <div className="p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors duration-300 flex-shrink-0">
+                          <BookOpen className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5" />
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {classes.length === 0 && subjects.length === 0 && (
-          <Card className="glass-card border-primary/10">
-            <CardContent className="pt-6 relative overflow-hidden">
-              {/* Decorative Background */}
-              <div className="absolute inset-0 islamic-pattern-subtle opacity-30"></div>
-              <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
-              
-              <div className="text-center py-8 text-muted-foreground relative z-10">
-                <div className="relative inline-block mb-4">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-xl opacity-20 animate-pulse"></div>
-                  <div className="relative p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
-                    <School className="h-16 w-16 mx-auto text-primary" />
+                        <Badge variant={subject.published ? 'success' : 'secondary'} className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5">
+                          {subject.published 
+                            ? (language === 'ar' ? 'منشور' : 'Published') 
+                            : (language === 'ar' ? 'مسودة' : 'Draft')}
+                        </Badge>
                   </div>
-                </div>
-                <div className="w-24 h-1 bg-gradient-to-l from-transparent via-secondary to-transparent mx-auto mb-4"></div>
-                <p className="text-lg font-semibold text-foreground">
-                  {language === 'ar' 
-                    ? 'لا توجد فصول أو مواد مسجلة لهذا المعلم'
-                    : 'No classes or subjects registered for this teacher'}
-                </p>
+                      <h3 className="font-bold text-sm sm:text-base md:text-base mb-1.5 sm:mb-2 group-hover:text-accent transition-colors line-clamp-2 text-left rtl:text-right leading-tight">
+                        {subject.subject_name}
+                      </h3>
+                      <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm text-muted-foreground">
+                        <School className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                        <span className="truncate text-left rtl:text-right font-medium">{subject.class_name}</span>
               </div>
             </CardContent>
           </Card>
-        )}
+                ))}
+                {subjects.length === 0 && (
+                  <div className="col-span-full py-8 sm:py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                    <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 opacity-20" />
+                    <p className="text-sm sm:text-base">{language === 'ar' ? 'لا توجد مواد مسجلة' : 'No subjects found'}</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </DashboardLayout>
   );

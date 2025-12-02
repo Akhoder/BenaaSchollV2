@@ -560,10 +560,11 @@ export default function ClassesPage() {
             variant="outline" 
             size="sm"
             onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-            className="border-border bg-background hover:bg-accent text-foreground"
+            className="border-border bg-background hover:bg-accent text-foreground text-xs sm:text-sm px-3 sm:px-4"
           >
-            <Users className="h-4 w-4 mr-2" />
-            {t('toggleView')}
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            <span className="hidden sm:inline">{t('toggleView')}</span>
+            <span className="sm:hidden">{t('view')}</span>
           </Button>
           {profile?.role === 'admin' && (
             <Button 
@@ -572,75 +573,84 @@ export default function ClassesPage() {
                 setIsViewing(false);
                 setIsDialogOpen(true);
               }}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md text-xs sm:text-sm px-3 sm:px-4"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('addClass')}
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+              <span className="hidden sm:inline">{t('addClass')}</span>
+              <span className="sm:hidden">{t('add')}</span>
             </Button>
           )}
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-          <Card className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                {t('totalClasses')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
-                <School className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('allClasses')}</p>
-            </CardContent>
-          </Card>
+        {/* ✨ Stats Cards - Islamic Design - Mobile Horizontal Scroll */}
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 animate-fade-in-up -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300 h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-muted-foreground font-sans whitespace-nowrap">
+                  {t('totalClasses')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg flex-shrink-0">
+                  <School className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{t('allClasses')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                {t('activeClasses')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg">
-                <Calendar className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-success">{stats.active}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('currentlyRunning')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300 h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-muted-foreground font-sans whitespace-nowrap">
+                  {t('activeClasses')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg flex-shrink-0">
+                  <Calendar className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-display text-success">{stats.active}</div>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{t('currentlyRunning')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                {t('completed')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-secondary">{stats.completed}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('finishedClasses')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300 h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-muted-foreground font-sans whitespace-nowrap">
+                  {t('completed')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20 flex-shrink-0">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-display text-secondary">{stats.completed}</div>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{t('finishedClasses')}</p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground font-sans">
-                {t('totalStudents')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-accent">{stats.totalStudents}</div>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">{t('enrolledStudents')}</p>
-            </CardContent>
-          </Card>
+          <div className="min-w-[240px] snap-center md:min-w-0">
+            <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300 h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-muted-foreground font-sans whitespace-nowrap">
+                  {t('totalStudents')}
+                </CardTitle>
+                <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg flex-shrink-0">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-display text-accent">{stats.totalStudents}</div>
+                <p className="text-xs text-muted-foreground mt-1 font-sans">{t('enrolledStudents')}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* ✨ Search - Islamic Design */}
@@ -687,19 +697,19 @@ export default function ClassesPage() {
                 description={searchQuery ? t('tryAdjustingSearchCriteria') : t('noClassesCreatedYet')}
               />
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <Table className="min-w-[800px] md:min-w-0">
                   <TableHeader>
                     <TableRow className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-                      <TableHead className="font-semibold font-sans text-foreground">{t('class')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('code')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('level')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('students')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('duration')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('status')}</TableHead>
-                      <TableHead className="font-semibold font-sans text-foreground">{t('published')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm">{t('class')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm hidden sm:table-cell">{t('code')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm">{t('level')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm">{t('students')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm hidden md:table-cell">{t('duration')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm">{t('status')}</TableHead>
+                      <TableHead className="font-semibold font-sans text-foreground text-xs sm:text-sm hidden lg:table-cell">{t('published')}</TableHead>
                       {profile?.role === 'admin' && (
-                        <TableHead className="text-right font-semibold font-sans text-foreground">{t('actions')}</TableHead>
+                        <TableHead className="text-right font-semibold font-sans text-foreground text-xs sm:text-sm">{t('actions')}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -709,60 +719,64 @@ export default function ClassesPage() {
                         key={cls.id}
                         className="hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors border-b border-border/50"
                       >
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 ring-2 ring-secondary/30 shadow-sm">
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-secondary/30 shadow-sm flex-shrink-0">
                               <AvatarImage src={cls.image_url} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold text-xs sm:text-sm">
                                 {(cls.class_name || '?').charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-semibold font-sans text-foreground">{cls.class_name}</div>
-                              <div className="text-sm text-muted-foreground font-sans">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold font-sans text-foreground text-sm sm:text-base truncate">{cls.class_name}</div>
+                              <div className="text-xs sm:text-sm text-muted-foreground font-sans">
                                 {`${t('level' as TranslationKey)} ${cls.level}`}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-mono sm:hidden mt-0.5">
+                                {cls.class_code}
                               </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-3 hidden sm:table-cell">
                           <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
                             {cls.class_code}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="islamic" className="font-semibold">
+                        <TableCell className="py-3">
+                          <Badge variant="islamic" className="font-semibold text-xs">
                             {`${t('level' as TranslationKey)} ${cls.level}`}
                           </Badge>
                         </TableCell>
                         
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm font-sans text-foreground">
-                            <Users className="h-4 w-4 text-accent" />
-                            {cls.student_count || 0}
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-sans text-foreground">
+                            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent flex-shrink-0" />
+                            <span className="font-medium">{cls.student_count || 0}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-sans">
+                        <TableCell className="py-3 hidden md:table-cell">
+                          <div className="text-xs sm:text-sm font-sans">
                             <div className="flex items-center gap-1 text-foreground">
-                              <Calendar className="h-3 w-3 text-secondary" />
-                              {new Date(cls.start_date).toLocaleDateString(dateLocale)}
+                              <Calendar className="h-3 w-3 text-secondary flex-shrink-0" />
+                              <span className="whitespace-nowrap">{new Date(cls.start_date).toLocaleDateString(dateLocale)}</span>
                             </div>
                             {cls.end_date && (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {t('to')} {new Date(cls.end_date).toLocaleDateString(dateLocale)}
                               </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-3">
                           <Badge
                             variant={cls.end_date && new Date(cls.end_date) <= new Date() ? 'gold' : 'success'}
+                            className="text-xs"
                           >
                             {cls.end_date && new Date(cls.end_date) <= new Date() ? t('completed') : t('active')}
                           </Badge>
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="py-3 hidden lg:table-cell" onClick={(e) => e.stopPropagation()}>
                           <Switch
                             checked={cls.published === true}
                             onCheckedChange={async (val) => {
@@ -906,7 +920,7 @@ export default function ClassesPage() {
 
         {/* ✨ Create/Edit Class Dialog - Islamic Design */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-primary/20">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-primary/20 p-4 sm:p-6">
             <DialogHeader className="border-b border-primary/10 pb-4">
               <DialogTitle className="text-2xl font-display text-primary flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-lg">

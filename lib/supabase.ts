@@ -1947,26 +1947,43 @@ export async function checkEligibleSubjectsForStudent() {
   const eligibleSubjects: Array<{ subject_id: string; subject_name: string; eligibility: any }> = [];
   
   for (const subject of subjects) {
-    const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
-      p_student_id: userRes.user.id,
-      p_subject_id: subject.id,
-    });
-    
-    if (eligibility && (eligibility as any).eligible) {
-      // Check if certificate doesn't exist yet
-      const { data: existingCerts, error: certError } = await supabase
-        .from('certificates')
-        .select('id')
-        .eq('student_id', userRes.user.id)
-        .eq('subject_id', subject.id);
+    try {
+      const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
+        p_student_id: userRes.user.id,
+        p_subject_id: subject.id,
+      });
       
-      if (!certError && (!existingCerts || existingCerts.length === 0)) {
-        eligibleSubjects.push({
-          subject_id: subject.id,
-          subject_name: subject.subject_name,
-          eligibility: eligibility,
-        });
+      // Skip if RPC function doesn't exist or there's an error
+      if (eligibilityError) {
+        console.warn(`Error checking certificate eligibility for subject ${subject.id}:`, eligibilityError);
+        continue;
       }
+      
+      if (eligibility && (eligibility as any).eligible) {
+        // Check if certificate doesn't exist yet
+        const { data: existingCerts, error: certError } = await supabase
+          .from('certificates')
+          .select('id')
+          .eq('student_id', userRes.user.id)
+          .eq('subject_id', subject.id);
+        
+        if (certError) {
+          console.warn(`Error checking existing certificates for subject ${subject.id}:`, certError);
+          continue;
+        }
+        
+        if (!existingCerts || existingCerts.length === 0) {
+          eligibleSubjects.push({
+            subject_id: subject.id,
+            subject_name: subject.subject_name,
+            eligibility: eligibility,
+          });
+        }
+      }
+    } catch (err) {
+      // Silently handle errors for individual subjects
+      console.warn(`Error processing certificate eligibility for subject ${subject.id}:`, err);
+      continue;
     }
   }
   

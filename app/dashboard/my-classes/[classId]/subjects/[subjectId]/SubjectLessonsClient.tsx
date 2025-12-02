@@ -315,11 +315,16 @@ export default function SubjectLessonsClient() {
       if (profile?.id) {
         try {
           // Check if auto_publish is enabled for this subject
-          const { data: subjectData } = await supabase
+          const { data: subjectData, error: subjectError } = await supabase
             .from('class_subjects')
             .select('auto_publish_certificates')
             .eq('id', currentSubjectId)
             .single();
+          
+          if (subjectError) {
+            console.warn('Error fetching subject data for certificate eligibility:', subjectError);
+            return;
+          }
           
           if (subjectData?.auto_publish_certificates) {
             // Check if certificate already exists
@@ -329,12 +334,23 @@ export default function SubjectLessonsClient() {
               .eq('student_id', profile.id)
               .eq('subject_id', currentSubjectId);
             
-            if (!certError && (!existingCerts || existingCerts.length === 0)) {
+            if (certError) {
+              console.warn('Error checking existing certificates:', certError);
+              return;
+            }
+            
+            if (!existingCerts || existingCerts.length === 0) {
               // Check eligibility
-              const { data: eligibility } = await supabase.rpc('check_certificate_eligibility', {
+              const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
                 p_student_id: profile.id,
                 p_subject_id: currentSubjectId,
               });
+              
+              if (eligibilityError) {
+                // RPC function might not exist or there's an error - log it but don't break the page
+                console.warn('Error checking certificate eligibility (RPC may not exist):', eligibilityError);
+                return;
+              }
               
               if (eligibility && (eligibility as any).eligible) {
                 setCertificateEligibility(eligibility);
@@ -342,7 +358,8 @@ export default function SubjectLessonsClient() {
             }
           }
         } catch (err) {
-          console.error('Error checking certificate eligibility:', err);
+          // Silently handle errors - certificate eligibility is not critical for page functionality
+          console.warn('Error in certificate eligibility check:', err);
         }
       }
     } catch (e) {

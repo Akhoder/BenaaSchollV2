@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { SimplePageLoading } from '@/components/LoadingSpinner';
@@ -42,6 +43,7 @@ export default function ClassViewPage() {
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
+  const { setLabel } = useBreadcrumb();
   const classId = (params?.classId as string) || '';
 
   const [classData, setClassData] = useState<any>(null);
@@ -135,6 +137,8 @@ export default function ClassViewPage() {
       }
       
       setClassData(selectedClass);
+      // Set breadcrumb label
+      setLabel(classId, selectedClass.class_name);
 
       // Load subjects for this class
       const { data: subjectsData, error: subjectsError } = await fetchSubjectsForClass(classId);
@@ -260,7 +264,7 @@ export default function ClassViewPage() {
         </div>
 
         {/* Class Header */}
-        <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-2xl shadow-primary/20 animate-fade-in-up">
+        <div className="relative overflow-hidden rounded-3xl p-6 md:p-12 border border-primary/20 bg-gradient-to-br from-primary via-accent to-primary text-white shadow-2xl shadow-primary/20 animate-fade-in-up">
           {/* Animated Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
           <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
@@ -268,37 +272,37 @@ export default function ClassViewPage() {
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/30 rounded-full translate-y-16 -translate-x-16 animate-float blur-2xl" style={{animationDelay: '1s'}}></div>
 
           <div className="relative z-10">
-            <div className="flex items-start gap-6">
+            <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-8">
               {/* Class Image */}
-              <div className="relative flex-shrink-0">
+              <div className="relative flex-shrink-0 mx-auto md:mx-0">
                 <div className="absolute inset-0 bg-white/20 rounded-3xl blur-lg"></div>
                 {classData.image_url ? (
-                  <img src={classData.image_url} alt={classData.class_name} className="w-24 h-24 rounded-3xl object-cover relative border-4 border-white/30" />
+                  <img src={classData.image_url} alt={classData.class_name} className="w-24 h-24 md:w-32 md:h-32 rounded-3xl object-cover relative border-4 border-white/30 shadow-xl" />
                 ) : (
-                  <div className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30 relative">
-                    <GraduationCap className="h-12 w-12 text-white" />
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30 relative shadow-xl">
+                    <GraduationCap className="h-10 w-10 md:h-14 md:w-14 text-white" />
                   </div>
                 )}
               </div>
 
               {/* Class Info */}
-              <div className="flex-1 pt-2">
-                <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight mb-3 drop-shadow-lg">
+              <div className="flex-1 pt-2 text-center md:text-right md:rtl:text-right md:ltr:text-left">
+                <h1 className="text-2xl md:text-4xl font-display font-bold tracking-tight mb-4 drop-shadow-lg leading-tight">
                   {classData.class_name}
                 </h1>
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">{t('enrolledStatus' as TranslationKey)}</span>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 transition-transform hover:scale-105">
+                    <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="text-xs md:text-sm font-medium">{t('enrolledStatus' as TranslationKey)}</span>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <Badge variant="outline" className="bg-white/20 border-white/30 text-white">
+                  <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 transition-transform hover:scale-105">
+                    <Badge variant="outline" className="bg-white/20 border-white/30 text-white text-xs md:text-sm px-2 py-0.5 h-auto">
                       {`${t('level' as TranslationKey)} ${classData.level ?? '—'}`}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <BookOpen className="w-4 h-4" />
-                    <span className="text-sm font-medium">
+                  <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 transition-transform hover:scale-105">
+                    <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="text-xs md:text-sm font-medium">
                       {subjects.length}{' '}
                       {subjects.length === 1 ? t('subject' as TranslationKey) : t('subjects' as TranslationKey)}
                     </span>
@@ -308,13 +312,13 @@ export default function ClassViewPage() {
             </div>
             {lastActivity ? (
               <div className="mt-8">
-                <div className="rounded-2xl bg-white/10 border border-white/20 p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-sm uppercase tracking-wide text-white/70 mb-1">
+                <div className="rounded-2xl bg-white/10 border border-white/20 p-4 md:p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between backdrop-blur-md transition-all hover:bg-white/15">
+                  <div className="text-center md:text-right md:rtl:text-right md:ltr:text-left">
+                    <p className="text-xs md:text-sm uppercase tracking-wide text-white/70 mb-1 font-medium">
                       {t('latestActivity' as TranslationKey)}
                     </p>
-                    <h3 className="text-xl font-semibold">{lastActivity.label}</h3>
-                    <p className="text-sm text-white/80">
+                    <h3 className="text-lg md:text-xl font-semibold mb-1">{lastActivity.label}</h3>
+                    <p className="text-xs md:text-sm text-white/80">
                       {new Date(lastActivity.date).toLocaleString(dateLocale, {
                         dateStyle: 'medium',
                         timeStyle: 'short',
@@ -322,15 +326,15 @@ export default function ClassViewPage() {
                     </p>
                   </div>
                   <Link href={lastActivity.link} className="w-full md:w-auto">
-                    <Button variant="secondary" className="w-full md:w-auto gap-2">
-                      <ArrowRight className="h-4 w-4" />
+                    <Button variant="secondary" className="w-full md:w-auto gap-2 shadow-lg hover:shadow-xl transition-all active:scale-95">
+                      <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                       {t('continueLearning' as TranslationKey)}
                     </Button>
                   </Link>
                 </div>
               </div>
             ) : (
-              <p className="mt-8 text-sm text-white/70">
+              <p className="mt-8 text-sm text-white/70 text-center md:text-right md:rtl:text-right md:ltr:text-left">
                 {t('noActivityYet' as TranslationKey)}
               </p>
             )}
@@ -338,44 +342,52 @@ export default function ClassViewPage() {
         </div>
 
         {/* Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in-up">
-          <StatCard
-            title={t('classOverview' as TranslationKey)}
-            value={overviewStats.total}
-            description={t('totalSubjectsLabel' as TranslationKey)}
-            icon={BookOpen}
-            gradient="from-primary to-accent"
-            color="primary"
-          />
-          <StatCard
-            title={t('subjectsCompleted' as TranslationKey)}
-            value={overviewStats.completed}
-            description={`${Math.round((overviewStats.completed / Math.max(overviewStats.total, 1)) * 100)}%`}
-            icon={CircleCheck}
-            gradient="from-success to-primary"
-            color="success"
-          />
-          <StatCard
-            title={t('subjectsInProgress' as TranslationKey)}
-            value={overviewStats.inProgress}
-            description={`${Math.round((overviewStats.inProgress / Math.max(overviewStats.total, 1)) * 100)}%`}
-            icon={CheckCircle}
-            gradient="from-info to-primary"
-            color="info"
-          />
-          <StatCard
-            title={t('subjectsNotStarted' as TranslationKey)}
-            value={overviewStats.notStarted}
-            description={`${Math.round((overviewStats.notStarted / Math.max(overviewStats.total, 1)) * 100)}%`}
-            icon={CircleDot}
-            gradient="from-warning to-warning/80"
-            color="warning"
-          />
+        <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none animate-fade-in-up">
+          <div className="min-w-[260px] snap-center md:min-w-0">
+            <StatCard
+              title={t('classOverview' as TranslationKey)}
+              value={overviewStats.total}
+              description={t('totalSubjectsLabel' as TranslationKey)}
+              icon={BookOpen}
+              gradient="from-primary to-accent"
+              color="primary"
+            />
+          </div>
+          <div className="min-w-[260px] snap-center md:min-w-0">
+            <StatCard
+              title={t('subjectsCompleted' as TranslationKey)}
+              value={overviewStats.completed}
+              description={`${Math.round((overviewStats.completed / Math.max(overviewStats.total, 1)) * 100)}%`}
+              icon={CircleCheck}
+              gradient="from-success to-primary"
+              color="success"
+            />
+          </div>
+          <div className="min-w-[260px] snap-center md:min-w-0">
+            <StatCard
+              title={t('subjectsInProgress' as TranslationKey)}
+              value={overviewStats.inProgress}
+              description={`${Math.round((overviewStats.inProgress / Math.max(overviewStats.total, 1)) * 100)}%`}
+              icon={CheckCircle}
+              gradient="from-info to-primary"
+              color="info"
+            />
+          </div>
+          <div className="min-w-[260px] snap-center md:min-w-0">
+            <StatCard
+              title={t('subjectsNotStarted' as TranslationKey)}
+              value={overviewStats.notStarted}
+              description={`${Math.round((overviewStats.notStarted / Math.max(overviewStats.total, 1)) * 100)}%`}
+              icon={CircleDot}
+              gradient="from-warning to-warning/80"
+              color="warning"
+            />
+          </div>
         </div>
 
         {/* Filter Tabs */}
         {subjects.length > 0 && (
-          <div className="flex flex-wrap gap-3">
+          <div className="flex overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:flex-wrap gap-2 scrollbar-none">
             {([
               { key: 'all', label: t('all' as TranslationKey) },
               { key: 'in_progress', label: t('statusInProgress' as TranslationKey) },
@@ -387,7 +399,7 @@ export default function ClassViewPage() {
                 type="button"
                 variant={filterTab === tab.key ? 'default' : 'outline'}
                 size="sm"
-                className="rounded-full"
+                className="rounded-full whitespace-nowrap flex-shrink-0"
                 onClick={() => setFilterTab(tab.key)}
               >
                 {tab.label}
@@ -452,9 +464,9 @@ export default function ClassViewPage() {
                       aria-label={subject.subject_name}
                     >
                       <CardHeader className="pb-4 h-full hover:bg-primary/5 transition-all">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                           {/* Subject Info */}
-                          <div className="flex items-start gap-4 flex-1 min-w-0">
+                          <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
                             {/* Subject Image/Icon */}
                             <div className="relative flex-shrink-0">
                               {subject.image_url ? (
@@ -477,9 +489,17 @@ export default function ClassViewPage() {
 
                             {/* Subject Details */}
                             <div className="flex-1 min-w-0 pt-1">
-                              <CardTitle className="text-2xl font-display font-bold text-foreground mb-2 group-hover:text-primary transition-colors cursor-pointer">
-                                {subject.subject_name}
-                              </CardTitle>
+                              <div className="flex items-start justify-between gap-2">
+                                <CardTitle className="text-xl sm:text-2xl font-display font-bold text-foreground mb-2 group-hover:text-primary transition-colors cursor-pointer leading-tight">
+                                  {subject.subject_name}
+                                </CardTitle>
+                                {/* Arrow Mobile */}
+                                <div className="sm:hidden flex-shrink-0">
+                                  <div className="p-2 rounded-lg bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                                    <ArrowRight className="h-4 w-4 text-primary rtl:rotate-180" />
+                                  </div>
+                                </div>
+                              </div>
                               
                               {/* Subject Description */}
                               {subject.description && (
@@ -524,7 +544,7 @@ export default function ClassViewPage() {
                               )}
                               
                               {progress && progress.total_lessons > 0 ? (
-                                <div className="space-y-3">
+                                <div className="space-y-3 mt-2">
                                   {/* Progress Bar */}
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between">
@@ -533,15 +553,15 @@ export default function ClassViewPage() {
                                           status === 'completed' ? 'text-success' :
                                           status === 'in_progress' ? 'text-info' : 'text-muted-foreground'
                                         }`} />
-                                        <span className="text-sm font-medium text-foreground">
+                                        <span className="text-xs sm:text-sm font-medium text-foreground">
                                           {statusText}
                                         </span>
                                       </div>
-                                      <span className="text-sm font-bold text-foreground">
+                                      <span className="text-xs sm:text-sm font-bold text-foreground">
                                         {Math.round(progressValue)}%
                                       </span>
                                     </div>
-                                    <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                                    <div className="relative h-2.5 sm:h-3 bg-muted rounded-full overflow-hidden">
                                       <div
                                         className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${getCompletionColor(progressValue)}`}
                                         style={{ width: `${progressValue}%` }}
@@ -552,29 +572,23 @@ export default function ClassViewPage() {
                                   </div>
 
                                   {/* Stats */}
-                                  <div className="flex items-center gap-4 text-sm flex-wrap">
+                                  <div className="flex items-center gap-3 text-xs sm:text-sm flex-wrap">
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                                      <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
                                       <span className="text-muted-foreground">
                                         {progress.completed_lessons} {t('completedLessons' as TranslationKey)}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-info"></div>
+                                      <div className="w-1.5 h-1.5 rounded-full bg-info"></div>
                                       <span className="text-muted-foreground">
                                         {progress.in_progress_lessons} {t('lessonsInProgress' as TranslationKey)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
-                                      <span className="text-muted-foreground">
-                                        {progress.not_started_lessons} {t('lessonsRemaining' as TranslationKey)}
                                       </span>
                                     </div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                                   <StatusIcon className="h-4 w-4" />
                                   <span>{t('noLessonsYet' as TranslationKey)}</span>
                                 </div>
@@ -582,25 +596,25 @@ export default function ClassViewPage() {
                             </div>
                           </div>
 
-                          {/* Arrow */}
-                          <div className="flex-shrink-0 pt-2">
+                          {/* Arrow Desktop */}
+                          <div className="hidden sm:block flex-shrink-0 pt-2">
                             <div className="p-3 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-colors">
-                              <ArrowRight className="h-6 w-6 text-primary" />
+                              <ArrowRight className="h-6 w-6 text-primary rtl:rotate-180" />
                             </div>
                           </div>
                         </div>
                       </CardHeader>
                     </Link>
-                    <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 pt-4 flex flex-wrap gap-2">
-                      <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true}>
-                        <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors">
-                          <BookOpen className="h-4 w-4" />
+                    <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 pt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                      <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true} className="w-full sm:w-auto">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors h-9 text-xs sm:text-sm">
+                          <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {t('viewLesson' as TranslationKey)}
                         </Button>
                       </Link>
-                      <Link href={`/dashboard/my-assignments?subject=${subject.id}`} prefetch={false}>
-                        <Button variant="outline" size="sm" className="gap-2 hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors">
-                          <FileText className="h-4 w-4" />
+                      <Link href={`/dashboard/my-assignments?subject=${subject.id}`} prefetch={false} className="w-full sm:w-auto">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors h-9 text-xs sm:text-sm">
+                          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {t('openAssignments' as TranslationKey)}
                         </Button>
                       </Link>
@@ -608,15 +622,15 @@ export default function ClassViewPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="gap-2 hover:bg-info/10 hover:text-info hover:border-info/30 transition-colors"
+                        className="w-full sm:w-auto gap-2 hover:bg-info/10 hover:text-info hover:border-info/30 transition-colors h-9 text-xs sm:text-sm"
                         onClick={() => setDiscussionSubject({ id: subject.id, name: subject.subject_name })}
                       >
-                        <MessageCircle className="h-4 w-4" />
+                        <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         {t('openDiscussion' as TranslationKey)}
                       </Button>
-                      <Link href={`/dashboard/schedule?subject=${subject.id}`} prefetch={false}>
-                        <Button variant="outline" size="sm" className="gap-2 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-colors">
-                          <Calendar className="h-4 w-4" />
+                      <Link href={`/dashboard/schedule?subject=${subject.id}`} prefetch={false} className="w-full sm:w-auto">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-colors h-9 text-xs sm:text-sm">
+                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {t('openSchedule' as TranslationKey)}
                         </Button>
                       </Link>

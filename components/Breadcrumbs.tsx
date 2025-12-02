@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { ChevronRight, Home, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, language } = useLanguage();
+  const { labels } = useBreadcrumb();
 
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const segments = pathname.split('/').filter(Boolean);
@@ -28,6 +30,15 @@ export function Breadcrumbs() {
     segments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       
+      // Check if we have a custom label for this segment/path first
+      if (labels[segment]) {
+        breadcrumbs.push({
+          label: labels[segment],
+          href: currentPath
+        });
+        return;
+      }
+
       // ترجمة أسماء الصفحات
       let label = segment;
       switch (segment) {
@@ -55,10 +66,22 @@ export function Breadcrumbs() {
         case 'my-classes':
           label = t('myClasses');
           break;
+        case 'my-assignments':
+          label = t('myAssignments');
+          break;
         case 'announcements':
           label = t('announcements');
           break;
+        case 'teachers':
+          label = t('teachers');
+          break;
         default:
+          // Check if segment looks like a UUID (36 characters with hyphens)
+          // If it's a UUID and we don't have a custom label, skip it
+          if (segment.length === 36 && segment.includes('-')) {
+            // Skip UUID segments that don't have custom labels
+            return;
+          }
           label = segment.charAt(0).toUpperCase() + segment.slice(1);
       }
 
@@ -101,15 +124,18 @@ export function Breadcrumbs() {
       )}
 
       {/* Breadcrumb Items */}
-      <div className="flex items-center space-x-1 flex-1">
+      <div className={`flex items-center flex-1 ${language === 'ar' ? 'flex-row-reverse' : ''} ${language === 'ar' ? 'space-x-reverse space-x-1' : 'space-x-1'}`}>
         {breadcrumbs.map((breadcrumb, index) => {
           const isLast = index === breadcrumbs.length - 1;
           const Icon = breadcrumb.icon;
 
           return (
-            <div key={`${breadcrumb.href}-${index}`} className="flex items-center space-x-1">
+            <div key={`${breadcrumb.href}-${index}`} className={`flex items-center ${language === 'ar' ? 'space-x-reverse space-x-1' : 'space-x-1'}`}>
               {index > 0 && (
-                <ChevronRight className="h-4 w-4 text-slate-400" />
+                <ChevronRight className={cn(
+                  "h-4 w-4 text-slate-400",
+                  language === 'ar' && "rotate-180"
+                )} />
               )}
               
               {isLast ? (

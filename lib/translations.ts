@@ -658,6 +658,13 @@ export const translations = {
     scoreLabel: 'Score:',
     feedback: 'Feedback:',
     gradedOn: 'Graded:',
+    pending: 'Pending',
+    graded: 'Graded',
+    allClasses: 'All Classes',
+    noAssignmentsFound: 'No assignments found',
+    tryAdjustingFilters: 'Try adjusting your filters',
+    viewSubmission: 'View Submission',
+    submitAssignment: 'Submit Assignment',
     errorLoadingGrades: 'Error loading grades',
     // Subjects page stats and filters
     totalSubjects: 'Total Subjects',
@@ -855,7 +862,6 @@ export const translations = {
     // uploading: 'Uploading...', // Duplicate key removed
     // Security
     securitySettings: 'Security Settings',
-    passwordRequired: 'Password is required',
     passwordTooShort: 'Password must be at least 6 characters',
     passwordsDoNotMatch: 'Passwords do not match',
     passwordUpdatedSuccessfully: 'Password updated successfully',
@@ -1545,6 +1551,12 @@ export const translations = {
     selectClass: 'اختر الفصل',
     assignment: 'واجب',
     assignments: 'الواجبات',
+    pending: 'قيد الانتظار',
+    graded: 'تم التصحيح',
+    noAssignmentsFound: 'لم يتم العثور على واجبات',
+    tryAdjustingFilters: 'حاول تعديل الفلاتر',
+    viewSubmission: 'عرض التسليم',
+    submitAssignment: 'تسليم الواجب',
     // Subjects page stats and filters
     totalSubjects: 'إجمالي المواد',
     publishedSubjects: 'المواد المنشورة',
@@ -1743,7 +1755,6 @@ export const translations = {
     // uploading: 'جاري التحميل...', // Duplicate key removed
     // Security
     securitySettings: 'إعدادات الأمان',
-    passwordRequired: 'كلمة المرور مطلوبة',
     passwordTooShort: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
     passwordsDoNotMatch: 'كلمات المرور غير متطابقة',
     passwordUpdatedSuccessfully: 'تم تحديث كلمة المرور بنجاح',
@@ -2322,6 +2333,13 @@ export const translations = {
     scoreLabel: 'Score :',
     feedback: 'Commentaires :',
     gradedOn: 'Noté le :',
+    pending: 'En attente',
+    graded: 'Noté',
+    allClasses: 'Toutes les classes',
+    noAssignmentsFound: 'Aucun devoir trouvé',
+    tryAdjustingFilters: 'Essayez d\'ajuster vos filtres',
+    viewSubmission: 'Voir la soumission',
+    submitAssignment: 'Soumettre le devoir',
     errorLoadingGrades: 'Erreur lors du chargement des notes',
     // Subjects page stats and filters
     totalSubjects: 'Total des matières',

@@ -2,10 +2,12 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 import { WebVitals } from '@/components/WebVitals';
 import { FontLoader } from '@/components/FontLoader';
+import { ErrorSuppressor } from '@/components/ErrorSuppressor';
 
 // ✅ PERFORMANCE: Optimized font loading with preconnect
 // Islamic Scholarly Fonts: Tajawal (body) + Amiri (headings) + Scheherazade (decorative)
@@ -68,13 +70,16 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="scroll-smooth">
       <body className="font-sans antialiased bg-background text-foreground">
+        <ErrorSuppressor />
         <FontLoader />
         <ServiceWorkerProvider>
           <LanguageProvider>
             <AuthProvider>
-              {children}
-              <Toaster />
-              <WebVitals />
+              <BreadcrumbProvider>
+                {children}
+                <Toaster />
+                <WebVitals />
+              </BreadcrumbProvider>
             </AuthProvider>
           </LanguageProvider>
         </ServiceWorkerProvider>

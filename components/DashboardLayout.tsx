@@ -336,10 +336,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Background Pattern */}
-      <div className="fixed inset-0 bg-pattern-dots opacity-20 pointer-events-none" />
-      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
-      
-      {/* ✨ Enhanced Header with Islamic Design */}
+        <div className="fixed inset-0 bg-pattern-dots opacity-20 pointer-events-none" />
+        <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+        
+        {/* ✨ Enhanced Header with Islamic Design */}
       <nav className="fixed top-0 z-50 w-full bg-card/95 backdrop-blur-xl border-b-2 border-primary/10 shadow-lg shadow-primary/5">
         <div className="px-3 py-3 lg:px-5 lg:pl-3">
           <div className="flex items-center justify-between">
