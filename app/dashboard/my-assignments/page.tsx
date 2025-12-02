@@ -86,7 +86,7 @@ export default function MyAssignmentsPage() {
       // Set breadcrumb label for subject if provided
       const subjectId = searchParams.get('subject');
       if (subjectId) {
-        const subject = allSubjectsList.find(s => s.id === subjectId);
+        const subject = allSubjectsList.find((s: any) => s.id === subjectId);
         if (subject) {
           setLabel(subjectId, subject.subject_name);
         }
@@ -104,10 +104,10 @@ export default function MyAssignmentsPage() {
           }
           if (assignments && assignments.length > 0) {
             // Add class_id and subject info to assignment for filtering
-            const assignmentsWithClass = assignments.map(a => ({ 
-              ...a, 
-              class_id: clsId, 
-              class_name: enrolledClasses.find(c => c.id === clsId)?.class_name,
+            const assignmentsWithClass = assignments.map((a: any) => ({
+              ...a,
+              class_id: clsId,
+              class_name: enrolledClasses.find((c: any) => c.id === clsId)?.class_name,
               subject_name: subject.subject_name,
               subject_id: subject.id
             }));
@@ -174,7 +174,7 @@ export default function MyAssignmentsPage() {
   };
 
   const filteredAssignments = useMemo(() => {
-    return assignments.filter(assignment => {
+    return assignments.filter((assignment: any) => {
       const matchesClass = filterClass === 'ALL' || assignment.class_id === filterClass;
       const matchesSubject = filterSubject === 'ALL' || assignment.subject_id === filterSubject;
       const submission = submissions[assignment.id];
@@ -205,15 +205,15 @@ export default function MyAssignmentsPage() {
     // Calculate stats based on ALL assignments for the selected class and subject (ignoring status filter)
     let relevantAssignments = assignments;
     if (filterClass !== 'ALL') {
-      relevantAssignments = relevantAssignments.filter(a => a.class_id === filterClass);
+      relevantAssignments = relevantAssignments.filter((a: any) => a.class_id === filterClass);
     }
     if (filterSubject !== 'ALL') {
-      relevantAssignments = relevantAssignments.filter(a => a.subject_id === filterSubject);
+      relevantAssignments = relevantAssignments.filter((a: any) => a.subject_id === filterSubject);
     }
 
     const total = relevantAssignments.length;
-    const submitted = relevantAssignments.filter(a => submissions[a.id]).length;
-    const graded = relevantAssignments.filter(a => submissions[a.id]?.status === 'graded').length;
+    const submitted = relevantAssignments.filter((a: any) => submissions[a.id]).length;
+    const graded = relevantAssignments.filter((a: any) => submissions[a.id]?.status === 'graded').length;
     const pending = total - submitted;
     
     return { total, submitted, graded, pending };
@@ -224,7 +224,7 @@ export default function MyAssignmentsPage() {
     if (filterClass === 'ALL') {
       return subjects;
     }
-    return subjects.filter(s => s.class_id === filterClass);
+    return subjects.filter((s: any) => s.class_id === filterClass);
   }, [subjects, filterClass]);
 
   if (authLoading || loading) {
