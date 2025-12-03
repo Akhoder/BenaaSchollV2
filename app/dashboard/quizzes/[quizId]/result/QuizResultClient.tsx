@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase, fetchQuizBundle, fetchAnswersForAttempt } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { 
   ArrowLeft, 
   Award, 
@@ -29,6 +31,7 @@ export default function QuizResultClient() {
   const search = useSearchParams();
   const quizId = params?.quizId as string;
   const router = useRouter();
+  const { profile, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
 
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,8 @@ export default function QuizResultClient() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+    
     (async () => {
       try {
         setLoading(true);
@@ -46,10 +51,14 @@ export default function QuizResultClient() {
         setQuiz(quiz);
         setQuestions(questions || []);
         setOptionsByQuestion(optionsByQuestion as any);
+        
+        // ✅ FIX: Fetch the most recent attempt (graded or submitted) for current student
         const { data: attempts } = await supabase
           .from('quiz_attempts')
           .select('*')
           .eq('quiz_id', quizId)
+          .eq('student_id', profile.id)
+          .in('status', ['graded', 'submitted'])
           .order('started_at', { ascending: false })
           .limit(1);
         const att = attempts && attempts[0] ? attempts[0] : null;
@@ -64,11 +73,32 @@ export default function QuizResultClient() {
         setLoading(false);
       }
     })();
-  }, [quizId]);
+  }, [quizId, profile, authLoading]);
 
   const classId = search.get('classId');
   const subjectId = search.get('subjectId');
-  const canShow = useMemo(() => quiz && (quiz.show_results_policy === 'immediate' || (quiz.show_results_policy === 'after_close' && quiz.end_at && new Date(quiz.end_at) < new Date())), [quiz]);
+  // ✅ FIX: Show results if attempt exists and is graded, regardless of policy
+  // The policy check is mainly for preventing access before submission
+  const canShow = useMemo(() => {
+    if (!quiz || !attempt) return false;
+    // If attempt is graded, always show results (user already submitted)
+    if (attempt.status === 'graded') return true;
+    // Otherwise, check policy
+    return quiz.show_results_policy === 'immediate' || 
+           (quiz.show_results_policy === 'after_close' && quiz.end_at && new Date(quiz.end_at) < new Date());
+  }, [quiz, attempt]);
+  
+  // Calculate total_points from questions
+  const totalPoints = useMemo(() => {
+    if (!questions.length) return 100; // Default fallback
+    return questions.reduce((sum, q) => sum + (Number(q.points) || 1), 0);
+  }, [questions]);
+  
+  // Calculate percentage score
+  const percentageScore = useMemo(() => {
+    if (!attempt || !totalPoints || totalPoints === 0) return 0;
+    return Math.round((attempt.score || 0) / totalPoints * 100);
+  }, [attempt, totalPoints]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -94,7 +124,7 @@ export default function QuizResultClient() {
   if (loading) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل النتائج...' : 'Loading results...'} />
+        <SimplePageLoading text={t('loading' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -104,65 +134,72 @@ export default function QuizResultClient() {
       <div className="space-y-6 animate-fade-in">
         {/* Page Header */}
         <PageHeader
-          title={quiz?.title || (language === 'ar' ? 'نتائج الاختبار' : 'Quiz Results')}
-          description={quiz?.description || (language === 'ar' ? 'عرض إجاباتك ونتائجك' : 'View your answers and results')}
+          title={quiz?.title || t('quizResultsAvailable' as TranslationKey)}
+          description={quiz?.description || t('viewGradesAndFeedback' as TranslationKey)}
           icon={Award}
           gradient="from-secondary to-accent"
         />
 
         {/* Score Card */}
-        {attempt && canShow && (
+        {attempt && (attempt.status === 'graded' || attempt.status === 'submitted') && (
           <Card className="glass-card border-secondary/30 bg-gradient-to-br from-secondary/10 to-accent/10 shadow-xl shadow-secondary/20 animate-fade-in-up">
             <CardContent className="pt-6 relative overflow-hidden">
               {/* Decorative Background */}
               <div className="absolute inset-0 islamic-pattern-subtle opacity-20"></div>
               <div className="absolute -top-10 -right-10 w-48 h-48 bg-secondary/20 rounded-full blur-3xl animate-pulse"></div>
               
-              <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {/* Total Score */}
-                <div className="text-center p-4 rounded-xl bg-gradient-to-br from-secondary to-accent text-white shadow-lg">
-                  <div className="flex items-center justify-center mb-2">
-                    <Award className="h-6 w-6" />
+                <div className="text-center p-3 sm:p-4 rounded-xl bg-gradient-to-br from-secondary to-accent text-white shadow-lg">
+                  <div className="flex items-center justify-center mb-1.5 sm:mb-2">
+                    <Award className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
-                  <div className="text-3xl font-bold mb-1">{attempt.score ?? 0}%</div>
-                  <div className="text-xs opacity-90">{language === 'ar' ? 'النتيجة النهائية' : 'Final Score'}</div>
+                  <div className="text-2xl sm:text-3xl font-bold mb-1">{percentageScore}%</div>
+                  <div className="text-[10px] sm:text-xs opacity-90">{t('finalScore' as TranslationKey)}</div>
+                  <div className="text-[9px] sm:text-[10px] opacity-75 mt-0.5">{attempt.score ?? 0} / {totalPoints}</div>
                 </div>
 
                 {/* Correct Answers */}
-                <div className="text-center p-4 rounded-xl bg-gradient-to-br from-success/20 to-success/10 border border-success/30">
-                  <div className="flex items-center justify-center mb-2">
-                    <CheckCircle2 className="h-6 w-6 text-success" />
+                <div className="text-center p-3 sm:p-4 rounded-xl bg-gradient-to-br from-success/20 to-success/10 border border-success/30">
+                  <div className="flex items-center justify-center mb-1.5 sm:mb-2">
+                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-success" />
                   </div>
-                  <div className="text-3xl font-bold text-success mb-1">{stats.correct}</div>
-                  <div className="text-xs text-muted-foreground">{language === 'ar' ? 'إجابات صحيحة' : 'Correct'}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-success mb-1">{stats.correct}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusCompleted' as TranslationKey)}</div>
                 </div>
 
                 {/* Wrong Answers */}
-                <div className="text-center p-4 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
-                  <div className="flex items-center justify-center mb-2">
-                    <XCircle className="h-6 w-6 text-destructive" />
+                <div className="text-center p-3 sm:p-4 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/30">
+                  <div className="flex items-center justify-center mb-1.5 sm:mb-2">
+                    <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive" />
                   </div>
-                  <div className="text-3xl font-bold text-destructive mb-1">{stats.wrong}</div>
-                  <div className="text-xs text-muted-foreground">{language === 'ar' ? 'إجابات خاطئة' : 'Wrong'}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-destructive mb-1">{stats.wrong}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusNotStarted' as TranslationKey)}</div>
                 </div>
 
                 {/* Not Graded */}
-                <div className="text-center p-4 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 border border-warning/30">
-                  <div className="flex items-center justify-center mb-2">
-                    <AlertCircle className="h-6 w-6 text-warning" />
+                <div className="text-center p-3 sm:p-4 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 border border-warning/30">
+                  <div className="flex items-center justify-center mb-1.5 sm:mb-2">
+                    <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-warning" />
                   </div>
-                  <div className="text-3xl font-bold text-warning mb-1">{stats.notGraded}</div>
-                  <div className="text-xs text-muted-foreground">{language === 'ar' ? 'قيد التصحيح' : 'Not Graded'}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-warning mb-1">{stats.notGraded}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusInProgress' as TranslationKey)}</div>
                 </div>
               </div>
 
               {/* Submission Time */}
               {attempt.submitted_at && (
-                <div className="mt-4 pt-4 border-t border-secondary/30 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    {language === 'ar' ? 'تم التسليم في' : 'Submitted at'}: {new Date(attempt.submitted_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-secondary/30 text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span>{t('submitted' as TranslationKey)}: {new Date(attempt.submitted_at).toLocaleString(language === 'ar' ? 'ar-EG' : language === 'fr' ? 'fr-FR' : 'en-US')}</span>
                   </div>
+                  {attempt.status === 'submitted' && (
+                    <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-warning">
+                      <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span>{language === 'ar' ? 'بعض الأسئلة قد تحتاج إلى تصحيح يدوي' : 'Some questions may require manual grading'}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -177,13 +214,13 @@ export default function QuizResultClient() {
                 <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="font-display">{language === 'ar' ? 'الأسئلة والإجابات' : 'Questions & Answers'}</CardTitle>
-                <p className="text-sm text-muted-foreground">{language === 'ar' ? 'مراجعة إجاباتك' : 'Review your answers'}</p>
+                <CardTitle className="font-display">{t('viewGradesAndFeedback' as TranslationKey)}</CardTitle>
+                <p className="text-sm text-muted-foreground">{t('feedback' as TranslationKey)}</p>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
-            {!canShow ? (
+          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+            {!attempt ? (
               <div className="text-center py-12">
                 <div className="relative inline-block mb-4">
                   <div className="absolute inset-0 bg-gradient-to-br from-warning to-warning/80 rounded-full blur-xl opacity-20 animate-pulse"></div>
@@ -192,10 +229,10 @@ export default function QuizResultClient() {
                   </div>
                 </div>
                 <p className="text-lg font-semibold text-foreground mb-2">
-                  {language === 'ar' ? 'النتائج غير متاحة حالياً' : 'Results Not Available Yet'}
+                  {t('resultsNotAvailableYet' as TranslationKey)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {language === 'ar' ? 'ستكون النتائج متاحة لاحقاً حسب سياسة المعلم' : 'Results will be available later according to teacher policy'}
+                  {language === 'ar' ? 'لم يتم العثور على محاولة للاختبار' : 'No quiz attempt found'}
                 </p>
               </div>
             ) : (
@@ -212,12 +249,12 @@ export default function QuizResultClient() {
                   return (
                     <div 
                       key={q.id} 
-                      className="glass-card-hover border-primary/10 p-5 rounded-xl animate-fade-in-up"
+                      className="glass-card-hover border-primary/10 p-3 sm:p-5 rounded-xl animate-fade-in-up"
                       style={{ animationDelay: `${idx * 50}ms` }}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         {/* Question Number */}
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg ${
+                        <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg ${
                           isCorrect === true ? 'bg-gradient-to-br from-success to-success/80 text-white' :
                           isCorrect === false ? 'bg-gradient-to-br from-destructive to-destructive/80 text-white' :
                           'bg-gradient-to-br from-warning to-warning/80 text-white'
@@ -227,22 +264,22 @@ export default function QuizResultClient() {
 
                         <div className="flex-1 min-w-0">
                           {/* Question Text */}
-                          <div className="mb-3 font-semibold text-foreground flex items-start gap-2">
-                            <Target className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <span>{q.text}</span>
+                          <div className="mb-2 sm:mb-3 font-semibold text-sm sm:text-base text-foreground flex items-start gap-2">
+                            <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="break-words">{q.text}</span>
                           </div>
 
                           {/* Answers */}
                           <div className="space-y-2">
                             {q.type === 'mcq_single' && (
                               <>
-                                <div className="text-sm p-3 rounded-lg bg-primary/5 border border-primary/10">
+                                <div className="text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg bg-primary/5 border border-primary/10">
                                   <span className="font-medium text-primary">{language === 'ar' ? 'إجابتك:' : 'Your answer:'}</span>
-                                  <span className="ml-2 text-foreground">{selectedTextSingle}</span>
+                                  <span className="ml-2 rtl:mr-2 rtl:ml-0 text-foreground break-words">{selectedTextSingle}</span>
                                 </div>
-                                <div className="text-sm p-3 rounded-lg bg-success/5 border border-success/10">
+                                <div className="text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg bg-success/5 border border-success/10">
                                   <span className="font-medium text-success">{language === 'ar' ? 'الإجابة الصحيحة:' : 'Correct answer:'}</span>
-                                  <span className="ml-2 text-foreground">{correctSingleText}</span>
+                                  <span className="ml-2 rtl:mr-2 rtl:ml-0 text-foreground break-words">{correctSingleText}</span>
                                 </div>
                               </>
                             )}
@@ -334,24 +371,24 @@ export default function QuizResultClient() {
             )}
 
             {/* Back Button */}
-            <div className="pt-4 border-t border-primary/10">
+            <div className="pt-3 sm:pt-4 border-t border-primary/10">
               {classId && subjectId ? (
                 <Button 
                   variant="outline" 
                   onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subjectId}`)}
-                  className="border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {language === 'ar' ? 'العودة للمادة' : 'Back to Subject'}
+                  <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                  {t('backToSubjects' as TranslationKey)}
                 </Button>
               ) : (
                 <Button 
                   variant="outline"
                   onClick={() => router.push('/dashboard')}
-                  className="border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  {language === 'ar' ? 'العودة للوحة التحكم' : 'Back to Dashboard'}
+                  <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                  {t('back' as TranslationKey)} {t('dashboard' as TranslationKey)}
                 </Button>
               )}
             </div>

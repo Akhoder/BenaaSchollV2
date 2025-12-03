@@ -1555,7 +1555,7 @@ export async function startQuizAttempt(quizId: string) {
   return await supabase
     .from('quiz_attempts')
     .insert([{ quiz_id: quizId, student_id: uid, attempt_number }])
-    .select('*')
+    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
     .single();
 }
 
@@ -1579,7 +1579,7 @@ export async function submitQuizAttempt(attemptId: string, durationSeconds?: num
     .from('quiz_attempts')
     .update({ status: 'submitted', submitted_at: new Date().toISOString(), duration_seconds: durationSeconds ?? null })
     .eq('id', attemptId)
-    .select('*')
+    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
     .single();
 }
 
@@ -1591,11 +1591,29 @@ export async function fetchAnswersForAttempt(attemptId: string) {
 }
 
 export async function updateAttemptScore(attemptId: string, score: number) {
+  // Get current attempt to preserve submitted_at if already set
+  const { data: currentAttempt } = await supabase
+    .from('quiz_attempts')
+    .select('submitted_at')
+    .eq('id', attemptId)
+    .single();
+  
+  const updateData: any = {
+    status: 'graded',
+    score: score
+  };
+  
+  // Only set submitted_at if not already set
+  if (!currentAttempt?.submitted_at) {
+    updateData.submitted_at = new Date().toISOString();
+  }
+  
+  // Use specific fields in select to avoid trigger issues
   return await supabase
     .from('quiz_attempts')
-    .update({ status: 'graded', score })
+    .update(updateData)
     .eq('id', attemptId)
-    .select('*')
+    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds')
     .single();
 }
 
@@ -1708,7 +1726,7 @@ export async function recalcAttemptScore(attemptId: string) {
   // Get current attempt to preserve submitted_at if already set
   const { data: currentAttempt } = await supabase
     .from('quiz_attempts')
-    .select('submitted_at')
+    .select('submitted_at, score, status')
     .eq('id', attemptId)
     .single();
   
@@ -1722,11 +1740,12 @@ export async function recalcAttemptScore(attemptId: string) {
     updateData.submitted_at = new Date().toISOString();
   }
   
+  // Use specific fields in select to avoid trigger issues
   return await supabase
     .from('quiz_attempts')
     .update(updateData)
     .eq('id', attemptId)
-    .select('*')
+    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds')
     .single();
 }
 
