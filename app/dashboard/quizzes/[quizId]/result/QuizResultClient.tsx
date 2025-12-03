@@ -77,15 +77,27 @@ export default function QuizResultClient() {
 
   const classId = search.get('classId');
   const subjectId = search.get('subjectId');
-  // ✅ FIX: Show results if attempt exists and is graded, regardless of policy
-  // The policy check is mainly for preventing access before submission
+  // ✅ FIX: Check if results should be shown based on quiz policy
   const canShow = useMemo(() => {
     if (!quiz || !attempt) return false;
-    // If attempt is graded, always show results (user already submitted)
-    if (attempt.status === 'graded') return true;
-    // Otherwise, check policy
-    return quiz.show_results_policy === 'immediate' || 
-           (quiz.show_results_policy === 'after_close' && quiz.end_at && new Date(quiz.end_at) < new Date());
+    
+    // If policy is 'never', never show results
+    if (quiz.show_results_policy === 'never') return false;
+    
+    // If policy is 'immediate', show results immediately after submission
+    if (quiz.show_results_policy === 'immediate') {
+      return attempt.status === 'graded' || attempt.status === 'submitted';
+    }
+    
+    // If policy is 'after_close', only show after quiz end date has passed
+    if (quiz.show_results_policy === 'after_close') {
+      if (!quiz.end_at) return false; // No end date means never show
+      const now = new Date();
+      const endDate = new Date(quiz.end_at);
+      return endDate < now && (attempt.status === 'graded' || attempt.status === 'submitted');
+    }
+    
+    return false;
   }, [quiz, attempt]);
   
   // Calculate total_points from questions
@@ -141,7 +153,7 @@ export default function QuizResultClient() {
         />
 
         {/* Score Card */}
-        {attempt && (attempt.status === 'graded' || attempt.status === 'submitted') && (
+        {attempt && canShow && (
           <Card className="glass-card border-secondary/30 bg-gradient-to-br from-secondary/10 to-accent/10 shadow-xl shadow-secondary/20 animate-fade-in-up">
             <CardContent className="pt-6 relative overflow-hidden">
               {/* Decorative Background */}
@@ -233,6 +245,27 @@ export default function QuizResultClient() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {language === 'ar' ? 'لم يتم العثور على محاولة للاختبار' : 'No quiz attempt found'}
+                </p>
+              </div>
+            ) : !canShow ? (
+              <div className="text-center py-12">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-warning to-warning/80 rounded-full blur-xl opacity-20 animate-pulse"></div>
+                  <div className="relative p-6 bg-gradient-to-br from-warning/10 to-warning/5 rounded-full border border-warning/20">
+                    <Clock className="h-12 w-12 text-warning" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-foreground mb-2">
+                  {t('resultsNotAvailableYet' as TranslationKey)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {quiz?.show_results_policy === 'never' 
+                    ? (language === 'ar' ? 'النتائج غير متاحة حسب إعدادات الاختبار' : 'Results are not available per quiz settings')
+                    : quiz?.show_results_policy === 'after_close' && quiz?.end_at && new Date(quiz.end_at) > new Date()
+                    ? (language === 'ar' 
+                        ? `النتائج ستكون متاحة بعد انتهاء الاختبار: ${new Date(quiz.end_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}`
+                        : `Results will be available after the quiz closes: ${new Date(quiz.end_at).toLocaleString('en-US')}`)
+                    : (language === 'ar' ? 'النتائج غير متاحة حالياً' : 'Results are not available at this time')}
                 </p>
               </div>
             ) : (
