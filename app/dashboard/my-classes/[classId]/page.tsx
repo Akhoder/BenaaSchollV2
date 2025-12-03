@@ -1,5 +1,3 @@
-'use client';
-
 import ClassViewClient from './ClassViewClient';
 
 export const dynamic = 'force-static';
