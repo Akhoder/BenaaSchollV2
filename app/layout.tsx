@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
@@ -15,7 +15,7 @@ import { ErrorSuppressor } from '@/components/ErrorSuppressor';
 // Get base URL from environment variable or use default
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://benaa-school.bolt.host';
 
-export const viewport: Viewport = {
+export const viewport = {
   themeColor: '#115E3C', // Deep Islamic Emerald
   width: 'device-width',
   initialScale: 1,
