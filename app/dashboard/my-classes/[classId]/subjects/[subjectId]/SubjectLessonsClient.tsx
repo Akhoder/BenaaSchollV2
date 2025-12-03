@@ -7,6 +7,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -340,20 +341,35 @@ export default function SubjectLessonsClient() {
             }
             
             if (!existingCerts || existingCerts.length === 0) {
-              // Check eligibility
-              const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
-                p_student_id: profile.id,
-                p_subject_id: currentSubjectId,
-              });
-              
-              if (eligibilityError) {
-                // RPC function might not exist or there's an error - log it but don't break the page
-                console.warn('Error checking certificate eligibility (RPC may not exist):', eligibilityError);
-                return;
-              }
-              
-              if (eligibility && (eligibility as any).eligible) {
-                setCertificateEligibility(eligibility);
+              // Validate inputs before checking eligibility
+              if (profile?.id && currentSubjectId) {
+                try {
+                  // Check eligibility
+                  const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
+                    p_student_id: profile.id,
+                    p_subject_id: currentSubjectId,
+                  });
+                  
+                  if (eligibilityError) {
+                    // RPC function might not exist or there's an error - log it but don't break the page
+                    console.warn('Error checking certificate eligibility:', {
+                      error: eligibilityError,
+                      studentId: profile.id,
+                      subjectId: currentSubjectId,
+                      message: eligibilityError.message,
+                      code: eligibilityError.code,
+                    });
+                    return;
+                  }
+                  
+                  if (eligibility && (eligibility as any).eligible) {
+                    setCertificateEligibility(eligibility);
+                  }
+                } catch (rpcError: any) {
+                  // Handle unexpected errors
+                  console.warn('Unexpected error checking certificate eligibility:', rpcError);
+                  return;
+                }
               }
             }
           }
@@ -515,7 +531,7 @@ export default function SubjectLessonsClient() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? '╪ش╪د╪▒┘è ╪ز╪ص┘à┘è┘ ╪د┘╪ذ┘è╪د┘╪د╪ز...' : 'Loading data...'}
+              {t('loading' as TranslationKey)}
             </p>
           </div>
         </div>
@@ -531,7 +547,7 @@ export default function SubjectLessonsClient() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              {language === 'ar' ? '╪ش╪د╪▒┘è ╪ز╪ص┘à┘è┘ ╪د┘╪ذ┘è╪د┘╪د╪ز...' : 'Loading data...'}
+              {t('loading' as TranslationKey)}
             </p>
           </div>
         </div>

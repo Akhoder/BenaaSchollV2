@@ -1776,10 +1776,33 @@ export async function replaceOptions(questionId: string, options: Array<{ text: 
 // ============================================
 
 export async function checkCertificateEligibility(studentId: string, subjectId: string) {
-  return await supabase.rpc('check_certificate_eligibility', {
-    p_student_id: studentId,
-    p_subject_id: subjectId,
-  });
+  // Validate inputs
+  if (!studentId || !subjectId) {
+    return {
+      data: null,
+      error: {
+        message: 'Student ID and Subject ID are required',
+        code: 'VALIDATION_ERROR',
+      },
+    };
+  }
+
+  try {
+    return await supabase.rpc('check_certificate_eligibility', {
+      p_student_id: studentId,
+      p_subject_id: subjectId,
+    });
+  } catch (error: any) {
+    // Handle RPC function not found or other errors
+    return {
+      data: null,
+      error: {
+        message: error?.message || 'Failed to check certificate eligibility',
+        code: error?.code || 'RPC_ERROR',
+        details: error,
+      },
+    };
+  }
 }
 
 export async function autoIssueCertificateIfEligible(studentId: string, subjectId: string) {
@@ -1948,6 +1971,12 @@ export async function checkEligibleSubjectsForStudent() {
   
   for (const subject of subjects) {
     try {
+      // Validate inputs before checking eligibility
+      if (!userRes.user?.id || !subject?.id) {
+        console.warn(`Skipping eligibility check for subject ${subject.id}: missing student or subject ID`);
+        continue;
+      }
+
       const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
         p_student_id: userRes.user.id,
         p_subject_id: subject.id,
@@ -1955,7 +1984,13 @@ export async function checkEligibleSubjectsForStudent() {
       
       // Skip if RPC function doesn't exist or there's an error
       if (eligibilityError) {
-        console.warn(`Error checking certificate eligibility for subject ${subject.id}:`, eligibilityError);
+        console.warn(`Error checking certificate eligibility for subject ${subject.id}:`, {
+          error: eligibilityError,
+          studentId: userRes.user.id,
+          subjectId: subject.id,
+          message: eligibilityError.message,
+          code: eligibilityError.code,
+        });
         continue;
       }
       

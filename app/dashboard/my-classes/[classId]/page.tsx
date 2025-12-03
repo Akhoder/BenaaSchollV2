@@ -245,15 +245,15 @@ export default function ClassViewPage() {
           <Button 
             variant="outline"
             onClick={() => router.push('/dashboard/my-classes')}
-            className="w-fit border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
+            className="w-full sm:w-fit border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
             {t('backToClasses' as TranslationKey)}
           </Button>
           {classData.enrolled_at && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground justify-center md:justify-start">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+              <span className="text-center md:text-left">
                 <span className="font-semibold">{t('enrolledOn' as TranslationKey)}:</span>{' '}
                 <span className="font-medium text-foreground">
                   {new Date(classData.enrolled_at).toLocaleDateString(dateLocale)}
@@ -286,11 +286,11 @@ export default function ClassViewPage() {
               </div>
 
               {/* Class Info */}
-              <div className="flex-1 pt-2 text-center md:text-right md:rtl:text-right md:ltr:text-left">
-                <h1 className="text-2xl md:text-4xl font-display font-bold tracking-tight mb-4 drop-shadow-lg leading-tight">
+              <div className="flex-1 pt-2 text-center md:text-right rtl:text-right ltr:text-left">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold tracking-tight mb-3 sm:mb-4 drop-shadow-lg leading-tight">
                   {classData.class_name}
                 </h1>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3">
                   <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 transition-transform hover:scale-105">
                     <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     <span className="text-xs md:text-sm font-medium">{t('enrolledStatus' as TranslationKey)}</span>
@@ -311,13 +311,13 @@ export default function ClassViewPage() {
               </div>
             </div>
             {lastActivity ? (
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8">
                 <div className="rounded-2xl bg-white/10 border border-white/20 p-4 md:p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between backdrop-blur-md transition-all hover:bg-white/15">
-                  <div className="text-center md:text-right md:rtl:text-right md:ltr:text-left">
+                  <div className="text-center md:text-right rtl:text-right ltr:text-left">
                     <p className="text-xs md:text-sm uppercase tracking-wide text-white/70 mb-1 font-medium">
                       {t('latestActivity' as TranslationKey)}
                     </p>
-                    <h3 className="text-lg md:text-xl font-semibold mb-1">{lastActivity.label}</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1 break-words">{lastActivity.label}</h3>
                     <p className="text-xs md:text-sm text-white/80">
                       {new Date(lastActivity.date).toLocaleString(dateLocale, {
                         dateStyle: 'medium',
@@ -326,7 +326,7 @@ export default function ClassViewPage() {
                     </p>
                   </div>
                   <Link href={lastActivity.link} className="w-full md:w-auto">
-                    <Button variant="secondary" className="w-full md:w-auto gap-2 shadow-lg hover:shadow-xl transition-all active:scale-95">
+                    <Button variant="secondary" className="w-full md:w-auto gap-2 shadow-lg hover:shadow-xl transition-all active:scale-95 text-sm sm:text-base">
                       <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                       {t('continueLearning' as TranslationKey)}
                     </Button>
@@ -334,7 +334,7 @@ export default function ClassViewPage() {
                 </div>
               </div>
             ) : (
-              <p className="mt-8 text-sm text-white/70 text-center md:text-right md:rtl:text-right md:ltr:text-left">
+              <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-white/70 text-center md:text-right rtl:text-right ltr:text-left">
                 {t('noActivityYet' as TranslationKey)}
               </p>
             )}
@@ -466,11 +466,11 @@ export default function ClassViewPage() {
                       <CardHeader className="pb-4 h-full hover:bg-primary/5 transition-all">
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                           {/* Subject Info */}
-                          <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
+                          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
                             {/* Subject Image/Icon */}
                             <div className="relative flex-shrink-0">
                               {subject.image_url ? (
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all relative">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all relative">
                                   <img
                                     src={subject.image_url}
                                     alt={subject.subject_name}
@@ -480,8 +480,8 @@ export default function ClassViewPage() {
                               ) : (
                                 <>
                                   <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-                                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all shadow-lg shadow-primary/20">
-                                    <BookOpen className="h-8 w-8 text-white" />
+                                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center relative ring-2 ring-secondary/30 group-hover:ring-secondary/50 transition-all shadow-lg shadow-primary/20">
+                                    <BookOpen className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                   </div>
                                 </>
                               )}
@@ -539,7 +539,7 @@ export default function ClassViewPage() {
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <ExternalLink className="h-3 w-3" />
-                                  {language === 'ar' ? 'المرجع' : 'Reference'}
+                                  {t('reference' as TranslationKey)}
                                 </a>
                               )}
                               
@@ -605,17 +605,18 @@ export default function ClassViewPage() {
                         </div>
                       </CardHeader>
                     </Link>
-                    <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 pt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                      <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true} className="w-full sm:w-auto">
+                    <CardContent className="border-t border-primary/10 bg-gradient-to-l from-primary/5 to-secondary/5 pt-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                      <Link href={`/dashboard/my-classes/${classId}/subjects/${subject.id}`} prefetch={true} className="col-span-2 sm:col-span-1 w-full sm:w-auto">
                         <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors h-9 text-xs sm:text-sm">
-                          <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          {t('viewLesson' as TranslationKey)}
+                          <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="truncate">{t('viewLesson' as TranslationKey)}</span>
                         </Button>
                       </Link>
                       <Link href={`/dashboard/my-assignments?subject=${subject.id}`} prefetch={false} className="w-full sm:w-auto">
                         <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-colors h-9 text-xs sm:text-sm">
-                          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          {t('openAssignments' as TranslationKey)}
+                          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="truncate hidden sm:inline">{t('openAssignments' as TranslationKey)}</span>
+                          <span className="truncate sm:hidden">{t('assignments' as TranslationKey)}</span>
                         </Button>
                       </Link>
                       <Button
@@ -625,13 +626,15 @@ export default function ClassViewPage() {
                         className="w-full sm:w-auto gap-2 hover:bg-info/10 hover:text-info hover:border-info/30 transition-colors h-9 text-xs sm:text-sm"
                         onClick={() => setDiscussionSubject({ id: subject.id, name: subject.subject_name })}
                       >
-                        <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        {t('openDiscussion' as TranslationKey)}
+                        <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate hidden sm:inline">{t('openDiscussion' as TranslationKey)}</span>
+                        <span className="truncate sm:hidden">{t('openDiscussion' as TranslationKey).split(' ')[0]}</span>
                       </Button>
                       <Link href={`/dashboard/schedule?subject=${subject.id}`} prefetch={false} className="w-full sm:w-auto">
                         <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 transition-colors h-9 text-xs sm:text-sm">
-                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          {t('openSchedule' as TranslationKey)}
+                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="truncate hidden sm:inline">{t('openSchedule' as TranslationKey)}</span>
+                          <span className="truncate sm:hidden">{t('schedule' as TranslationKey)}</span>
                         </Button>
                       </Link>
                     </CardContent>
