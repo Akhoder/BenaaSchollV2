@@ -46,6 +46,9 @@ import {
   Play,
   CheckCircle,
   MoreVertical,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { 
   supabase, 
@@ -88,6 +91,7 @@ export default function QuizzesManagePage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'subject' | 'lesson'>('all');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   
   // Confirmation dialogs
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -482,105 +486,109 @@ export default function QuizzesManagePage() {
         >
           <Button
             onClick={() => router.push('/dashboard/quizzes/new')}
-            className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg"
+            className="w-full sm:w-auto bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/30 shadow-lg text-sm sm:text-base"
           >
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
             {t('createQuiz')}
           </Button>
         </PageHeader>
 
-        {/* ✨ Stats Cards - Islamic Design */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 animate-fade-in-up">
-          <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('totalQuizzes')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-primary">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('open')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-success to-primary rounded-xl shadow-lg">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-success">{stats.open}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('closed')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl shadow-lg shadow-secondary/20">
-                <X className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-secondary">{stats.closed}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('subjectQuizzes')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-accent to-primary rounded-xl shadow-lg">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-accent">{stats.subject}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card-hover border-info/10 hover:border-info/30 transition-all duration-300">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">
-                {t('lessonQuizzes')}
-              </CardTitle>
-              <div className="p-2.5 bg-gradient-to-br from-info to-accent rounded-xl shadow-lg">
-                <GraduationCap className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-info">{stats.lesson}</div>
-            </CardContent>
-          </Card>
+        {/* ✨ Stats Cards - Horizontal Scroll on Mobile */}
+        <div className="flex overflow-x-auto pb-3 sm:pb-4 gap-2.5 sm:gap-3 md:gap-4 snap-x snap-mandatory md:grid md:grid-cols-5 md:overflow-visible md:pb-0 -mx-2 sm:-mx-3 md:mx-0 px-2 sm:px-3 md:px-0 scrollbar-none animate-fade-in-up">
+          <div className="min-w-[160px] sm:min-w-[180px] md:min-w-0 snap-center h-full">
+            <Card className="glass-card-hover border-primary/10 hover:border-primary/30 transition-all duration-300 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-gradient-to-br from-primary to-accent rounded-full mb-2 sm:mb-2.5 md:mb-3 shadow-lg">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-display mb-1">{stats.total}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('totalQuizzes')}</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="min-w-[160px] sm:min-w-[180px] md:min-w-0 snap-center h-full">
+            <Card className="glass-card-hover border-success/10 hover:border-success/30 transition-all duration-300 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-gradient-to-br from-success to-primary rounded-full mb-2 sm:mb-2.5 md:mb-3 shadow-lg">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-display mb-1">{stats.open}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('open')}</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="min-w-[160px] sm:min-w-[180px] md:min-w-0 snap-center h-full">
+            <Card className="glass-card-hover border-secondary/10 hover:border-secondary/30 transition-all duration-300 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-gradient-to-br from-secondary to-secondary/80 rounded-full mb-2 sm:mb-2.5 md:mb-3 shadow-lg shadow-secondary/20">
+                  <X className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-display mb-1">{stats.closed}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('closed')}</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="min-w-[160px] sm:min-w-[180px] md:min-w-0 snap-center h-full">
+            <Card className="glass-card-hover border-accent/10 hover:border-accent/30 transition-all duration-300 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-gradient-to-br from-accent to-primary rounded-full mb-2 sm:mb-2.5 md:mb-3 shadow-lg">
+                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-display mb-1">{stats.subject}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('subjectQuizzes')}</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="min-w-[160px] sm:min-w-[180px] md:min-w-0 snap-center h-full">
+            <Card className="glass-card-hover border-info/10 hover:border-info/30 transition-all duration-300 h-full">
+              <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-gradient-to-br from-info to-accent rounded-full mb-2 sm:mb-2.5 md:mb-3 shadow-lg">
+                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-display mb-1">{stats.lesson}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('lessonQuizzes')}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* ✨ Filters - Islamic Design */}
+        {/* ✨ Filters - Mobile First Design */}
         <Card className="glass-card border-primary/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display text-foreground">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <Search className="h-4 w-4 text-primary" />
-              </div>
-              {t('filtersAndSearch')}
-            </CardTitle>
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 font-display text-foreground text-base sm:text-lg">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                {t('filtersAndSearch')}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                className="sm:hidden"
+              >
+                {filtersExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="relative md:col-span-2">
+          <CardContent className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="relative sm:col-span-2">
                 <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={t('searchQuizzes')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rtl:pl-3 rtl:pr-10 input-modern border-primary/20 focus:border-primary"
+                  className="pl-10 rtl:pl-3 rtl:pr-10 input-modern border-primary/20 focus:border-primary h-10 sm:h-11"
                 />
               </div>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 sm:h-11">
                   <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -590,7 +598,7 @@ export default function QuizzesManagePage() {
                 </SelectContent>
               </Select>
               <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 sm:h-11">
                   <SelectValue placeholder={t('subjectLabel')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -600,8 +608,8 @@ export default function QuizzesManagePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-                <SelectTrigger>
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)} className="sm:col-span-2 lg:col-span-1">
+                <SelectTrigger className="h-10 sm:h-11">
                   <SelectValue placeholder={t('type')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -617,16 +625,16 @@ export default function QuizzesManagePage() {
         {/* ✨ Quizzes List - Islamic Design */}
         <Card className="glass-card border-primary/10 overflow-hidden animate-fade-in-up delay-200">
           <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-            <div className="flex items-center justify-between">
-              <CardTitle className="font-display text-foreground flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+              <CardTitle className="font-display text-foreground flex items-center gap-2 text-base sm:text-lg">
                 <div className="p-1.5 bg-primary/10 rounded-lg">
-                  <FileText className="h-5 w-5 text-primary" />
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
                 {t('quizzes')} 
-                <Badge variant="gold" className="mr-2">{filteredQuizzes.length}</Badge>
+                <Badge variant="gold" className="text-xs sm:text-sm">{filteredQuizzes.length}</Badge>
               </CardTitle>
               {filteredQuizzes.length > 0 && (
-                <Badge variant="outline" className="text-sm border-primary/30 text-muted-foreground">
+                <Badge variant="outline" className="text-xs sm:text-sm border-primary/30 text-muted-foreground w-full sm:w-auto text-center sm:text-left">
                   {t('showingQuizzes')
                     .replace('{start}', (startIndex + 1).toString())
                     .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
@@ -637,14 +645,14 @@ export default function QuizzesManagePage() {
           </CardHeader>
           <CardContent>
             {filteredQuizzes.length === 0 ? (
-              <div className="text-center py-12 animate-fade-in">
-                <div className="relative inline-block mb-4">
-                  <div className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full">
-                    <FileText className="h-16 w-16 mx-auto text-primary/50 animate-float" />
+              <div className="text-center py-8 sm:py-12 animate-fade-in">
+                <div className="relative inline-block mb-3 sm:mb-4">
+                  <div className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full">
+                    <FileText className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-primary/50 animate-float" />
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground font-display mb-2">{t('noQuizzesFound')}</h3>
-                <p className="text-sm text-muted-foreground font-sans">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground font-display mb-1.5 sm:mb-2">{t('noQuizzesFound')}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground font-sans px-4">
                   {debouncedSearchQuery || statusFilter !== 'ALL' || subjectFilter !== 'all' || typeFilter !== 'all'
                     ? t('tryAdjustingFilters')
                     : t('noQuizzesCreatedYet')}
@@ -673,14 +681,14 @@ export default function QuizzesManagePage() {
                       <CardContent className="p-0">
                         {/* Subject & Lesson Info Section */}
                         {(quiz.subject_id || quiz.lesson_id || quiz.lesson?.subject_id) && (
-                          <div className={`px-6 pt-4 pb-3 border-b ${
+                          <div className={`px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b ${
                             isLessQuiz
                               ? 'bg-info/5 dark:bg-info/10 border-info/20'
                               : isSubQuiz
                               ? 'bg-accent/5 dark:bg-accent/10 border-accent/20'
                               : 'bg-primary/5 dark:bg-primary/10 border-primary/20'
                           }`}>
-                            <div className="flex items-center gap-4 flex-wrap">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                               {(quiz.subject_id || quiz.lesson?.subject_id) && (
                                 <div className="flex items-center gap-2">
                                   <div className="p-1.5 rounded-lg bg-accent/10">
@@ -732,16 +740,16 @@ export default function QuizzesManagePage() {
                                   </div>
                                 </div>
                               )}
-                              <div className="ml-auto">
+                              <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap gap-2">
                                 {isLessQuiz && (
-                                  <Badge variant="info" className="font-medium">
-                                    <GraduationCap className="h-3 w-3 mr-1.5" />
+                                  <Badge variant="info" className="font-medium text-xs sm:text-sm">
+                                    <GraduationCap className="h-3 w-3 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                                     {t('lessonQuizzes')}
                                   </Badge>
                                 )}
                                 {isSubQuiz && (
-                                  <Badge variant="accent" className="font-medium">
-                                    <BookOpen className="h-3 w-3 mr-1.5" />
+                                  <Badge variant="accent" className="font-medium text-xs sm:text-sm">
+                                    <BookOpen className="h-3 w-3 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                                     {t('subjectQuizzes')}
                                   </Badge>
                                 )}
@@ -751,38 +759,38 @@ export default function QuizzesManagePage() {
                         )}
 
                         {/* Header Section */}
-                        <div className={`relative p-6 pb-4 ${
+                        <div className={`relative p-4 sm:p-6 pb-3 sm:pb-4 ${
                           active
                             ? 'bg-primary/5 dark:bg-primary/10'
                             : 'bg-muted/30 dark:bg-muted/10'
                         }`}>
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start gap-3 mb-3">
-                                <div className={`p-2.5 rounded-xl flex-shrink-0 ${
+                              <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                                <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl flex-shrink-0 ${
                                   active
                                     ? 'bg-gradient-to-br from-success to-primary shadow-lg'
                                     : 'bg-gradient-to-br from-secondary to-secondary/80 shadow-lg shadow-secondary/20'
                                 }`}>
-                                  <FileText className="h-5 w-5 text-white" />
+                                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="font-bold text-xl text-foreground mb-2 leading-tight">
+                                  <h3 className="font-bold text-base sm:text-xl text-foreground mb-1.5 sm:mb-2 leading-tight break-words">
                                     {quiz.title}
                                   </h3>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <Badge
                                       variant={active ? 'success' : 'gold'}
-                                      className="font-medium"
+                                      className="font-medium text-xs sm:text-sm"
                                     >
                                       {active ? (
                                         <>
-                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          <CheckCircle className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                           {t('open')}
                                         </>
                                       ) : (
                                         <>
-                                          <X className="h-3 w-3 mr-1" />
+                                          <X className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                           {t('closed')}
                                         </>
                                       )}
@@ -792,7 +800,7 @@ export default function QuizzesManagePage() {
                               </div>
 
                               {quiz.description && (
-                                <p className="text-sm text-muted-foreground mb-0 line-clamp-2 leading-relaxed pl-14">
+                                <p className="text-xs sm:text-sm text-muted-foreground mb-0 line-clamp-2 leading-relaxed pl-0 sm:pl-14">
                                   {quiz.description}
                                 </p>
                               )}
@@ -800,28 +808,28 @@ export default function QuizzesManagePage() {
 
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                <Button variant="ghost" size="sm" className="h-9 w-9 sm:h-8 sm:w-8 p-0 flex-shrink-0">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}>
-                                  <Edit className="h-4 w-4 mr-2" />
+                                  <Edit className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   {t('edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}>
-                                  <Award className="h-4 w-4 mr-2" />
+                                  <Award className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   {t('gradeAction')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {active ? (
                                   <DropdownMenuItem onClick={() => handleCloseQuizClick(quiz)}>
-                                    <X className="h-4 w-4 mr-2" />
+                                    <X className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                     {t('close')}
                                   </DropdownMenuItem>
                                 ) : (
                                   <DropdownMenuItem onClick={() => handleOpenQuizClick(quiz)}>
-                                    <Play className="h-4 w-4 mr-2" />
+                                    <Play className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                     {t('openAction')}
                                   </DropdownMenuItem>
                                 )}
@@ -830,9 +838,9 @@ export default function QuizzesManagePage() {
                                   disabled={downloading === quiz.id}
                                 >
                                   {downloading === quiz.id ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
                                   ) : (
-                                    <Download className="h-4 w-4 mr-2" />
+                                    <Download className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   )}
                                   {t('export')}
                                 </DropdownMenuItem>
@@ -841,9 +849,9 @@ export default function QuizzesManagePage() {
                                   disabled={publishing === quiz.id}
                                 >
                                   {publishing === quiz.id ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
                                   ) : (
-                                    <Send className="h-4 w-4 mr-2" />
+                                    <Send className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   )}
                                   {t('publish')}
                                 </DropdownMenuItem>
@@ -852,9 +860,9 @@ export default function QuizzesManagePage() {
                                   disabled={notifying === quiz.id}
                                 >
                                   {notifying === quiz.id ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
                                   ) : (
-                                    <Send className="h-4 w-4 mr-2" />
+                                    <Send className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   )}
                                   {t('notify')}
                                 </DropdownMenuItem>
@@ -863,7 +871,7 @@ export default function QuizzesManagePage() {
                                   onClick={() => handleDeleteQuizClick(quiz)}
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  <Trash2 className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                                   {t('delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -872,39 +880,39 @@ export default function QuizzesManagePage() {
                         </div>
 
                         {/* Content Section */}
-                        <div className="p-6 pt-4">
-                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                        <div className="p-4 sm:p-6 pt-3 sm:pt-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                            <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
                               <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                                <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('attempts')}</p>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('attempts')}</p>
+                                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
                                   {quiz.attempts_allowed || 1}
                                 </p>
                               </div>
                             </div>
                             {quiz.time_limit_minutes && (
-                              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30">
+                              <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30">
                                 <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
-                                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-0.5">{t('timeLimit')}</p>
-                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  <p className="text-[10px] sm:text-xs font-medium text-amber-600 dark:text-amber-400 mb-0.5">{t('timeLimit')}</p>
+                                  <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
                                     {quiz.time_limit_minutes} {t('minutes')}
                                   </p>
                                 </div>
                               </div>
                             )}
-                            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
+                            <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30">
                               <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-700 flex-shrink-0">
-                                <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('created')}</p>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('created')}</p>
+                                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 break-words">
                                   {formatDateTime(quiz.created_at)}
                                 </p>
                               </div>
@@ -912,11 +920,11 @@ export default function QuizzesManagePage() {
                           </div>
 
                           {(quiz.start_at || quiz.end_at) && (
-                            <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30 mb-4">
-                              <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
-                              <div className="flex-1">
-                                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('timeRange')}</p>
-                                <p className="text-sm text-slate-900 dark:text-slate-100">
+                            <div className="flex items-start sm:items-center gap-2 p-2.5 sm:p-3 rounded-lg bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30 mb-3 sm:mb-4">
+                              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{t('timeRange')}</p>
+                                <p className="text-xs sm:text-sm text-slate-900 dark:text-slate-100 break-words">
                                   {quiz.start_at ? formatDateTime(quiz.start_at) : '—'} →{' '}
                                   {quiz.end_at ? formatDateTime(quiz.end_at) : '—'}
                                 </p>
@@ -925,23 +933,23 @@ export default function QuizzesManagePage() {
                           )}
 
                           {/* Actions Bar */}
-                          <div className="flex items-center gap-2 pt-4 border-t border-slate-200 dark:border-slate-800 flex-wrap">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-800">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/edit`)}
-                              className="flex-1 sm:flex-initial"
+                              className="flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                             >
-                              <Edit className="h-4 w-4 mr-1.5" />
+                              <Edit className="h-4 w-4 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                               {t('edit')}
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => router.push(`/dashboard/quizzes/${quiz.id}/grade`)}
-                              className="flex-1 sm:flex-initial"
+                              className="flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                             >
-                              <Award className="h-4 w-4 mr-1.5" />
+                              <Award className="h-4 w-4 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                               {t('gradeAction')}
                             </Button>
                             {active ? (
@@ -949,9 +957,9 @@ export default function QuizzesManagePage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleCloseQuizClick(quiz)}
-                                className="flex-1 sm:flex-initial"
+                                className="flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                               >
-                                <X className="h-4 w-4 mr-1.5" />
+                                <X className="h-4 w-4 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                                 {t('close')}
                               </Button>
                             ) : (
@@ -959,9 +967,9 @@ export default function QuizzesManagePage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleOpenQuizClick(quiz)}
-                                className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 flex-1 sm:flex-initial"
+                                className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                               >
-                                <Play className="h-4 w-4 mr-1.5" />
+                                <Play className="h-4 w-4 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
                                 {t('openAction')}
                               </Button>
                             )}
@@ -977,19 +985,20 @@ export default function QuizzesManagePage() {
             {/* Pagination */}
             {filteredQuizzes.length > 10 && (
               <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+                  <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left">
                     {t('showingQuizzes')
                       .replace('{start}', (startIndex + 1).toString())
                       .replace('{end}', Math.min(endIndex, filteredQuizzes.length).toString())
                       .replace('{total}', filteredQuizzes.length.toString())}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
+                      className="flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                     >
                       {t('previous')}
                     </Button>
@@ -998,6 +1007,7 @@ export default function QuizzesManagePage() {
                       size="sm"
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
+                      className="flex-1 sm:flex-initial h-10 sm:h-9 text-sm"
                     >
                       {t('next')}
                     </Button>

@@ -226,16 +226,24 @@ export default function TakeQuizClient() {
       (ansRows || []).forEach((row: any) => {
         const q = (questions as any[]).find((x: any) => x.id === row.question_id);
         if (!q) return;
-        const points = Number(q.points || 1);
+        // Ensure points is a valid positive number, default to 1 if invalid
+        const points = Math.max(1, Number(q.points) || 1);
+        if (isNaN(points) || points <= 0) {
+          console.warn(`Invalid points value for question ${q.id}, using default 1`);
+          return;
+        }
+        
+        // MCQ Single Choice
         if (q.type === 'mcq_single') {
           const selected = (row.answer_payload?.selected_option_ids || [])[0];
           const opts = optionsByQuestion.get(q.id) || [];
           const correctOpt = opts.find((o: any) => o.is_correct);
-          const correct = !!selected && correctOpt && selected === correctOpt.id;
+          const correct = !!selected && !!correctOpt && selected === correctOpt.id;
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
-        if (q.type === 'mcq_multi') {
+        // MCQ Multiple Choice
+        else if (q.type === 'mcq_multi') {
           const selected: string[] = row.answer_payload?.selected_option_ids || [];
           const opts = optionsByQuestion.get(q.id) || [];
           const correctIds = opts.filter((o: any) => o.is_correct).map((o: any) => o.id).sort();
@@ -244,18 +252,8 @@ export default function TakeQuizClient() {
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
-        if (q.type === 'numeric') {
-          const provided = row.answer_payload?.number;
-          const opts = optionsByQuestion.get(q.id) || [];
-          const correctOpt = opts.find((o: any) => o.is_correct);
-          const correctVal = correctOpt ? Number(correctOpt.text) : undefined;
-          const tol = q.media_url ? Number(q.media_url) : 0;
-          const correct = typeof provided === 'number' && typeof correctVal === 'number' && Math.abs(provided - correctVal) <= tol;
-          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
-          if (correct) total += points;
-        }
         // True/False
-        if (q.type === 'true_false') {
+        else if (q.type === 'true_false') {
           const provided = row.answer_payload?.bool;
           const opts = optionsByQuestion.get(q.id) || [];
           const correctOpt = opts.find((o: any) => o.is_correct);
@@ -266,17 +264,39 @@ export default function TakeQuizClient() {
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
         }
+        // Numeric
+        else if (q.type === 'numeric') {
+          const provided = row.answer_payload?.number;
+          const opts = optionsByQuestion.get(q.id) || [];
+          const correctOpt = opts.find((o: any) => o.is_correct);
+          const correctVal = correctOpt ? Number(correctOpt.text) : undefined;
+          const tol = q.media_url ? Number(q.media_url) : 0;
+          // Validate that both values are valid numbers before comparison
+          const providedNum = typeof provided === 'number' && !isNaN(provided) ? provided : undefined;
+          const correctNum = typeof correctVal === 'number' && !isNaN(correctVal) ? correctVal : undefined;
+          const tolNum = !isNaN(tol) && tol >= 0 ? tol : 0;
+          const correct = providedNum !== undefined && correctNum !== undefined && Math.abs(providedNum - correctNum) <= tolNum;
+          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
+          if (correct) total += points;
+        }
         // Note: short_text, ordering, matching require manual grading
       });
       if (toGrade.length > 0) {
-        await gradeAnswersBulk(toGrade);
+        const gradeResult = await gradeAnswersBulk(toGrade);
+        if (gradeResult?.error) {
+          console.error('Error grading answers:', gradeResult.error);
+          toast.error(language === 'ar' ? 'حدث خطأ أثناء التصحيح التلقائي' : language === 'fr' ? 'Erreur lors de la notation automatique' : 'Error during automatic grading');
+        }
       }
       // Use recalcAttemptScore to ensure accuracy (sums all points_awarded from DB)
       // This is more reliable than using the calculated 'total' variable
       const { error: recalcError } = await recalcAttemptScore(attempt!.id);
       if (recalcError) {
         // Fallback to manual calculation if recalc fails
-        await updateAttemptScore(attempt!.id, total);
+        const { error: updateError } = await updateAttemptScore(attempt!.id, total);
+        if (updateError) {
+          console.error('Error updating attempt score:', updateError);
+        }
       }
 
       toast.success(t('submitted' as TranslationKey));

@@ -1591,16 +1591,20 @@ export async function fetchAnswersForAttempt(attemptId: string) {
 }
 
 export async function updateAttemptScore(attemptId: string, score: number) {
+  // Validate score
+  const validScore = typeof score === 'number' && !isNaN(score) && score >= 0 ? score : 0;
+  
   // Get current attempt to preserve submitted_at if already set
   const { data: currentAttempt } = await supabase
     .from('quiz_attempts')
-    .select('submitted_at')
+    .select('submitted_at, status')
     .eq('id', attemptId)
     .single();
   
+  // Prepare update data
   const updateData: any = {
     status: 'graded',
-    score: score
+    score: validScore
   };
   
   // Only set submitted_at if not already set
@@ -1608,20 +1612,158 @@ export async function updateAttemptScore(attemptId: string, score: number) {
     updateData.submitted_at = new Date().toISOString();
   }
   
-  // Use specific fields in select to avoid trigger issues
-  return await supabase
+  // Try to update - use minimal select to avoid trigger issues
+  let result = await supabase
     .from('quiz_attempts')
     .update(updateData)
     .eq('id', attemptId)
-    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds')
+    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
     .single();
+  
+  // If update failed due to trigger error, try direct update without select
+  if (result.error && result.error.code === '42703') {
+    console.warn('Trigger error in updateAttemptScore, trying direct update:', result.error);
+    // Try direct update without select first
+    const { error: directError } = await supabase
+      .from('quiz_attempts')
+      .update(updateData)
+      .eq('id', attemptId);
+    
+    if (!directError) {
+      // If direct update succeeded, fetch the result
+      const { data: fetched } = await supabase
+        .from('quiz_attempts')
+        .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
+        .eq('id', attemptId)
+        .single();
+      
+      if (fetched) {
+        // Verify status was updated
+        if (fetched.status !== 'graded') {
+          // Force update status only
+          await supabase
+            .from('quiz_attempts')
+            .update({ status: 'graded' })
+            .eq('id', attemptId);
+          // Re-fetch
+          const { data: final } = await supabase
+            .from('quiz_attempts')
+            .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
+            .eq('id', attemptId)
+            .single();
+          return { data: final || fetched, error: null };
+        }
+        return { data: fetched, error: null };
+      }
+    }
+  }
+  
+  // Verify the update succeeded
+  if (result.data) {
+    // Double-check status was updated
+    if (result.data.status !== 'graded') {
+      // Force update status
+      await supabase
+        .from('quiz_attempts')
+        .update({ status: 'graded' })
+        .eq('id', attemptId);
+      // Re-fetch
+      const { data: verified } = await supabase
+        .from('quiz_attempts')
+        .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
+        .eq('id', attemptId)
+        .single();
+      return { data: verified || result.data, error: null };
+    }
+    return result;
+  }
+  
+  // If we got here, there was an error - try one more time with just status update
+  if (result.error) {
+    console.warn('Update failed, trying status-only update:', result.error);
+    const { error: statusError } = await supabase
+      .from('quiz_attempts')
+      .update({ status: 'graded', score: validScore })
+      .eq('id', attemptId);
+    
+    if (!statusError) {
+      const { data: final } = await supabase
+        .from('quiz_attempts')
+        .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds, attempt_number')
+        .eq('id', attemptId)
+        .single();
+      return { data: final, error: null };
+    }
+  }
+  
+  return result;
 }
 
 export async function gradeAnswersBulk(rows: Array<{ id: string; is_correct: boolean; points_awarded: number }>) {
   // Update each row; Supabase lacks bulk update by different rows in one call, do sequential minimal
+  const errors: Array<{ id: string; error: any }> = [];
+  
+  // Pre-fetch all question IDs to get points efficiently
+  const answerIds = rows.map(r => r.id);
+  const { data: answersData } = await supabase
+    .from('quiz_answers')
+    .select('id, question_id')
+    .in('id', answerIds);
+  
+  const answerToQuestionMap = new Map((answersData || []).map((a: any) => [a.id, a.question_id]));
+  const questionIds = Array.from(new Set(Array.from(answerToQuestionMap.values())));
+  
+  const { data: questionsData } = await supabase
+    .from('quiz_questions')
+    .select('id, points')
+    .in('id', questionIds);
+  
+  const questionPointsMap = new Map((questionsData || []).map((q: any) => [q.id, Math.max(1, Number(q.points) || 1)]));
+  
   for (const r of rows) {
-    await supabase.from('quiz_answers').update({ is_correct: r.is_correct, points_awarded: r.points_awarded }).eq('id', r.id);
+    // Validate inputs
+    const isCorrect = typeof r.is_correct === 'boolean' ? r.is_correct : false;
+    let points = typeof r.points_awarded === 'number' && !isNaN(r.points_awarded) && r.points_awarded >= 0 
+      ? r.points_awarded 
+      : 0;
+    
+    // Ensure consistency: if is_correct is true, points should match question points
+    // If is_correct is false, points should be 0
+    if (isCorrect && points === 0) {
+      // Get question points
+      const questionId = answerToQuestionMap.get(r.id);
+      if (questionId) {
+        const questionPoints = questionPointsMap.get(questionId);
+        if (questionPoints) {
+          points = questionPoints;
+        }
+      }
+    } else if (!isCorrect && points > 0) {
+      // If is_correct is false, points must be 0
+      points = 0;
+    }
+    
+    const { error } = await supabase
+      .from('quiz_answers')
+      .update({ 
+        is_correct: isCorrect, 
+        points_awarded: points,
+        graded_at: new Date().toISOString()
+      })
+      .eq('id', r.id);
+    
+    if (error) {
+      errors.push({ id: r.id, error });
+      console.error(`Failed to grade answer ${r.id}:`, error);
+    }
   }
+  
+  // Return errors if any occurred
+  if (errors.length > 0) {
+    return { error: { message: `Failed to grade ${errors.length} answer(s)`, details: errors } };
+  }
+  
+  return { error: null };
 }
 // ==== END QUIZZES HELPERS ====
 
@@ -1708,45 +1850,121 @@ export async function updateAnswerPayload(answerId: string, partial: Record<stri
 }
 
 export async function recalcAttemptScore(attemptId: string) {
+  // Step 1: Get all answers with points_awarded and is_correct
   const { data: answers } = await supabase
     .from('quiz_answers')
-    .select('points_awarded')
+    .select('id, points_awarded, is_correct, question_id')
     .eq('attempt_id', attemptId);
   
-  // Calculate total: sum all points_awarded (null or undefined = 0)
-  const total = (answers || []).reduce((acc: number, r: any) => {
-    const points = r.points_awarded;
-    // Handle null, undefined, or invalid numbers
-    if (points === null || points === undefined || isNaN(Number(points))) {
-      return acc;
-    }
-    return acc + Number(points);
-  }, 0);
-  
-  // Get current attempt to preserve submitted_at if already set
-  const { data: currentAttempt } = await supabase
-    .from('quiz_attempts')
-    .select('submitted_at, score, status')
-    .eq('id', attemptId)
-    .single();
-  
-  const updateData: any = {
-    score: total,
-    status: 'graded'
-  };
-  
-  // Only set submitted_at if not already set
-  if (!currentAttempt?.submitted_at) {
-    updateData.submitted_at = new Date().toISOString();
+  if (!answers || answers.length === 0) {
+    // No answers found, set score to 0 and status to graded
+    return await updateAttemptScore(attemptId, 0);
   }
   
-  // Use specific fields in select to avoid trigger issues
-  return await supabase
-    .from('quiz_attempts')
-    .update(updateData)
-    .eq('id', attemptId)
-    .select('id, quiz_id, student_id, score, status, submitted_at, started_at, duration_seconds')
-    .single();
+  // Step 2: Get questions to know the points for each question
+  const questionIds = Array.from(new Set(answers.map((a: any) => a.question_id)));
+  const { data: questions } = await supabase
+    .from('quiz_questions')
+    .select('id, points')
+    .in('id', questionIds);
+  
+  const questionPointsMap = new Map((questions || []).map((q: any) => [q.id, Math.max(1, Number(q.points) || 1)]));
+  
+  // Step 3: Calculate total and fix inconsistent answers
+  const answersToFix: Array<{ id: string; points: number; is_correct: boolean }> = [];
+  let totalScore = 0;
+  
+  for (const ans of answers) {
+    const questionPoints = questionPointsMap.get(ans.question_id) || 1;
+    let points = ans.points_awarded;
+    let isCorrect = ans.is_correct;
+    let needsFix = false;
+    let finalPoints = points;
+    let finalIsCorrect = isCorrect;
+    
+    // Determine correct points based on is_correct
+    if (isCorrect === true) {
+      // Answer is correct - should have full points
+      if (points === null || points === undefined || Number(points) === 0) {
+        finalPoints = questionPoints;
+        needsFix = true;
+      } else {
+        finalPoints = Number(points);
+        // Ensure points match question points for correct answers
+        if (finalPoints !== questionPoints) {
+          finalPoints = questionPoints;
+          needsFix = true;
+        }
+      }
+      totalScore += finalPoints;
+    } else if (isCorrect === false) {
+      // Answer is wrong - should have 0 points
+      finalPoints = 0;
+      if (points !== null && points !== undefined && Number(points) !== 0) {
+        needsFix = true;
+      }
+      // totalScore += 0 (no need to add)
+    } else {
+      // is_correct is null - check points_awarded
+      if (points !== null && points !== undefined) {
+        const pointsNum = Number(points);
+        if (!isNaN(pointsNum) && pointsNum >= 0) {
+          finalPoints = pointsNum;
+          // Infer is_correct from points
+          if (pointsNum > 0) {
+            finalIsCorrect = true;
+            needsFix = true;
+          } else {
+            finalIsCorrect = false;
+            needsFix = true;
+          }
+          totalScore += finalPoints;
+        } else {
+          finalPoints = 0;
+          finalIsCorrect = false;
+          needsFix = true;
+        }
+      } else {
+        // Both are null - default to 0
+        finalPoints = 0;
+        finalIsCorrect = false;
+        needsFix = true;
+      }
+    }
+    
+    // Collect answers that need fixing
+    if (needsFix) {
+      answersToFix.push({ 
+        id: ans.id, 
+        points: finalPoints,
+        is_correct: finalIsCorrect
+      });
+    }
+  }
+  
+  // Step 4: Fix inconsistent answers in database
+  if (answersToFix.length > 0) {
+    await Promise.all(answersToFix.map(async (ans) => {
+      try {
+        await supabase
+          .from('quiz_answers')
+          .update({ 
+            points_awarded: ans.points,
+            is_correct: ans.is_correct,
+            graded_at: new Date().toISOString()
+          })
+          .eq('id', ans.id);
+      } catch (err) {
+        console.warn(`Failed to fix answer ${ans.id}:`, err);
+      }
+    }));
+  }
+  
+  // Step 5: Ensure total is valid
+  const finalTotal = Math.max(0, totalScore);
+  
+  // Step 6: Update attempt score and status
+  return await updateAttemptScore(attemptId, finalTotal);
 }
 
 export async function fetchEnrolledStudentsForSubject(subjectId: string) {

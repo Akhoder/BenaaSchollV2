@@ -228,9 +228,10 @@ export default function EditQuizClient() {
         let correct_answer: string | number | boolean | null = null;
         if (q.type === 'true_false') {
           // For true_false, find the correct option
+          // Use order_index for language independence: 0 = True, 1 = False
           const correctOpt = opts.find((opt: any) => opt.is_correct);
           if (correctOpt) {
-            correct_answer = correctOpt.text === (language === 'ar' ? 'صحيح' : 'True');
+            correct_answer = correctOpt.order_index === 0; // true if order_index is 0 (True), false if 1 (False)
           }
         } else if (q.type === 'numeric') {
           // For numeric, use media_url as correct_answer
@@ -521,7 +522,16 @@ export default function EditQuizClient() {
         }
       } else if (question.type === 'true_false') {
         // Update true/false options
-        const correctAnswerBool = question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1';
+        // Handle correct_answer as boolean, string, or number
+        let correctAnswerBool = false;
+        if (typeof question.correct_answer === 'boolean') {
+          correctAnswerBool = question.correct_answer;
+        } else if (question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1') {
+          correctAnswerBool = true;
+        } else if (question.correct_answer === 'false' || question.correct_answer === 0 || question.correct_answer === '0') {
+          correctAnswerBool = false;
+        }
+        
         const trueFalseOptions = [
           { text: language === 'ar' ? 'صحيح' : 'True', is_correct: correctAnswerBool, order_index: 0 },
           { text: language === 'ar' ? 'خطأ' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
@@ -1131,18 +1141,32 @@ export default function EditQuizClient() {
                         </Label>
                         <div className="flex gap-2">
                           <Button
-                            variant={(question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1') ? 'default' : 'outline'}
+                            variant={
+                              (typeof question.correct_answer === 'boolean' && question.correct_answer === true) ||
+                              question.correct_answer === 'true' ||
+                              question.correct_answer === 1 ||
+                              question.correct_answer === '1'
+                                ? 'default'
+                                : 'outline'
+                            }
                             onClick={() =>
-                              updateQuestionLocal(question.id, { correct_answer: 'true' })
+                              updateQuestionLocal(question.id, { correct_answer: true })
                             }
                             className="h-10 sm:h-11 flex-1 sm:flex-none text-sm"
                           >
                             {language === 'ar' ? 'صحيح' : 'True'}
                           </Button>
                           <Button
-                            variant={(question.correct_answer === 'false' || question.correct_answer === 0 || question.correct_answer === '0') ? 'default' : 'outline'}
+                            variant={
+                              (typeof question.correct_answer === 'boolean' && question.correct_answer === false) ||
+                              question.correct_answer === 'false' ||
+                              question.correct_answer === 0 ||
+                              question.correct_answer === '0'
+                                ? 'default'
+                                : 'outline'
+                            }
                             onClick={() =>
-                              updateQuestionLocal(question.id, { correct_answer: 'false' })
+                              updateQuestionLocal(question.id, { correct_answer: false })
                             }
                             className="h-10 sm:h-11 flex-1 sm:flex-none text-sm"
                           >
