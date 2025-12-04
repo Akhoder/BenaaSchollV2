@@ -12,7 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchQuizBundle, supabase, startQuizAttempt, saveQuizAnswer, submitQuizAttempt, fetchAnswersForAttempt, gradeAnswersBulk, updateAttemptScore } from '@/lib/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { TranslationKey } from '@/lib/translations';
+import { fetchQuizBundle, supabase, startQuizAttempt, saveQuizAnswer, submitQuizAttempt, fetchAnswersForAttempt, gradeAnswersBulk, updateAttemptScore, recalcAttemptScore } from '@/lib/supabase';
 
 export const dynamic = 'force-static';
 
@@ -23,6 +25,7 @@ export default function TakeQuizPage() {
   const quizId = params?.quizId as string;
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
+  const { t, language } = useLanguage();
 
   const [bundle, setBundle] = useState<any | null>(null);
   const [attempt, setAttempt] = useState<any | null>(null);
@@ -54,7 +57,7 @@ export default function TakeQuizPage() {
         onSubmit(true);
       }
       if (timeLeft === 60) {
-        toast.message('One minute remaining');
+        toast.message(language === 'ar' ? 'بقي دقيقة واحدة' : 'One minute remaining');
       }
     }
   }, [timeLeft]);
@@ -63,7 +66,7 @@ export default function TakeQuizPage() {
     try {
       setLoading(true);
       const { quiz, questions, optionsByQuestion } = await fetchQuizBundle(quizId);
-      if (!quiz) { toast.error('Quiz not found'); router.push('/dashboard'); return; }
+      if (!quiz) { toast.error(t('noQuizzesFound' as TranslationKey)); router.push('/dashboard'); return; }
       setBundle({ quiz, questions, optionsByQuestion });
 
       // Derive redirect params if not provided
@@ -85,7 +88,7 @@ export default function TakeQuizPage() {
       const startsOk = !quiz.start_at || new Date(quiz.start_at) <= now;
       const endsOk = !quiz.end_at || new Date(quiz.end_at) >= now;
       if (!(startsOk && endsOk)) {
-        toast.error('Quiz is not available currently');
+        toast.error(t('quizClosedSuccessfully' as TranslationKey));
         const backClass = classIdResolved; const backSub = subjectIdQP;
         if (backClass && backSub) router.push(`/dashboard/my-classes/${backClass}/subjects/${backSub}`); else router.push('/dashboard');
         return;
@@ -105,7 +108,7 @@ export default function TakeQuizPage() {
 
       const inProgress = (attempts || []).find((a: any) => a.status === 'in_progress');
       if (attemptsCount >= (quiz.attempts_allowed || 1) && !inProgress) {
-        toast.error('No attempts remaining');
+        toast.error(language === 'ar' ? 'لا توجد محاولات متبقية' : 'No attempts remaining');
         const backClass = classIdResolved; const backSub = subjectIdQP;
         if (backClass && backSub) router.push(`/dashboard/my-classes/${backClass}/subjects/${backSub}`); else router.push('/dashboard');
         return;
@@ -145,7 +148,7 @@ export default function TakeQuizPage() {
           return;
         }
         const { data: created, error } = await startQuizAttempt(quizId);
-        if (error || !created) { toast.error('Failed to start attempt'); return; }
+        if (error || !created) { toast.error(t('unexpectedError' as TranslationKey)); return; }
         att = created;
       }
       setAttempt(att);
@@ -192,7 +195,7 @@ export default function TakeQuizPage() {
       }
       const duration = (bundle?.quiz?.time_limit_minutes ? (bundle.quiz.time_limit_minutes * 60 - (timeLeft || 0)) : undefined);
       const { error } = await submitQuizAttempt(attempt!.id, duration);
-      if (error) { toast.error('Submit failed'); return; }
+      if (error) { toast.error(t('unexpectedError' as TranslationKey)); return; }
 
       // Auto-grade auto-gradable questions
       const { quiz, questions, optionsByQuestion } = bundle!;
@@ -249,9 +252,15 @@ export default function TakeQuizPage() {
       if (toGrade.length > 0) {
         await gradeAnswersBulk(toGrade);
       }
-      await updateAttemptScore(attempt!.id, total);
+      // Use recalcAttemptScore to ensure accuracy (sums all points_awarded from DB)
+      // This is more reliable than using the calculated 'total' variable
+      const { error: recalcError } = await recalcAttemptScore(attempt!.id);
+      if (recalcError) {
+        // Fallback to manual calculation if recalc fails
+        await updateAttemptScore(attempt!.id, total);
+      }
 
-      toast.success(auto ? 'Auto-submitted' : 'Submitted');
+      toast.success(t('submitted' as TranslationKey));
       const policy = bundle?.quiz?.show_results_policy as 'immediate' | 'after_close' | 'never';
       const classId = search.get('classId') || redirectParams.classId;
       const subjectId = search.get('subjectId') || redirectParams.subjectId;
@@ -266,7 +275,7 @@ export default function TakeQuizPage() {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Submit failed');
+      toast.error(t('unexpectedError' as TranslationKey));
     } finally {
       setSubmitting(false);
     }
@@ -304,25 +313,30 @@ export default function TakeQuizPage() {
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="font-display text-xl md:text-2xl">{quiz.title}</CardTitle>
-                <div className="mt-2">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="font-display text-lg sm:text-xl md:text-2xl break-words">{quiz.title}</CardTitle>
+                <div className="mt-2 sm:mt-3 space-y-1.5">
                   <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500" style={{ width: `${bundle.questions.length ? Math.round((answeredCount / bundle.questions.length) * 100) : 0}%` }} />
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300" style={{ width: `${bundle.questions.length ? Math.round((answeredCount / bundle.questions.length) * 100) : 0}%` }} />
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">{answeredCount}/{bundle.questions.length} answered</div>
-                  <div className="mt-1 text-xs text-muted-foreground">Attempts: {Math.min(attemptsUsed, attemptsAllowed)}/{attemptsAllowed}</div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span>{answeredCount}/{bundle.questions.length} {language === 'ar' ? 'تم الإجابة' : language === 'fr' ? 'répondu' : 'answered'}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>{t('attempts' as TranslationKey)}: {Math.min(attemptsUsed, attemptsAllowed)}/{attemptsAllowed}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 {quiz.time_limit_minutes && timeLeft !== null && (
-                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-3 py-1 rounded-full">{Math.max(0, timeLeft || 0)}s</Badge>
+                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap">
+                    {Math.floor(Math.max(0, timeLeft || 0) / 60)}:{(Math.max(0, timeLeft || 0) % 60).toString().padStart(2, '0')}
+                  </Badge>
                 )}
                 {!readOnly && (
-                  <Button onClick={handleSubmitClick} disabled={submitting || readOnly}>
-                    {submitting ? 'Submitting...' : 'Submit'}
+                  <Button onClick={handleSubmitClick} disabled={submitting || readOnly} className="w-full sm:w-auto text-sm sm:text-base">
+                    {submitting ? (language === 'ar' ? 'جاري الإرسال...' : language === 'fr' ? 'Envoi...' : 'Submitting...') : t('submit' as TranslationKey)}
                   </Button>
                 )}
               </div>
@@ -330,12 +344,16 @@ export default function TakeQuizPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!readOnly && attemptsAllowed > 1 && (
-              <div className="p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 text-xs">
-                You can submit up to {attemptsAllowed} attempt(s). Current attempts used: {attemptsUsed}.
+              <div className="p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 text-xs rtl:text-right">
+                {language === 'ar' 
+                  ? `يمكنك الإرسال حتى ${attemptsAllowed} محاولة. المحاولات المستخدمة حالياً: ${attemptsUsed}.`
+                  : language === 'fr'
+                  ? `Vous pouvez soumettre jusqu'à ${attemptsAllowed} tentative(s). Tentatives utilisées actuellement : ${attemptsUsed}.`
+                  : `You can submit up to ${attemptsAllowed} attempt(s). Current attempts used: ${attemptsUsed}.`}
               </div>
             )}
             {questions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No questions.</p>
+              <p className="text-sm text-muted-foreground rtl:text-right">{t('noQuizzesFound' as TranslationKey)}</p>
             ) : (
               questions.map((q, idx) => {
                 const opts = optionsByQuestion.get(q.id) || [];
@@ -345,8 +363,8 @@ export default function TakeQuizPage() {
                 const textVal: string | undefined = ans?.text;
                 const numVal: number | undefined = ans?.number;
                 return (
-                  <div key={q.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
-                    <div className="mb-3 font-semibold text-[hsl(var(--foreground))]">{idx + 1}. {q.text}</div>
+                  <div key={q.id} className="p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
+                    <div className="mb-3 font-semibold text-sm sm:text-base text-[hsl(var(--foreground))] rtl:text-right">{idx + 1}. {q.text}</div>
                     {q.type === 'mcq_single' && (
                       <div className="grid gap-2">
                         {opts.map((o: any) => (
@@ -384,12 +402,12 @@ export default function TakeQuizPage() {
                       </div>
                     )}
                     {q.type === 'true_false' && (
-                      <div className="grid gap-2 grid-cols-2 max-w-sm">
-                        {[{ id: 'T', text: 'True', val: true }, { id: 'F', text: 'False', val: false }].map((o: any) => (
-                          <label key={o.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${boolVal === o.val ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}>
+                      <div className="grid gap-2 grid-cols-2 max-w-xs sm:max-w-sm">
+                        {[{ id: 'T', text: language === 'ar' ? 'صحيح' : language === 'fr' ? 'Vrai' : 'True', val: true }, { id: 'F', text: language === 'ar' ? 'خطأ' : language === 'fr' ? 'Faux' : 'False', val: false }].map((o: any) => (
+                          <label key={o.id} className={`flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-colors rtl:flex-row-reverse ${boolVal === o.val ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}>
                             <input className="sr-only" type="radio" name={`q_${q.id}`} disabled={readOnly} checked={boolVal === o.val} onChange={() => answerQuestion(q, { bool: o.val })} />
-                            <span className={`h-4 w-4 rounded-full border flex items-center justify-center ${boolVal === o.val ? 'border-blue-600' : 'border-slate-400'}`}> {boolVal === o.val && <span className="h-2 w-2 bg-blue-600 rounded-full" />} </span>
-                            <span className="text-sm">{o.text}</span>
+                            <span className={`h-4 w-4 rounded-full border flex items-center justify-center flex-shrink-0 ${boolVal === o.val ? 'border-blue-600' : 'border-slate-400'}`}> {boolVal === o.val && <span className="h-2 w-2 bg-blue-600 rounded-full" />} </span>
+                            <span className="text-sm sm:text-base rtl:text-right flex-1">{o.text}</span>
                           </label>
                         ))}
                       </div>
@@ -404,32 +422,44 @@ export default function TakeQuizPage() {
 
         {/* Submit Quiz Confirmation Dialog */}
         <AlertDialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="rtl:text-right">
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                Submit Quiz
+              <AlertDialogTitle className="flex items-center gap-2 rtl:flex-row-reverse">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                {language === 'ar' ? 'إرسال الاختبار' : language === 'fr' ? 'Soumettre le quiz' : 'Submit Quiz'}
               </AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to submit this quiz? You cannot change your answers after submitting.
+              <AlertDialogDescription className="rtl:text-right">
+                {language === 'ar' 
+                  ? 'هل أنت متأكد من إرسال هذا الاختبار؟ لا يمكنك تغيير إجاباتك بعد الإرسال.'
+                  : language === 'fr'
+                  ? 'Êtes-vous sûr de vouloir soumettre ce quiz ? Vous ne pourrez pas modifier vos réponses après la soumission.'
+                  : 'Are you sure you want to submit this quiz? You cannot change your answers after submitting.'}
                 {bundle && (
-                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800 rtl:text-right">
                     <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                      Progress: {answeredCount} of {(bundle.questions as any[]).length} questions answered
+                      {language === 'ar' 
+                        ? `التقدم: ${answeredCount} من ${(bundle.questions as any[]).length} سؤال تم الإجابة عليه`
+                        : language === 'fr'
+                        ? `Progrès : ${answeredCount} sur ${(bundle.questions as any[]).length} questions répondues`
+                        : `Progress: ${answeredCount} of ${(bundle.questions as any[]).length} questions answered`}
                     </p>
                     {(bundle.questions as any[]).length - answeredCount > 0 && (
                       <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                        {(bundle.questions as any[]).length - answeredCount} questions remain unanswered
+                        {language === 'ar'
+                          ? `${(bundle.questions as any[]).length - answeredCount} سؤال لم يتم الإجابة عليه`
+                          : language === 'fr'
+                          ? `${(bundle.questions as any[]).length - answeredCount} questions restent sans réponse`
+                          : `${(bundle.questions as any[]).length - answeredCount} questions remain unanswered`}
                       </p>
                     )}
                   </div>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogFooter className="rtl:flex-row-reverse">
+              <AlertDialogCancel>{t('cancel' as TranslationKey)}</AlertDialogCancel>
               <AlertDialogAction onClick={() => onSubmit(false)} className="bg-blue-600 hover:bg-blue-700">
-                Submit Quiz
+                {language === 'ar' ? 'إرسال الاختبار' : language === 'fr' ? 'Soumettre le quiz' : 'Submit Quiz'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

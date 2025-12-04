@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { supabase, fetchQuizBundle, fetchAttemptsWithAnswers, updateAnswerGrade, recalcAttemptScore, updateAnswerPayload } from '@/lib/supabase';
+import { supabase, fetchQuizBundle, fetchAttemptsWithAnswers, updateAnswerGrade, recalcAttemptScore, updateAnswerPayload, updateAttemptScore } from '@/lib/supabase';
 
 // Client component - generateStaticParams handled in page.tsx
 export const dynamicParams = true;
@@ -70,10 +70,50 @@ export default function GradeQuizClient() {
   };
 
   const finalizeAttempt = async (attemptId: string) => {
-    const { error } = await recalcAttemptScore(attemptId);
-    if (error) { toast.error('Failed to finalize'); return; }
-    toast.success('Attempt finalized');
-    await load();
+    try {
+      // First, ensure all answers have points_awarded set (even if 0)
+      const answers = answersByAttempt.get(attemptId) || [];
+      for (const ans of answers) {
+        if (ans.points_awarded === null || ans.points_awarded === undefined) {
+          // Set default 0 points for ungraded answers
+          const { error: gradeError } = await updateAnswerGrade(ans.id, null, 0);
+          if (gradeError) {
+            console.warn(`Failed to set points for answer ${ans.id}:`, gradeError);
+          }
+        }
+      }
+      
+      // Recalculate score
+      const { error, data } = await recalcAttemptScore(attemptId);
+      if (error) {
+        console.error('Recalc error:', error);
+        // Try fallback: calculate score manually from current answers
+        // Re-fetch answers to get updated points_awarded values
+        const { data: updatedAnswers } = await supabase
+          .from('quiz_answers')
+          .select('points_awarded')
+          .eq('attempt_id', attemptId);
+        
+        const totalScore = (updatedAnswers || []).reduce((sum: number, ans: any) => {
+          const points = ans.points_awarded;
+          if (points === null || points === undefined || isNaN(Number(points))) {
+            return sum;
+          }
+          return sum + Number(points);
+        }, 0);
+        
+        const { error: updateError } = await updateAttemptScore(attemptId, totalScore);
+        if (updateError) {
+          toast.error(`Failed to finalize: ${updateError.message || 'Unknown error'}`);
+          return;
+        }
+      }
+      toast.success('Attempt finalized');
+      await load();
+    } catch (err: any) {
+      console.error('Finalize error:', err);
+      toast.error(`Failed to finalize: ${err.message || 'Unknown error'}`);
+    }
   };
 
   if (authLoading || loading) {

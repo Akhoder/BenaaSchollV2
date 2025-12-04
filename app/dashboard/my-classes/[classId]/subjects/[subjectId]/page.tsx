@@ -353,20 +353,35 @@ export default function SubjectLessonsPage() {
             }
             
             if (!existingCerts || existingCerts.length === 0) {
-              // Check eligibility
-              const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
-                p_student_id: profile.id,
-                p_subject_id: currentSubjectId,
-              });
-              
-              if (eligibilityError) {
-                // RPC function might not exist or there's an error - log it but don't break the page
-                console.warn('Error checking certificate eligibility (RPC may not exist):', eligibilityError);
-                return;
-              }
-              
-              if (eligibility && (eligibility as any).eligible) {
-                setCertificateEligibility(eligibility);
+              // Validate inputs before checking eligibility
+              if (profile?.id && currentSubjectId) {
+                try {
+                  // Check eligibility
+                  const { data: eligibility, error: eligibilityError } = await supabase.rpc('check_certificate_eligibility', {
+                    p_student_id: profile.id,
+                    p_subject_id: currentSubjectId,
+                  });
+                  
+                  if (eligibilityError) {
+                    // RPC function might not exist or there's an error - log it but don't break the page
+                    console.warn('Error checking certificate eligibility:', {
+                      error: eligibilityError,
+                      studentId: profile.id,
+                      subjectId: currentSubjectId,
+                      message: eligibilityError.message,
+                      code: eligibilityError.code,
+                    });
+                    return;
+                  }
+                  
+                  if (eligibility && (eligibility as any).eligible) {
+                    setCertificateEligibility(eligibility);
+                  }
+                } catch (rpcError: any) {
+                  // Handle unexpected errors
+                  console.warn('Unexpected error checking certificate eligibility:', rpcError);
+                  return;
+                }
               }
             }
           }
@@ -502,7 +517,7 @@ export default function SubjectLessonsPage() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل بيانات المادة...' : 'Loading subject data...'} />
+        <SimplePageLoading text={t('errorLoadingSubjectInfo' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -519,7 +534,7 @@ export default function SubjectLessonsPage() {
   if (!subject || lessons.length === 0) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل البيانات...' : 'Loading data...'} />
+        <SimplePageLoading text={t('loading' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -529,7 +544,7 @@ export default function SubjectLessonsPage() {
   if (!activeLesson) {
     return (
       <DashboardLayout>
-        <SimplePageLoading text={language === 'ar' ? 'جاري تحميل الدرس...' : 'Loading lesson...'} />
+        <SimplePageLoading text={t('errorLoadingLessons' as TranslationKey)} />
       </DashboardLayout>
     );
   }
@@ -550,7 +565,7 @@ export default function SubjectLessonsPage() {
       <div className="space-y-1.5 sm:space-y-2" ref={sidebarRef} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         {lessonsToShow.length === 0 ? (
           <div className="text-center py-6 sm:py-8 text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-left rtl:text-right">
-            {language === 'ar' ? 'لا توجد دروس مطابقة' : 'No lessons found'}
+            {t('noLessons' as TranslationKey)}
           </div>
         ) : (
           lessonsToShow.map((lesson) => {
@@ -733,7 +748,7 @@ export default function SubjectLessonsPage() {
                   {issuingCertificate ? (
                     <>
                       <Loader2 className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin", language === 'ar' ? 'ml-1.5 sm:ml-2 mr-0' : 'mr-1.5 sm:mr-2')} />
-                      <span className="text-left rtl:text-right">{language === 'ar' ? 'جاري الإصدار...' : 'Issuing...'}</span>
+                      <span className="text-left rtl:text-right">{t('issuing' as TranslationKey)}</span>
                     </>
                   ) : (
                     <>
@@ -757,26 +772,26 @@ export default function SubjectLessonsPage() {
             className="border-primary/30 hover:bg-primary/5 hover:border-primary/50 h-8 sm:h-9 px-2 text-xs flex items-center rtl:flex-row-reverse flex-shrink-0"
           >
             <ArrowLeft className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1 mr-0 rotate-180' : 'mr-1')} />
-            <span className="hidden xs:inline text-left rtl:text-right">{language === 'ar' ? 'رجوع' : 'Back'}</span>
+            <span className="hidden xs:inline text-left rtl:text-right">{t('back' as TranslationKey)}</span>
           </Button>
           
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="border-primary/30 hover:bg-primary/5 h-8 sm:h-9 px-2 text-xs flex items-center rtl:flex-row-reverse flex-1 sm:flex-none">
                 <Menu className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", language === 'ar' ? 'ml-1 mr-0' : 'mr-1')} />
-                <span className="text-left rtl:text-right">{language === 'ar' ? 'الدروس' : 'Lessons'}</span>
+                <span className="text-left rtl:text-right">{t('lessons' as TranslationKey)}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side={language === 'ar' ? 'right' : 'left'} className="w-[90vw] sm:w-80 p-3 sm:p-4 overflow-y-auto" dir={language === 'ar' ? 'rtl' : 'ltr'}>
               <div className="mb-3 sm:mb-4 sticky top-0 bg-background z-10 pb-2 border-b">
                 <h2 className="text-sm sm:text-base font-bold text-foreground font-display text-left rtl:text-right mb-1">{subject.subject_name}</h2>
-                <p className="text-xs text-muted-foreground text-left rtl:text-right">{lessons.length} {language === 'ar' ? 'درس' : 'Lessons'}</p>
+                <p className="text-xs text-muted-foreground text-left rtl:text-right">{lessons.length} {t('lessons' as TranslationKey)}</p>
                 {/* Search and Filter in Sheet */}
                 <div className="space-y-2 mt-3">
                   <div className="relative">
                     <Search className={cn("absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary", language === 'ar' ? 'right-2' : 'left-2')} />
                     <Input
-                      placeholder={language === 'ar' ? 'بحث...' : 'Search...'}
+                      placeholder={t('searchLessons' as TranslationKey)}
                       value={lessonSearchQuery}
                       onChange={(e) => setLessonSearchQuery(e.target.value)}
                       className={cn("h-8 text-xs", language === 'ar' ? 'pr-8 pl-2' : 'pl-8 pr-2')}
@@ -844,7 +859,7 @@ export default function SubjectLessonsPage() {
                     <span className="truncate text-left rtl:text-right">{subject.teacher.full_name}</span>
                   </div>
                 )}
-                <p className="text-[10px] sm:text-xs text-white/95 text-left rtl:text-right">{language === 'ar' ? 'الدرس' : 'Lesson'} {activeLessonIndex + 1} {language === 'ar' ? 'من' : 'of'} {lessons.length}</p>
+                <p className="text-[10px] sm:text-xs text-white/95 text-left rtl:text-right">{t('lessonLabel' as TranslationKey)} {activeLessonIndex + 1} {t('of' as TranslationKey)} {lessons.length}</p>
               </div>
             </div>
             
@@ -852,7 +867,7 @@ export default function SubjectLessonsPage() {
             {subject.description && (
               <details className="mb-2 sm:mb-2.5">
                 <summary className="text-[10px] sm:text-xs font-medium text-white/90 cursor-pointer list-none pb-1.5 border-b border-white/30 text-left rtl:text-right">
-                  {language === 'ar' ? 'الوصف' : 'Description'}
+                  {t('description' as TranslationKey)}
                 </summary>
                 <p className="text-[10px] sm:text-xs text-white/95 leading-relaxed mt-1.5 text-left rtl:text-right">{subject.description}</p>
               </details>
@@ -863,7 +878,7 @@ export default function SubjectLessonsPage() {
               <details className="mb-2 sm:mb-2.5">
                 <summary className="text-[10px] sm:text-xs font-semibold text-white cursor-pointer list-none pb-1.5 border-b border-white/30 flex items-center gap-1.5 text-left rtl:text-right rtl:flex-row-reverse">
                   <Target className="h-3 w-3 flex-shrink-0" />
-                  {language === 'ar' ? 'الأهداف' : 'Objectives'}
+                  {t('objectives' as TranslationKey)}
                 </summary>
                 <ul className="space-y-1 mt-1.5">
                   {subject.objectives.slice(0, 3).map((obj: string, idx: number) => (
@@ -874,7 +889,7 @@ export default function SubjectLessonsPage() {
                   ))}
                   {subject.objectives.length > 3 && (
                     <li className="text-[10px] sm:text-xs text-white/80 text-left rtl:text-right">
-                      {language === 'ar' ? `+ ${subject.objectives.length - 3} أهداف أخرى` : `+ ${subject.objectives.length - 3} more`}
+                      {`+ ${subject.objectives.length - 3} ${t('more' as TranslationKey)}`}
                     </li>
                   )}
                 </ul>
@@ -891,7 +906,7 @@ export default function SubjectLessonsPage() {
                   className="text-[10px] sm:text-xs text-white hover:text-secondary flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 inline-flex transition-all hover:bg-white/30 border border-white/20 hover:border-secondary/50 rtl:flex-row-reverse"
                 >
                   <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                  <span className="text-left rtl:text-right">{language === 'ar' ? 'المرجع' : 'Reference'}</span>
+                  <span className="text-left rtl:text-right">{t('reference' as TranslationKey)}</span>
                 </a>
               </div>
             )}
@@ -911,7 +926,7 @@ export default function SubjectLessonsPage() {
                   className="mb-3 border-primary/30 hover:bg-primary/5 hover:border-primary/50 flex items-center rtl:flex-row-reverse"
                 >
                   <ArrowLeft className={cn("h-4 w-4", language === 'ar' ? 'ml-2 mr-0 rotate-180' : 'mr-2')} />
-                  <span className="text-left rtl:text-right">{language === 'ar' ? 'رجوع' : 'Back to Subjects'}</span>
+                  <span className="text-left rtl:text-right">{t('backToSubjects' as TranslationKey)}</span>
                 </Button>
                 <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/10" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                   <div className="flex items-center gap-3 mb-3 rtl:flex-row-reverse">
@@ -952,7 +967,7 @@ export default function SubjectLessonsPage() {
                     <div className="mb-3">
                       <p className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-2 text-left rtl:text-right rtl:flex-row-reverse">
                         <Target className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                        <span>{language === 'ar' ? 'الأهداف:' : 'Objectives:'}</span>
+                        <span>{t('objectives' as TranslationKey)}:</span>
                       </p>
                       <ul className="space-y-1">
                         {subject.objectives.map((obj: string, idx: number) => (
@@ -975,7 +990,7 @@ export default function SubjectLessonsPage() {
                         className="text-xs text-info hover:underline flex items-center gap-1 rtl:flex-row-reverse"
                       >
                         <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                        <span className="text-left rtl:text-right">{language === 'ar' ? 'المرجع' : 'Reference'}</span>
+                        <span className="text-left rtl:text-right">{t('reference' as TranslationKey)}</span>
                       </a>
                     </div>
                   )}

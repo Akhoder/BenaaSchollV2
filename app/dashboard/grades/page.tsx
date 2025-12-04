@@ -86,7 +86,8 @@ export default function GradesPage() {
             if (submission && submission.status === 'graded' && submission.score !== null) {
               return {
                 ...submission,
-                assignment_title: assignment.title,
+                type: 'assignment',
+                title: assignment.title,
                 total_points: assignment.total_points,
                 subject_name: subjectNames[assignment.subject_id] || 'Unknown',
               };
@@ -96,6 +97,70 @@ export default function GradesPage() {
 
           const submissions = await Promise.all(submissionPromises);
           allGrades.push(...submissions.filter((s: any): s is any => s !== null));
+        }
+
+        // ✅ Get all quizzes for all subjects in parallel
+        const { data: allQuizzes } = await api.supabase
+          .from('quizzes')
+          .select('id, title, total_points, subject_id, lesson_id')
+          .in('subject_id', allSubjectIds)
+          .in('status', ['published', 'closed']);
+
+        if (allQuizzes && allQuizzes.length > 0) {
+          // ✅ PERFORMANCE: Calculate total_points for all quizzes in parallel first
+          const quizIds = allQuizzes.map((q: any) => q.id);
+          const { data: allQuestions } = await api.supabase
+            .from('quiz_questions')
+            .select('quiz_id, points')
+            .in('quiz_id', quizIds);
+          
+          // Create a map of quiz_id -> total_points
+          const quizTotalPointsMap: Record<string, number> = {};
+          allQuizzes.forEach((quiz: any) => {
+            if (quiz.total_points && quiz.total_points > 0) {
+              quizTotalPointsMap[quiz.id] = quiz.total_points;
+            } else {
+              // Calculate from questions
+              const questions = (allQuestions || []).filter((q: any) => q.quiz_id === quiz.id);
+              if (questions.length > 0) {
+                quizTotalPointsMap[quiz.id] = questions.reduce((sum: number, q: any) => {
+                  return sum + (Number(q.points) || 1);
+                }, 0);
+              } else {
+                quizTotalPointsMap[quiz.id] = 100; // Default fallback
+              }
+            }
+          });
+
+          // Get all quiz attempts in parallel
+          const quizAttemptPromises = allQuizzes.map(async (quiz) => {
+            const { data: attempts } = await api.fetchStudentAttemptsForQuiz(quiz.id);
+            // Get the best attempt (highest score) or latest graded attempt
+            if (attempts && attempts.length > 0) {
+              const gradedAttempts = attempts.filter((a: any) => a.status === 'graded' && a.score !== null);
+              if (gradedAttempts.length > 0) {
+                // Get the best score attempt
+                const bestAttempt = gradedAttempts.reduce((best: any, current: any) => {
+                  return (current.score || 0) > (best.score || 0) ? current : best;
+                }, gradedAttempts[0]);
+
+                return {
+                  id: bestAttempt.id,
+                  type: 'quiz',
+                  title: quiz.title,
+                  score: bestAttempt.score,
+                  total_points: quizTotalPointsMap[quiz.id] || 100,
+                  subject_name: subjectNames[quiz.subject_id] || 'Unknown',
+                  graded_at: bestAttempt.submitted_at,
+                  feedback: null,
+                };
+              }
+            }
+            return null;
+          });
+
+          const quizGrades = await Promise.all(quizAttemptPromises);
+          allGrades.push(...quizGrades.filter((g: any): g is any => g !== null));
         }
       }
 
@@ -213,22 +278,34 @@ export default function GradesPage() {
                     : percentage >= 60
                     ? 'warning'
                     : 'destructive';
+                  const isQuiz = grade.type === 'quiz';
 
                   return (
                     <Card key={grade.id || idx} className="glass-card-hover border-primary/10 group" style={{ animationDelay: `${idx * 50}ms` }}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start gap-3">
-                          <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg flex-shrink-0">
-                            <FileText className="h-4 w-4 text-white" />
+                          <div className={`p-2 bg-gradient-to-br rounded-xl shadow-lg flex-shrink-0 ${isQuiz ? 'from-secondary to-accent' : 'from-primary to-accent'}`}>
+                            {isQuiz ? (
+                              <Award className="h-4 w-4 text-white" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-white" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <CardTitle className="text-base text-foreground group-hover:text-primary transition-colors mb-1">
-                              {grade.assignment_title}
+                              {grade.title || grade.assignment_title}
                             </CardTitle>
                             <div className="flex items-center gap-2 flex-wrap">
                               <Badge variant="islamic" className="gap-1">
-                                <FileText className="h-3 w-3" />
+                                {isQuiz ? (
+                                  <Award className="h-3 w-3" />
+                                ) : (
+                                  <FileText className="h-3 w-3" />
+                                )}
                                 {grade.subject_name}
+                              </Badge>
+                              <Badge variant={isQuiz ? 'secondary' : 'outline'} className="gap-1">
+                                {isQuiz ? t('quizzes') : t('assignment')}
                               </Badge>
                               <Badge variant={badgeVariant} className="gap-1">
                                 <Award className="h-3 w-3" />
@@ -255,8 +332,8 @@ export default function GradesPage() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3.5 w-3.5 text-primary" />
                           <span>
-                            <span className="font-semibold">{t('gradedOn')}:</span>{' '}
-                            {new Date(grade.graded_at).toLocaleDateString(dateLocale)}
+                            <span className="font-semibold">{isQuiz ? t('submitted') : t('gradedOn')}:</span>{' '}
+                            {new Date(grade.graded_at || grade.submitted_at).toLocaleDateString(dateLocale)}
                           </span>
                         </div>
                       </CardContent>
