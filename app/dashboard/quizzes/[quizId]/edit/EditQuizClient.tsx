@@ -162,7 +162,7 @@ export default function EditQuizClient() {
       }
       
       if (!quiz) {
-        toast.error(language === 'ar' ? '╪د┘┘à╪│╪د╪ذ┘é╪ر ╪║┘è╪▒ ┘à┘ê╪ش┘ê╪»╪ر' : 'Quiz not found');
+        toast.error(language === 'ar' ? 'المسابقة غير موجودة' : 'Quiz not found');
         router.push('/dashboard/quizzes');
         return;
       }
@@ -230,7 +230,7 @@ export default function EditQuizClient() {
           // For true_false, find the correct option
           const correctOpt = opts.find((opt: any) => opt.is_correct);
           if (correctOpt) {
-            correct_answer = correctOpt.text === (language === 'ar' ? '╪╡╪ص┘è╪ص' : 'True');
+            correct_answer = correctOpt.text === (language === 'ar' ? 'صحيح' : 'True');
           }
         } else if (q.type === 'numeric') {
           // For numeric, use media_url as correct_answer
@@ -287,13 +287,13 @@ export default function EditQuizClient() {
       };
       const { error } = await updateQuiz(quizId, payload);
       if (error) {
-        toast.error(getErrorMessage(error) || (language === 'ar' ? '┘╪┤┘ ╪د┘╪ص┘╪╕' : 'Save failed'));
+        toast.error(getErrorMessage(error) || (language === 'ar' ? 'فشل الحفظ' : 'Save failed'));
         return;
       }
-      toast.success(language === 'ar' ? '╪ز┘à ╪ز╪ص╪»┘è╪س ╪د┘┘à╪│╪د╪ذ┘é╪ر ╪ذ┘╪ش╪د╪ص' : 'Quiz updated successfully');
+      toast.success(language === 'ar' ? 'تم تحديث المسابقة بنجاح' : 'Quiz updated successfully');
     } catch (e) {
       console.error(e);
-      toast.error(getErrorMessage(e) || (language === 'ar' ? '┘╪┤┘ ╪د┘╪ص┘╪╕' : 'Save failed'));
+      toast.error(getErrorMessage(e) || (language === 'ar' ? 'فشل الحفظ' : 'Save failed'));
     } finally {
       setSaving(false);
     }
@@ -305,7 +305,7 @@ export default function EditQuizClient() {
       const { data, error } = await addQuizQuestion({
         quiz_id: quizId,
         type,
-        text: language === 'ar' ? '╪│╪ج╪د┘ ╪ش╪»┘è╪»' : 'New question',
+        text: language === 'ar' ? 'سؤال جديد' : 'New question',
         points: 1,
         order_index: questions.length,
       });
@@ -346,7 +346,7 @@ export default function EditQuizClient() {
         const { error: optError } = await addQuizOptions(data.id, opts);
         if (optError) {
           console.error('Error adding options:', optError);
-          toast.error(language === 'ar' ? '╪ز┘à ╪ح╪╢╪د┘╪ر ╪د┘╪│╪ج╪د┘ ┘┘â┘ ┘╪┤┘ ╪ح╪╢╪د┘╪ر ╪د┘╪«┘è╪د╪▒╪د╪ز' : 'Question added but failed to add options');
+          toast.error(language === 'ar' ? 'تم إضافة السؤال لكن فشل إضافة الخيارات' : 'Question added but failed to add options');
         } else {
           // Update optionsByQ with actual option IDs
           const { data: addedOptions } = await supabase
@@ -368,8 +368,8 @@ export default function EditQuizClient() {
       // Add options for True/False questions
       if (type === 'true_false') {
         const trueFalseOptions = [
-          { text: language === 'ar' ? '╪╡╪ص┘è╪ص' : 'True', is_correct: false, order_index: 0 },
-          { text: language === 'ar' ? '╪«╪╖╪ث' : 'False', is_correct: false, order_index: 1 },
+          { text: language === 'ar' ? 'صحيح' : 'True', is_correct: false, order_index: 0 },
+          { text: language === 'ar' ? 'خطأ' : 'False', is_correct: false, order_index: 1 },
         ];
         const { error: optError } = await addQuizOptions(data.id, trueFalseOptions);
         if (optError) {
@@ -453,7 +453,7 @@ export default function EditQuizClient() {
         newMap.delete(questionId);
         return newMap;
       });
-      toast.success(language === 'ar' ? '╪ز┘à ╪ص╪░┘ ╪د┘╪│╪ج╪د┘' : 'Question deleted');
+      toast.success(language === 'ar' ? 'تم حذف السؤال' : 'Question deleted');
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -523,13 +523,13 @@ export default function EditQuizClient() {
         // Update true/false options
         const correctAnswerBool = question.correct_answer === 'true' || question.correct_answer === 1 || question.correct_answer === '1';
         const trueFalseOptions = [
-          { text: language === 'ar' ? '╪╡╪ص┘è╪ص' : 'True', is_correct: correctAnswerBool, order_index: 0 },
-          { text: language === 'ar' ? '╪«╪╖╪ث' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
+          { text: language === 'ar' ? 'صحيح' : 'True', is_correct: correctAnswerBool, order_index: 0 },
+          { text: language === 'ar' ? 'خطأ' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
         ];
         await replaceOptions(question.id, trueFalseOptions);
       }
 
-      toast.success(language === 'ar' ? '╪ز┘à ╪د┘╪ص┘╪╕' : 'Saved');
+      toast.success(language === 'ar' ? 'تم الحفظ' : 'Saved');
       
       // Reload options for MCQ questions
       if (question.type === 'mcq_single' || question.type === 'mcq_multi') {
@@ -555,11 +555,11 @@ export default function EditQuizClient() {
   if (authLoading || loading || loadingRefs) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex items-center justify-center min-h-[60vh] px-4">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-600 dark:text-slate-400">
-              {language === 'ar' ? '╪ش╪د╪▒┘è ╪د┘╪ز╪ص┘à┘è┘...' : 'Loading...'}
+            <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-blue-600 mx-auto" />
+            <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400">
+              {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
             </p>
           </div>
         </div>
@@ -576,13 +576,13 @@ export default function EditQuizClient() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in px-2 sm:px-0">
         <PageHeader
           icon={FileText}
-          title={language === 'ar' ? '╪ز╪╣╪»┘è┘ ╪د┘┘à╪│╪د╪ذ┘é╪ر' : 'Edit Quiz'}
+          title={language === 'ar' ? 'تعديل المسابقة' : 'Edit Quiz'}
           description={
             language === 'ar'
-              ? '┘é┘à ╪ذ╪ز╪╣╪»┘è┘ ┘à╪╣┘┘ê┘à╪د╪ز ╪د┘┘à╪│╪د╪ذ┘é╪ر ┘ê╪د┘╪ث╪│╪خ┘╪ر'
+              ? 'قم بتعديل معلومات المسابقة والأسئلة'
               : 'Edit quiz information and questions'
           }
           gradient="from-blue-600 via-purple-600 to-blue-700"
@@ -590,42 +590,42 @@ export default function EditQuizClient() {
 
         {/* Link Selection */}
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-              {language === 'ar' ? '╪▒╪ذ╪╖ ╪د┘┘à╪│╪د╪ذ┘é╪ر' : 'Link Quiz'}
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              {language === 'ar' ? 'ربط المسابقة' : 'Link Quiz'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
+          <CardContent className="space-y-3 sm:space-y-4">
+            <Alert className="text-xs sm:text-sm">
+              <Info className="h-3 w-3 sm:h-4 sm:w-4" />
+              <AlertDescription className="text-xs sm:text-sm">
                 {language === 'ar'
-                  ? '┘è╪ش╪ذ ╪▒╪ذ╪╖ ╪د┘┘à╪│╪د╪ذ┘é╪ر ╪ح┘à╪د ╪ذ┘à╪د╪»╪ر (┘à╪ز╪د╪ص╪ر ┘╪ش┘à┘è╪╣ ╪╖┘╪د╪ذ ╪د┘┘à╪د╪»╪ر) ╪ث┘ê ╪ذ╪»╪▒╪│ ┘à╪ص╪»╪» (┘à╪ز╪د╪ص╪ر ┘┘é╪╖ ┘┘╪╖┘╪د╪ذ ╪د┘┘à╪│╪ش┘┘è┘ ┘┘è ┘ç╪░╪د ╪د┘╪»╪▒╪│)'
+                  ? 'يجب ربط المسابقة إما بمادة (متاحة لجميع طلاب المادة) أو بدرس محدد (متاحة فقط للطلاب المسجلين في هذا الدرس)'
                   : 'Link the quiz to either a subject (available to all students in the subject) or a specific lesson (available only to students enrolled in this lesson)'}
               </AlertDescription>
             </Alert>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                  <BookOpen className="h-4 w-4" />
-                  {language === 'ar' ? '╪د┘┘à╪د╪»╪ر' : 'Subject'}{' '}
-                  {language === 'ar' ? '(╪د╪«╪ز┘è╪د╪▒┘è)' : '(Optional)'}
+                <Label className="text-xs sm:text-sm font-semibold flex items-center gap-2 mb-2">
+                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {language === 'ar' ? 'المادة' : 'Subject'}{' '}
+                  {language === 'ar' ? '(اختياري)' : '(Optional)'}
                 </Label>
                 <Select
                   key={`subject-${form.subject_id || 'none'}`}
                   value={form.subject_id && form.subject_id !== '' ? form.subject_id : 'NONE'}
                   onValueChange={(sid) => onSubjectChange(sid === 'NONE' ? '' : sid)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10 sm:h-11 text-sm">
                     <SelectValue
-                      placeholder={language === 'ar' ? '╪د╪«╪ز╪▒ ┘à╪د╪»╪ر' : 'Select subject'}
+                      placeholder={language === 'ar' ? 'اختر مادة' : 'Select subject'}
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">
-                      {language === 'ar' ? '╪ذ╪»┘ê┘ ┘à╪د╪»╪ر' : 'No Subject'}
+                      {language === 'ar' ? 'بدون مادة' : 'No Subject'}
                     </SelectItem>
                     {subjects.map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>
@@ -635,19 +635,19 @@ export default function EditQuizClient() {
                   </SelectContent>
                 </Select>
                 {selectedSubject && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
                     {language === 'ar'
-                      ? '╪د┘┘à╪│╪د╪ذ┘é╪ر ╪│╪ز┘â┘ê┘ ┘à╪ز╪د╪ص╪ر ┘╪ش┘à┘è╪╣ ╪╖┘╪د╪ذ ┘ç╪░┘ç ╪د┘┘à╪د╪»╪ر'
+                      ? 'المسابقة ستكون متاحة لجميع طلاب هذه المادة'
                       : 'Quiz will be available to all students in this subject'}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                  <GraduationCap className="h-4 w-4" />
-                  {language === 'ar' ? '╪د┘╪»╪▒╪│' : 'Lesson'}{' '}
-                  {language === 'ar' ? '(╪د╪«╪ز┘è╪د╪▒┘è)' : '(Optional)'}
+                <Label className="text-xs sm:text-sm font-semibold flex items-center gap-2 mb-2">
+                  <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {language === 'ar' ? 'الدرس' : 'Lesson'}{' '}
+                  {language === 'ar' ? '(اختياري)' : '(Optional)'}
                 </Label>
                 <Select
                   key={`lesson-${form.lesson_id || 'none'}-${lessons.length}`}
@@ -657,14 +657,14 @@ export default function EditQuizClient() {
                   }
                   disabled={!form.subject_id}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10 sm:h-11 text-sm">
                     <SelectValue
-                      placeholder={language === 'ar' ? '╪د╪«╪ز╪▒ ╪»╪▒╪│' : 'Select lesson'}
+                      placeholder={language === 'ar' ? 'اختر درس' : 'Select lesson'}
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">
-                      {language === 'ar' ? '╪ذ╪»┘ê┘ ╪»╪▒╪│' : 'No Lesson'}
+                      {language === 'ar' ? 'بدون درس' : 'No Lesson'}
                     </SelectItem>
                     {lessons.map((l) => (
                       <SelectItem key={l.id} value={String(l.id)}>
@@ -674,14 +674,14 @@ export default function EditQuizClient() {
                   </SelectContent>
                 </Select>
                 {!form.subject_id && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    {language === 'ar' ? '┘è╪ش╪ذ ╪د╪«╪ز┘è╪د╪▒ ┘à╪د╪»╪ر ╪ث┘ê┘╪د┘ï' : 'Please select a subject first'}
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                    {language === 'ar' ? 'يجب اختيار مادة أولاً' : 'Please select a subject first'}
                   </p>
                 )}
                 {selectedLesson && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
                     {language === 'ar'
-                      ? '╪د┘┘à╪│╪د╪ذ┘é╪ر ╪│╪ز┘â┘ê┘ ┘à╪ز╪د╪ص╪ر ┘┘é╪╖ ┘╪╖┘╪د╪ذ ┘ç╪░╪د ╪د┘╪»╪▒╪│'
+                      ? 'المسابقة ستكون متاحة فقط لطلاب هذا الدرس'
                       : 'Quiz will be available only to students in this lesson'}
                   </p>
                 )}
@@ -689,11 +689,11 @@ export default function EditQuizClient() {
             </div>
 
             {form.subject_id && form.lesson_id && (
-              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 dark:text-blue-200">
+              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-xs sm:text-sm">
+                <Info className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200 text-xs sm:text-sm">
                   {language === 'ar'
-                    ? '╪╣┘╪» ╪د╪«╪ز┘è╪د╪▒ ╪»╪▒╪│╪î ╪│┘è╪ز┘à ╪▒╪ذ╪╖ ╪د┘┘à╪│╪د╪ذ┘é╪ر ╪ذ╪د┘╪»╪▒╪│ ┘┘é╪╖ ┘ê┘┘è╪│ ╪ذ╪د┘┘à╪د╪»╪ر'
+                    ? 'عند اختيار درس، سيتم ربط المسابقة بالدرس فقط وليس بالمادة'
                     : 'When a lesson is selected, the quiz will be linked to the lesson only, not the subject'}
                 </AlertDescription>
               </Alert>
@@ -703,52 +703,52 @@ export default function EditQuizClient() {
 
         {/* Basic Info */}
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-purple-600" />
-              {language === 'ar' ? '┘à╪╣┘┘ê┘à╪د╪ز ╪د┘┘à╪│╪د╪ذ┘é╪ر' : 'Quiz Information'}
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+              {language === 'ar' ? 'معلومات المسابقة' : 'Quiz Information'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <div>
-              <Label className="text-sm font-semibold">
-                {language === 'ar' ? '╪د┘╪╣┘┘ê╪د┘' : 'Title'}{' '}
+              <Label className="text-xs sm:text-sm font-semibold">
+                {language === 'ar' ? 'العنوان' : 'Title'}{' '}
                 <span className="text-red-500">*</span>
               </Label>
               <Input
-                className="mt-1"
+                className="mt-1.5 h-10 sm:h-11 text-sm"
                 value={form.title}
                 onChange={(e) => setForm((p: any) => ({ ...p, title: e.target.value }))}
-                placeholder={language === 'ar' ? '╪ث╪»╪«┘ ╪╣┘┘ê╪د┘ ╪د┘┘à╪│╪د╪ذ┘é╪ر' : 'Enter quiz title'}
+                placeholder={language === 'ar' ? 'أدخل عنوان المسابقة' : 'Enter quiz title'}
               />
             </div>
 
             <div>
-              <Label className="text-sm font-semibold">
-                {language === 'ar' ? '╪د┘┘ê╪╡┘' : 'Description'}
+              <Label className="text-xs sm:text-sm font-semibold">
+                {language === 'ar' ? 'الوصف' : 'Description'}
               </Label>
               <Textarea
-                className="mt-1"
+                className="mt-1.5 text-sm"
                 value={form.description}
                 onChange={(e) => setForm((p: any) => ({ ...p, description: e.target.value }))}
                 placeholder={
                   language === 'ar'
-                    ? '╪ث╪»╪«┘ ┘ê╪╡┘ ╪د┘┘à╪│╪د╪ذ┘é╪ر (╪د╪«╪ز┘è╪د╪▒┘è)'
+                    ? 'أدخل وصف المسابقة (اختياري)'
                     : 'Enter quiz description (optional)'
                 }
                 rows={3}
               />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {language === 'ar' ? '╪د┘┘à╪»╪ر (╪»┘é╪د╪خ┘é)' : 'Time Limit (minutes)'}
+                <Label className="text-xs sm:text-sm font-semibold flex items-center gap-2">
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {language === 'ar' ? 'المدة (دقائق)' : 'Time Limit (minutes)'}
                 </Label>
                 <Input
                   type="number"
-                  className="mt-1"
+                  className="mt-1.5 h-10 sm:h-11 text-sm"
                   value={form.time_limit_minutes}
                   onChange={(e) =>
                     setForm((p: any) => ({
@@ -761,12 +761,12 @@ export default function EditQuizClient() {
               </div>
 
               <div>
-                <Label className="text-sm font-semibold">
-                  {language === 'ar' ? '╪╣╪»╪» ╪د┘┘à╪ص╪د┘ê┘╪د╪ز ╪د┘┘à╪│┘à┘ê╪ص╪ر' : 'Attempts Allowed'}
+                <Label className="text-xs sm:text-sm font-semibold">
+                  {language === 'ar' ? 'عدد المحاولات المسموحة' : 'Attempts Allowed'}
                 </Label>
                 <Input
                   type="number"
-                  className="mt-1"
+                  className="mt-1.5 h-10 sm:h-11 text-sm"
                   value={form.attempts_allowed}
                   onChange={(e) =>
                     setForm((p: any) => ({
@@ -779,28 +779,28 @@ export default function EditQuizClient() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {language === 'ar' ? '╪ز╪د╪▒┘è╪« ╪د┘╪ذ╪»╪ة' : 'Start Date & Time'}
+                <Label className="text-xs sm:text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {language === 'ar' ? 'تاريخ البدء' : 'Start Date & Time'}
                 </Label>
                 <Input
                   type="datetime-local"
-                  className="mt-1"
+                  className="mt-1.5 h-10 sm:h-11 text-sm"
                   value={form.start_at}
                   onChange={(e) => setForm((p: any) => ({ ...p, start_at: e.target.value }))}
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {language === 'ar' ? '╪ز╪د╪▒┘è╪« ╪د┘╪د┘╪ز┘ç╪د╪ة' : 'End Date & Time'}
+                <Label className="text-xs sm:text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                  {language === 'ar' ? 'تاريخ الانتهاء' : 'End Date & Time'}
                 </Label>
                 <Input
                   type="datetime-local"
-                  className="mt-1"
+                  className="mt-1.5 h-10 sm:h-11 text-sm"
                   value={form.end_at}
                   onChange={(e) => setForm((p: any) => ({ ...p, end_at: e.target.value }))}
                 />
@@ -811,19 +811,20 @@ export default function EditQuizClient() {
 
         {/* Settings */}
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle>{language === 'ar' ? '╪د┘╪ح╪╣╪»╪د╪»╪د╪ز' : 'Settings'}</CardTitle>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">{language === 'ar' ? 'الإعدادات' : 'Settings'}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
+          <CardContent className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="sq"
                   checked={!!form.shuffle_questions}
                   onCheckedChange={(v) => setForm((p: any) => ({ ...p, shuffle_questions: !!v }))}
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                 />
-                <Label htmlFor="sq">
-                  {language === 'ar' ? '╪«┘╪╖ ╪د┘╪ث╪│╪خ┘╪ر' : 'Shuffle Questions'}
+                <Label htmlFor="sq" className="text-xs sm:text-sm cursor-pointer">
+                  {language === 'ar' ? 'خلط الأسئلة' : 'Shuffle Questions'}
                 </Label>
               </div>
 
@@ -832,32 +833,33 @@ export default function EditQuizClient() {
                   id="so"
                   checked={!!form.shuffle_options}
                   onCheckedChange={(v) => setForm((p: any) => ({ ...p, shuffle_options: !!v }))}
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                 />
-                <Label htmlFor="so">
-                  {language === 'ar' ? '╪«┘╪╖ ╪د┘╪«┘è╪د╪▒╪د╪ز' : 'Shuffle Options'}
+                <Label htmlFor="so" className="text-xs sm:text-sm cursor-pointer">
+                  {language === 'ar' ? 'خلط الخيارات' : 'Shuffle Options'}
                 </Label>
               </div>
 
-              <div>
-                <Label className="text-sm font-semibold">
-                  {language === 'ar' ? '╪│┘è╪د╪│╪ر ╪╣╪▒╪╢ ╪د┘┘╪ز╪د╪خ╪ش' : 'Results Policy'}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <Label className="text-xs sm:text-sm font-semibold">
+                  {language === 'ar' ? 'سياسة عرض النتائج' : 'Results Policy'}
                 </Label>
                 <Select
                   value={form.show_results_policy}
                   onValueChange={(v) => setForm((p: any) => ({ ...p, show_results_policy: v }))}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1.5 h-10 sm:h-11 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="immediate">
-                      {language === 'ar' ? '┘┘ê╪▒┘è' : 'Immediate'}
+                      {language === 'ar' ? 'فوري' : 'Immediate'}
                     </SelectItem>
                     <SelectItem value="after_close">
-                      {language === 'ar' ? '╪ذ╪╣╪» ╪د┘╪ح╪║┘╪د┘é' : 'After Close'}
+                      {language === 'ar' ? 'بعد الإغلاق' : 'After Close'}
                     </SelectItem>
                     <SelectItem value="never">
-                      {language === 'ar' ? '╪ث╪ذ╪»╪د┘ï' : 'Never'}
+                      {language === 'ar' ? 'أبداً' : 'Never'}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -867,20 +869,25 @@ export default function EditQuizClient() {
         </Card>
 
         {/* Save Button */}
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => router.back()} disabled={saving}>
-            {language === 'ar' ? '╪ح┘╪║╪د╪ة' : 'Cancel'}
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pb-4 sm:pb-0">
+          <Button 
+            variant="outline" 
+            onClick={() => router.back()} 
+            disabled={saving}
+            className="w-full sm:w-auto h-11 sm:h-10 text-sm"
+          >
+            {language === 'ar' ? 'إلغاء' : 'Cancel'}
           </Button>
-          <Button onClick={onSave} disabled={saving}>
+          <Button onClick={onSave} disabled={saving} className="w-full sm:w-auto h-11 sm:h-10 text-sm">
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {language === 'ar' ? '╪ش╪د╪▒┘è ╪د┘╪ص┘╪╕...' : 'Saving...'}
+                {language === 'ar' ? 'جاري الحفظ...' : 'Saving...'}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                {language === 'ar' ? '╪ص┘╪╕ ╪د┘╪ز╪║┘è┘è╪▒╪د╪ز' : 'Save Changes'}
+                {language === 'ar' ? 'حفظ التغييرات' : 'Save Changes'}
               </>
             )}
           </Button>
@@ -888,48 +895,48 @@ export default function EditQuizClient() {
 
         {/* Questions Management */}
         <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-blue-600" />
-                {language === 'ar' ? '╪د┘╪ث╪│╪خ┘╪ر' : 'Questions'} ({questions.length})
+          <CardHeader className="pb-3 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                {language === 'ar' ? 'الأسئلة' : 'Questions'} ({questions.length})
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Select
                   onValueChange={(value) => addQuestion(value as Question['type'])}
                   defaultValue=""
                 >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={language === 'ar' ? '╪ح╪╢╪د┘╪ر ╪│╪ج╪د┘' : 'Add Question'} />
+                  <SelectTrigger className="w-full sm:w-48 h-10 sm:h-11 text-sm">
+                    <SelectValue placeholder={language === 'ar' ? 'إضافة سؤال' : 'Add Question'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mcq_single">
-                      {language === 'ar' ? '╪د╪«╪ز┘è╪د╪▒ ┘à┘ ┘à╪ز╪╣╪»╪» (┘ê╪د╪ص╪»)' : 'Multiple Choice (Single)'}
+                      {language === 'ar' ? 'اختيار من متعدد (واحد)' : 'Multiple Choice (Single)'}
                     </SelectItem>
                     <SelectItem value="mcq_multi">
-                      {language === 'ar' ? '╪د╪«╪ز┘è╪د╪▒ ┘à┘ ┘à╪ز╪╣╪»╪» (┘à╪ز╪╣╪»╪»)' : 'Multiple Choice (Multiple)'}
+                      {language === 'ar' ? 'اختيار من متعدد (متعدد)' : 'Multiple Choice (Multiple)'}
                     </SelectItem>
                     <SelectItem value="true_false">
-                      {language === 'ar' ? '╪╡╪ص┘è╪ص/╪«╪╖╪ث' : 'True/False'}
+                      {language === 'ar' ? 'صحيح/خطأ' : 'True/False'}
                     </SelectItem>
                     <SelectItem value="short_text">
-                      {language === 'ar' ? '┘╪╡ ┘é╪╡┘è╪▒' : 'Short Text'}
+                      {language === 'ar' ? 'نص قصير' : 'Short Text'}
                     </SelectItem>
                     <SelectItem value="numeric">
-                      {language === 'ar' ? '╪▒┘é┘à' : 'Numeric'}
+                      {language === 'ar' ? 'رقم' : 'Numeric'}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 sm:space-y-4">
             {questions.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                <HelpCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>
+              <div className="text-center py-6 sm:py-8 text-slate-500 dark:text-slate-400">
+                <HelpCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-xs sm:text-sm px-4">
                   {language === 'ar'
-                    ? '┘╪د ╪ز┘ê╪ش╪» ╪ث╪│╪خ┘╪ر ╪ذ╪╣╪». ╪د╪╢╪║╪╖ ╪╣┘┘ë ╪د┘╪ث╪▓╪▒╪د╪▒ ╪ث╪╣┘╪د┘ç ┘╪ح╪╢╪د┘╪ر ╪ث╪│╪خ┘╪ر.'
+                    ? 'لا توجد أسئلة بعد. اضغط على "إضافة سؤال" لإضافة سؤال جديد.'
                     : 'No questions yet. Click the buttons above to add questions.'}
                 </p>
               </div>
@@ -937,66 +944,69 @@ export default function EditQuizClient() {
               questions.map((question, index) => (
                 <div
                   key={question.id}
-                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
+                  className="p-3 sm:p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="font-mono text-xs">
                         #{index + 1}
                       </Badge>
-                      <Badge>
+                      <Badge className="text-xs">
                         {question.type === 'mcq_single'
                           ? language === 'ar'
-                            ? '╪د╪«╪ز┘è╪د╪▒ ┘ê╪د╪ص╪»'
+                            ? 'اختيار واحد'
                             : 'MCQ Single'
                           : question.type === 'mcq_multi'
                           ? language === 'ar'
-                            ? '╪د╪«╪ز┘è╪د╪▒ ┘à╪ز╪╣╪»╪»'
+                            ? 'اختيار متعدد'
                             : 'MCQ Multiple'
                           : question.type === 'true_false'
                           ? language === 'ar'
-                            ? '╪╡╪ص┘è╪ص/╪«╪╖╪ث'
+                            ? 'صحيح/خطأ'
                             : 'True/False'
                           : question.type === 'short_text'
                           ? language === 'ar'
-                            ? '┘╪╡ ┘é╪╡┘è╪▒'
+                            ? 'نص قصير'
                             : 'Short Text'
                           : language === 'ar'
-                          ? '╪▒┘é┘à'
+                          ? 'رقم'
                           : 'Numeric'}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => moveQuestion(question.id, 'up')}
                         disabled={index === 0}
+                        className="h-9 sm:h-8 flex-1 sm:flex-none"
                       >
-                        <ArrowUp className="h-4 w-4" />
+                        <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => moveQuestion(question.id, 'down')}
                         disabled={index === questions.length - 1}
+                        className="h-9 sm:h-8 flex-1 sm:flex-none"
                       >
-                        <ArrowDown className="h-4 w-4" />
+                        <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => removeQuestion(question.id)}
+                        className="h-9 sm:h-8 flex-1 sm:flex-none"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <Label className="text-sm font-semibold">
-                        {language === 'ar' ? '┘╪╡ ╪د┘╪│╪ج╪د┘' : 'Question Text'}{' '}
+                      <Label className="text-xs sm:text-sm font-semibold">
+                        {language === 'ar' ? 'نص السؤال' : 'Question Text'}{' '}
                         <span className="text-red-500">*</span>
                       </Label>
                       <Textarea
@@ -1006,20 +1016,21 @@ export default function EditQuizClient() {
                         }
                         placeholder={
                           language === 'ar'
-                            ? '╪ث╪»╪«┘ ┘╪╡ ╪د┘╪│╪ج╪د┘'
+                            ? 'أدخل نص السؤال'
                             : 'Enter question text'
                         }
                         rows={2}
+                        className="mt-1.5 text-sm"
                       />
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Label className="text-sm font-semibold">
-                        {language === 'ar' ? '╪د┘┘┘é╪د╪╖' : 'Points'}
+                      <Label className="text-xs sm:text-sm font-semibold">
+                        {language === 'ar' ? 'النقاط' : 'Points'}
                       </Label>
                       <Input
                         type="number"
-                        className="w-24"
+                        className="w-20 sm:w-24 h-10 sm:h-11 text-sm"
                         value={question.points}
                         onChange={(e) =>
                           updateQuestionLocal(question.id, {
@@ -1034,23 +1045,24 @@ export default function EditQuizClient() {
                     {(question.type === 'mcq_single' ||
                       question.type === 'mcq_multi') && (
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-semibold">
-                            {language === 'ar' ? '╪د┘╪«┘è╪د╪▒╪د╪ز' : 'Options'}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                          <Label className="text-xs sm:text-sm font-semibold">
+                            {language === 'ar' ? 'الخيارات' : 'Options'}
                           </Label>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => addOptionToQuestion(question.id)}
+                            className="h-9 sm:h-8 text-xs sm:text-sm w-full sm:w-auto"
                           >
-                            <Plus className="h-4 w-4 mr-1" />
-                            {language === 'ar' ? '╪ح╪╢╪د┘╪ر ╪«┘è╪د╪▒' : 'Add Option'}
+                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            {language === 'ar' ? 'إضافة خيار' : 'Add Option'}
                           </Button>
                         </div>
                         {(question.options || []).map((option: any, optIdx: number) => (
                           <div
                             key={option.id}
-                            className="flex items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-700"
+                            className="flex items-center gap-2 p-2 sm:p-2.5 rounded border border-slate-200 dark:border-slate-700"
                           >
                             <Checkbox
                               checked={option.is_correct}
@@ -1075,6 +1087,7 @@ export default function EditQuizClient() {
                                   });
                                 }
                               }}
+                              className="h-4 w-4 sm:h-5 sm:w-5"
                             />
                             <Input
                               value={option.text}
@@ -1084,7 +1097,7 @@ export default function EditQuizClient() {
                                 })
                               }
                               placeholder={`Option ${optIdx + 1}`}
-                              className="flex-1"
+                              className="flex-1 h-10 sm:h-11 text-sm"
                             />
                             {(question.options || []).length > 2 && (
                               <Button
@@ -1093,8 +1106,9 @@ export default function EditQuizClient() {
                                 onClick={() =>
                                   removeOptionFromQuestion(question.id, option.id)
                                 }
+                                className="h-9 sm:h-8 w-9 sm:w-8 p-0"
                               >
-                                <Trash2 className="h-4 w-4 text-red-600" />
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                               </Button>
                             )}
                           </div>
@@ -1102,7 +1116,7 @@ export default function EditQuizClient() {
                         {(question.options || []).length < 2 && (
                           <p className="text-xs text-amber-600 dark:text-amber-400">
                             {language === 'ar'
-                              ? '┘è╪ش╪ذ ╪ح╪╢╪د┘╪ر ╪«┘è╪د╪▒┘è┘ ╪╣┘┘ë ╪د┘╪ث┘é┘'
+                              ? 'يجب إضافة خيارين على الأقل'
                               : 'At least 2 options are required'}
                           </p>
                         )}
@@ -1112,8 +1126,8 @@ export default function EditQuizClient() {
                     {/* True/False Options */}
                     {question.type === 'true_false' && (
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold">
-                          {language === 'ar' ? '╪د┘╪ح╪ش╪د╪ذ╪ر ╪د┘╪╡╪ص┘è╪ص╪ر' : 'Correct Answer'}
+                        <Label className="text-xs sm:text-sm font-semibold">
+                          {language === 'ar' ? 'الإجابة الصحيحة' : 'Correct Answer'}
                         </Label>
                         <div className="flex gap-2">
                           <Button
@@ -1121,16 +1135,18 @@ export default function EditQuizClient() {
                             onClick={() =>
                               updateQuestionLocal(question.id, { correct_answer: 'true' })
                             }
+                            className="h-10 sm:h-11 flex-1 sm:flex-none text-sm"
                           >
-                            {language === 'ar' ? '╪╡╪ص┘è╪ص' : 'True'}
+                            {language === 'ar' ? 'صحيح' : 'True'}
                           </Button>
                           <Button
                             variant={(question.correct_answer === 'false' || question.correct_answer === 0 || question.correct_answer === '0') ? 'default' : 'outline'}
                             onClick={() =>
                               updateQuestionLocal(question.id, { correct_answer: 'false' })
                             }
+                            className="h-10 sm:h-11 flex-1 sm:flex-none text-sm"
                           >
-                            {language === 'ar' ? '╪«╪╖╪ث' : 'False'}
+                            {language === 'ar' ? 'خطأ' : 'False'}
                           </Button>
                         </div>
                       </div>
@@ -1139,8 +1155,8 @@ export default function EditQuizClient() {
                     {/* Numeric Answer */}
                     {question.type === 'numeric' && (
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold">
-                          {language === 'ar' ? '╪د┘╪ح╪ش╪د╪ذ╪ر ╪د┘╪╡╪ص┘è╪ص╪ر (╪▒┘é┘à)' : 'Correct Answer (Number)'}
+                        <Label className="text-xs sm:text-sm font-semibold">
+                          {language === 'ar' ? 'الإجابة الصحيحة (رقم)' : 'Correct Answer (Number)'}
                         </Label>
                         <Input
                           type="number"
@@ -1157,15 +1173,16 @@ export default function EditQuizClient() {
                                   : Number(e.target.value),
                             })
                           }
-                          placeholder={language === 'ar' ? '╪ث╪»╪«┘ ╪د┘╪▒┘é┘à ╪د┘╪╡╪ص┘è╪ص' : 'Enter correct number'}
+                          placeholder={language === 'ar' ? 'أدخل الرقم الصحيح' : 'Enter correct number'}
+                          className="h-10 sm:h-11 text-sm"
                         />
                         <div className="flex items-center gap-2">
                           <Label className="text-xs text-slate-600 dark:text-slate-400">
-                            {language === 'ar' ? '╪د┘╪ز╪│╪د┘à╪ص (┬▒)' : 'Tolerance (┬▒)'}
+                            {language === 'ar' ? 'التسامح (±)' : 'Tolerance (±)'}
                           </Label>
                           <Input
                             type="number"
-                            className="w-32"
+                            className="w-28 sm:w-32 h-10 sm:h-11 text-sm"
                             value={question.tolerance || ''}
                             onChange={(e) =>
                               updateQuestionLocal(question.id, {
@@ -1187,7 +1204,7 @@ export default function EditQuizClient() {
                       <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p className="text-xs text-blue-800 dark:text-blue-200">
                           {language === 'ar'
-                            ? '┘ç╪░╪د ╪د┘┘┘ê╪╣ ┘à┘ ╪د┘╪ث╪│╪خ┘╪ر ┘è╪ص╪ز╪د╪ش ╪ح┘┘ë ╪ز╪╡╪ص┘è╪ص ┘è╪»┘ê┘è'
+                            ? 'هذا النوع من الأسئلة يحتاج إلى تصحيح يدوي'
                             : 'This question type requires manual grading'}
                         </p>
                       </div>
@@ -1199,9 +1216,10 @@ export default function EditQuizClient() {
                       variant="outline"
                       size="sm"
                       onClick={() => saveQuestion(question, index)}
+                      className="h-10 sm:h-9 w-full sm:w-auto text-sm"
                     >
-                      <Save className="h-4 w-4 mr-1" />
-                      {language === 'ar' ? '╪ص┘╪╕ ╪د┘╪│╪ج╪د┘' : 'Save Question'}
+                      <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      {language === 'ar' ? 'حفظ السؤال' : 'Save Question'}
                     </Button>
                   </div>
                 </div>
