@@ -177,7 +177,7 @@ export default function QuizResultClient() {
                     <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-success" />
                   </div>
                   <div className="text-2xl sm:text-3xl font-bold text-success mb-1">{stats.correct}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusCompleted' as TranslationKey)}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ar' ? 'صحيح' : 'Correct'}</div>
                 </div>
 
                 {/* Wrong Answers */}
@@ -186,7 +186,7 @@ export default function QuizResultClient() {
                     <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive" />
                   </div>
                   <div className="text-2xl sm:text-3xl font-bold text-destructive mb-1">{stats.wrong}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusNotStarted' as TranslationKey)}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ar' ? 'خطأ' : 'Wrong'}</div>
                 </div>
 
                 {/* Not Graded */}
@@ -195,7 +195,7 @@ export default function QuizResultClient() {
                     <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-warning" />
                   </div>
                   <div className="text-2xl sm:text-3xl font-bold text-warning mb-1">{stats.notGraded}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">{t('statusInProgress' as TranslationKey)}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ar' ? 'لم يتم التصحيح' : 'Not graded'}</div>
                 </div>
               </div>
 
@@ -219,20 +219,9 @@ export default function QuizResultClient() {
         )}
 
         {/* Questions & Answers */}
-        <Card className="glass-card border-primary/10">
-          <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-accent">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="font-display">{t('viewGradesAndFeedback' as TranslationKey)}</CardTitle>
-                <p className="text-sm text-muted-foreground">{t('feedback' as TranslationKey)}</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-            {!attempt ? (
+        {!attempt ? (
+          <Card className="glass-card border-primary/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="text-center py-12">
                 <div className="relative inline-block mb-4">
                   <div className="absolute inset-0 bg-gradient-to-br from-warning to-warning/80 rounded-full blur-xl opacity-20 animate-pulse"></div>
@@ -247,7 +236,11 @@ export default function QuizResultClient() {
                   {language === 'ar' ? 'لم يتم العثور على محاولة للاختبار' : 'No quiz attempt found'}
                 </p>
               </div>
-            ) : !canShow ? (
+            </CardContent>
+          </Card>
+        ) : !canShow ? (
+          <Card className="glass-card border-primary/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="text-center py-12">
                 <div className="relative inline-block mb-4">
                   <div className="absolute inset-0 bg-gradient-to-br from-warning to-warning/80 rounded-full blur-xl opacity-20 animate-pulse"></div>
@@ -268,7 +261,22 @@ export default function QuizResultClient() {
                     : (language === 'ar' ? 'النتائج غير متاحة حالياً' : 'Results are not available at this time')}
                 </p>
               </div>
-            ) : (
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="glass-card border-primary/10">
+            <CardHeader className="bg-gradient-to-l from-primary/5 to-secondary/5 border-b border-primary/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-accent">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="font-display">{t('viewGradesAndFeedback' as TranslationKey)}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{t('feedback' as TranslationKey)}</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               <div className="space-y-4">
                 {questions.map((q: any, idx: number) => {
                   const ansRow = answers[q.id];
@@ -401,32 +409,61 @@ export default function QuizResultClient() {
                   );
                 })}
               </div>
-            )}
 
-            {/* Back Button */}
-            <div className="pt-3 sm:pt-4 border-t border-primary/10">
-              {classId && subjectId ? (
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subjectId}`)}
-                  className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
-                  {t('backToSubjects' as TranslationKey)}
-                </Button>
-              ) : (
-                <Button 
-                  variant="outline"
-                  onClick={() => router.push('/dashboard')}
-                  className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
-                  {t('back' as TranslationKey)} {t('dashboard' as TranslationKey)}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              {/* Back Button */}
+              <div className="pt-3 sm:pt-4 border-t border-primary/10">
+                {classId && subjectId ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subjectId}`)}
+                    className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                    {t('backToSubjects' as TranslationKey)}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline"
+                    onClick={() => router.push('/dashboard')}
+                    className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                    {t('back' as TranslationKey)} {t('dashboard' as TranslationKey)}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Back Button - shown when results are not available */}
+        {(!attempt || !canShow) && (
+          <Card className="glass-card border-primary/10">
+            <CardContent className="p-4 sm:p-6">
+              <div className="pt-3 sm:pt-4">
+                {classId && subjectId ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push(`/dashboard/my-classes/${classId}/subjects/${subjectId}`)}
+                    className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                    {t('backToSubjects' as TranslationKey)}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline"
+                    onClick={() => router.push('/dashboard')}
+                    className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
+                    {t('back' as TranslationKey)} {t('dashboard' as TranslationKey)}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

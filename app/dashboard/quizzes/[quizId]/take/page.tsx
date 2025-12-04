@@ -231,7 +231,9 @@ export default function TakeQuizPage() {
           const provided = row.answer_payload?.bool;
           const opts = optionsByQuestion.get(q.id) || [];
           const correctOpt = opts.find((o: any) => o.is_correct);
-          const correctVal = correctOpt ? correctOpt.text === 'True' || correctOpt.text === 'true' || correctOpt.text === 'T' : undefined;
+          // Use order_index instead of text comparison for language independence
+          // order_index 0 = True, order_index 1 = False
+          const correctVal = correctOpt ? correctOpt.order_index === 0 : undefined;
           const correct = typeof provided === 'boolean' && typeof correctVal === 'boolean' && provided === correctVal;
           toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
           if (correct) total += points;
