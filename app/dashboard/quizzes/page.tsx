@@ -608,16 +608,18 @@ export default function QuizzesManagePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)} className="sm:col-span-2 lg:col-span-1">
-                <SelectTrigger className="h-10 sm:h-11">
-                  <SelectValue placeholder={t('type')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allTypes')}</SelectItem>
-                  <SelectItem value="subject">{t('subjectOnly')}</SelectItem>
-                  <SelectItem value="lesson">{t('lessonOnly')}</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="sm:col-span-2 lg:col-span-1">
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                  <SelectTrigger className="h-10 sm:h-11">
+                    <SelectValue placeholder={t('type')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allTypes')}</SelectItem>
+                    <SelectItem value="subject">{t('subjectOnly')}</SelectItem>
+                    <SelectItem value="lesson">{t('lessonOnly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
