@@ -8,6 +8,7 @@ import { ServiceWorkerProvider } from '@/components/ServiceWorkerProvider';
 import { WebVitals } from '@/components/WebVitals';
 import { FontLoader } from '@/components/FontLoader';
 import { ErrorSuppressor } from '@/components/ErrorSuppressor';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 // ✅ PERFORMANCE: Optimized font loading with preconnect
 // Islamic Scholarly Fonts: Tajawal (body) + Amiri (headings) + Scheherazade (decorative)
@@ -79,6 +80,7 @@ export default function RootLayout({
                 {children}
                 <Toaster />
                 <WebVitals />
+                <InstallPrompt />
               </BreadcrumbProvider>
             </AuthProvider>
           </LanguageProvider>

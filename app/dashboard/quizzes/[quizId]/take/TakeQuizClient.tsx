@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,8 @@ export default function TakeQuizClient() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [readOnly, setReadOnly] = useState(false);
   const [redirectParams, setRedirectParams] = useState<{ classId?: string; subjectId?: string }>({});
+  // Debounce timers for saving answers (especially for short_text)
+  const saveTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const answeredCount = useMemo(() => {
     if (!bundle) return 0;
     return (bundle.questions as any[]).reduce((acc, q) => acc + (answers[q.id] ? 1 : 0), 0);
@@ -57,6 +59,12 @@ export default function TakeQuizClient() {
       if (!profile) { router.push('/login'); return; }
       load().catch(() => {});
     }
+    
+    // Cleanup: clear all save timers on unmount
+    return () => {
+      Object.values(saveTimersRef.current).forEach(timer => clearTimeout(timer));
+      saveTimersRef.current = {};
+    };
   }, [authLoading, profile, quizId]);
 
   useEffect(() => {
@@ -191,16 +199,42 @@ export default function TakeQuizClient() {
     }
   };
 
-  const answerQuestion = async (q: any, val: any) => {
+  // Save answer to database (called after debounce for text inputs)
+  const saveAnswerToDB = useCallback(async (questionId: string, val: any) => {
+    if (!attempt || readOnly) return;
     try {
-      if (readOnly) return;
       setSaving(true);
-      await saveQuizAnswer(attempt!.id, q.id, val);
-      setAnswers(prev => ({ ...prev, [q.id]: val }));
+      await saveQuizAnswer(attempt.id, questionId, val);
+    } catch (error) {
+      console.error('Error saving answer:', error);
     } finally {
       setSaving(false);
     }
-  };
+  }, [attempt, readOnly]);
+
+  const answerQuestion = useCallback((q: any, val: any) => {
+    if (readOnly) return;
+    
+    // Update local state immediately for smooth typing experience
+    setAnswers(prev => ({ ...prev, [q.id]: val }));
+    
+    // For short_text questions, use debouncing to avoid saving on every keystroke
+    if (q.type === 'short_text') {
+      // Clear existing timer for this question
+      if (saveTimersRef.current[q.id]) {
+        clearTimeout(saveTimersRef.current[q.id]);
+      }
+      
+      // Set new timer to save after user stops typing (500ms)
+      saveTimersRef.current[q.id] = setTimeout(() => {
+        saveAnswerToDB(q.id, val);
+        delete saveTimersRef.current[q.id];
+      }, 500);
+    } else {
+      // For other question types, save immediately
+      saveAnswerToDB(q.id, val);
+    }
+  }, [readOnly, saveAnswerToDB]);
 
   const handleSubmitClick = () => {
     if (readOnly || submitting) return;
@@ -437,7 +471,15 @@ export default function TakeQuizClient() {
                     )}
                     {q.type === 'short_text' && (
                       <div>
-                        <textarea className="w-full p-2.5 sm:p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent text-sm sm:text-base rtl:text-right" rows={3} disabled={readOnly} value={textVal || ''} onChange={(e) => answerQuestion(q, { text: e.target.value })} />
+                        <textarea 
+                          className="w-full p-2.5 sm:p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent text-sm sm:text-base rtl:text-right focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors" 
+                          rows={3} 
+                          readOnly={readOnly}
+                          disabled={readOnly}
+                          value={textVal || ''} 
+                          onChange={(e) => answerQuestion(q, { text: e.target.value })} 
+                          placeholder={language === 'ar' ? 'اكتب إجابتك هنا...' : language === 'fr' ? 'Écrivez votre réponse ici...' : 'Type your answer here...'}
+                        />
                       </div>
                     )}
                     {q.type === 'true_false' && (

@@ -88,9 +88,12 @@ export default function GradeQuizClient() {
     return data?.full_name || id;
   };
 
-  const gradeShortText = async (answerId: string, points: number) => {
-    // Validate points (should be >= 0 and not NaN)
-    const validPoints = isNaN(points) || points < 0 ? 0 : points;
+  const gradeShortText = async (answerId: string, points: number, maxPoints?: number) => {
+    // Validate points (should be >= 0 and not NaN, and not exceed maxPoints if provided)
+    let validPoints = isNaN(points) || points < 0 ? 0 : points;
+    if (maxPoints !== undefined && validPoints > maxPoints) {
+      validPoints = maxPoints;
+    }
     const ok = await updateAnswerGrade(answerId, null, validPoints);
     if ((ok as any).error) { 
       toast.error(language === 'ar' ? 'فشل التصحيح' : language === 'fr' ? 'Échec de la notation' : 'Failed to grade'); 
@@ -221,7 +224,17 @@ export default function GradeQuizClient() {
     );
   }
 
-              return (
+  if (!profile || !['admin', 'teacher', 'supervisor'].includes(profile.role)) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">{t('unauthorized' as TranslationKey)}</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
     <DashboardLayout>
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
         {/* Page Header */}
@@ -233,7 +246,7 @@ export default function GradeQuizClient() {
         >
           <Button
             variant="outline"
-            onClick={() => router.push(`/dashboard/quizzes/${quizId}`)}
+            onClick={() => router.push('/dashboard/quizzes')}
             className="w-full sm:w-auto border-primary/30 hover:bg-primary/5 hover:border-primary/50 text-sm sm:text-base"
           >
             <ArrowLeft className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 rtl:rotate-180" />
@@ -508,7 +521,7 @@ export default function GradeQuizClient() {
                                           defaultValue={pointsAwarded ?? ''}
                                           onBlur={async (e) => {
                                             const v = Number(e.target.value || 0);
-                                            await gradeShortText(ans?.id || '', v);
+                                            await gradeShortText(ans?.id || '', v, questionPoints);
                                           }}
                                         />
                                         <span className="text-xs sm:text-sm text-muted-foreground">
@@ -549,7 +562,7 @@ export default function GradeQuizClient() {
                                           defaultValue={pointsAwarded ?? ''}
                                           onBlur={async (e) => {
                                             const v = Number(e.target.value || 0);
-                                            await gradeShortText(ans?.id || '', v);
+                                            await gradeShortText(ans?.id || '', v, questionPoints);
                                           }}
                                         />
                                         <span className="text-xs sm:text-sm text-muted-foreground">

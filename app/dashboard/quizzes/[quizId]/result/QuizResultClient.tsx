@@ -465,7 +465,61 @@ export default function QuizResultClient() {
                   const correctOpts = opts.filter((o: any) => o.is_correct);
                   const selectedTextSingle = opts.find((o: any) => o.id === selectedIds[0])?.text || '-';
                   const correctSingleText = correctOpts[0]?.text || '-';
-                  const isCorrect = typeof ansRow?.is_correct === 'boolean' ? ansRow.is_correct : undefined;
+                  
+                  // Determine if answer is correct: check is_correct first, then points_awarded as fallback
+                  let isCorrect: boolean | undefined = undefined;
+                  const questionPoints = Number(q.points) || 1;
+                  
+                  if (typeof ansRow?.is_correct === 'boolean') {
+                    // Use is_correct if it's explicitly set
+                    isCorrect = ansRow.is_correct;
+                  } else if (ansRow?.points_awarded !== null && ansRow?.points_awarded !== undefined) {
+                    // If is_correct is not set, infer from points_awarded
+                    const points = Number(ansRow.points_awarded);
+                    if (!isNaN(points) && points >= 0) {
+                      // For auto-graded questions, if points equals question points, it's correct
+                      // For manually graded questions, if points > 0, consider it at least partially correct
+                      // But for display purposes, we'll show it as correct if points > 0
+                      if (['mcq_single', 'mcq_multi', 'true_false', 'numeric'].includes(q.type)) {
+                        // Auto-graded: correct if points equals question points
+                        isCorrect = points === questionPoints;
+                      } else {
+                        // Manually graded: correct if points > 0
+                        isCorrect = points > 0;
+                      }
+                    }
+                  }
+                  
+                  // Additional check: if we have both selected answer and correct answer, compare them directly
+                  if (isCorrect === undefined && ansRow && opts.length > 0) {
+                    if (q.type === 'mcq_single') {
+                      const selected = selectedIds[0];
+                      const correctOpt = correctOpts[0];
+                      isCorrect = !!selected && !!correctOpt && selected === correctOpt.id;
+                    } else if (q.type === 'mcq_multi') {
+                      const correctIds = correctOpts.map((o: any) => o.id).sort();
+                      const selSorted = [...selectedIds].sort();
+                      isCorrect = JSON.stringify(correctIds) === JSON.stringify(selSorted);
+                    } else if (q.type === 'true_false') {
+                      const provided = ansRow.answer_payload?.bool;
+                      const correctOpt = correctOpts[0];
+                      if (correctOpt) {
+                        const correctVal = correctOpt.order_index === 0;
+                        isCorrect = typeof provided === 'boolean' && provided === correctVal;
+                      }
+                    } else if (q.type === 'numeric') {
+                      const provided = ansRow.answer_payload?.number;
+                      const correctOpt = correctOpts[0];
+                      if (correctOpt) {
+                        const correctVal = Number(correctOpt.text);
+                        const tol = q.media_url ? Number(q.media_url) : 0;
+                        const providedNum = typeof provided === 'number' && !isNaN(provided) ? provided : undefined;
+                        const correctNum = !isNaN(correctVal) ? correctVal : undefined;
+                        const tolNum = !isNaN(tol) && tol >= 0 ? tol : 0;
+                        isCorrect = providedNum !== undefined && correctNum !== undefined && Math.abs(providedNum - correctNum) <= tolNum;
+                      }
+                    }
+                  }
                   
                   return (
                     <div 

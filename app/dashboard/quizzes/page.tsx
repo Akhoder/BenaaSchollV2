@@ -122,12 +122,6 @@ export default function QuizzesManagePage() {
       const quizzesData = quizzesResult.data || [];
       const subjectsData = subjectsResult.data || [];
       
-      // Debug: Log to check data structure
-      if (quizzesData.length > 0) {
-        console.log('Sample quiz data:', quizzesData[0]);
-        console.log('Subjects data:', subjectsData);
-      }
-      
       setQuizzes(quizzesData);
       setSubjects(subjectsData);
     } catch (err) {
@@ -142,6 +136,33 @@ export default function QuizzesManagePage() {
     if (isAuthorized) {
       loadData();
     }
+  }, [isAuthorized, loadData]);
+
+  // Reload data when page becomes visible (e.g., returning from creating/editing a quiz)
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    let lastVisibilityChange = Date.now();
+    const RELOAD_THROTTLE = 2000; // Only reload if page was hidden for at least 2 seconds
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        // Only reload if page was hidden for a reasonable time (user likely navigated away and back)
+        if (now - lastVisibilityChange > RELOAD_THROTTLE) {
+          loadData();
+        }
+        lastVisibilityChange = now;
+      } else {
+        lastVisibilityChange = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isAuthorized, loadData]);
 
   // Helper functions to avoid repetition
