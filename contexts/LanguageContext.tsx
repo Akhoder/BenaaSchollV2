@@ -12,12 +12,17 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>('ar');
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as Language;
     if (savedLanguage && translations[savedLanguage]) {
       setLanguageState(savedLanguage);
+    } else {
+      // إذا لم تكن هناك لغة محفوظة، استخدم العربية كافتراضية
+      setLanguageState('ar');
+      document.documentElement.dir = 'rtl';
+      document.documentElement.lang = 'ar';
     }
   }, []);
 

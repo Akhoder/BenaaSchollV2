@@ -9,6 +9,7 @@ import { WebVitals } from '@/components/WebVitals';
 import { FontLoader } from '@/components/FontLoader';
 import { ErrorSuppressor } from '@/components/ErrorSuppressor';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { UpdateNotification } from '@/components/UpdateNotification';
 
 // ✅ PERFORMANCE: Optimized font loading with preconnect
 // Islamic Scholarly Fonts: Tajawal (body) + Amiri (headings) + Scheherazade (decorative)
@@ -81,6 +82,7 @@ export default function RootLayout({
                 <Toaster />
                 <WebVitals />
                 <InstallPrompt />
+                <UpdateNotification />
               </BreadcrumbProvider>
             </AuthProvider>
           </LanguageProvider>

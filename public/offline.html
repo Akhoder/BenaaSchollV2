@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>غير متصل - مدرسة البناء العلمي</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #F8F5F0 0%, #E8E5E0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #115E3C;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    .icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      background: #115E3C;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s infinite;
+    }
+    
+    .icon svg {
+      width: 60px;
+      height: 60px;
+      color: white;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+    }
+    
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      color: #115E3C;
+    }
+    
+    p {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 12px 30px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+    
+    .btn-primary {
+      background: #115E3C;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0d4a2d;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(17, 94, 60, 0.3);
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #115E3C;
+      border: 2px solid #115E3C;
+    }
+    
+    .btn-secondary:hover {
+      background: #f0f0f0;
+    }
+    
+    .status {
+      margin-top: 30px;
+      padding: 15px;
+      background: rgba(17, 94, 60, 0.1);
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    
+    .status.online {
+      background: rgba(34, 197, 94, 0.1);
+      color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+      </svg>
+    </div>
+    
+    <h1>غير متصل بالإنترنت</h1>
+    <p>يبدو أنك غير متصل بالإنترنت حالياً. يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+    
+    <div class="actions">
+      <button class="btn-primary" onclick="window.location.reload()">
+        إعادة المحاولة
+      </button>
+      <button class="btn-secondary" onclick="window.history.back()">
+        العودة للخلف
+      </button>
+    </div>
+    
+    <div class="status" id="status">
+      <p>جاري التحقق من الاتصال...</p>
+    </div>
+  </div>
+  
+  <script>
+    // التحقق من حالة الاتصال
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      if (navigator.onLine) {
+        statusEl.className = 'status online';
+        statusEl.innerHTML = '<p>✓ تم اكتشاف الاتصال بالإنترنت. جاري إعادة التحميل...</p>';
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        statusEl.className = 'status';
+        statusEl.innerHTML = '<p>✗ لا يوجد اتصال بالإنترنت</p>';
+      }
+    }
+    
+    // تحديث الحالة عند تغيير الاتصال
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    
+    // التحقق الأولي
+    updateStatus();
+    
+    // التحقق الدوري كل 5 ثوان
+    setInterval(updateStatus, 5000);
+  </script>
+</body>
+</html>
+

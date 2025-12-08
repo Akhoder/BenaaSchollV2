@@ -1,13 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+
+interface ServiceWorkerState {
+  registration: ServiceWorkerRegistration | null;
+  updateAvailable: boolean;
+  isOnline: boolean;
+}
 
 export function useServiceWorker() {
+  const [swState, setSwState] = useState<ServiceWorkerState>({
+    registration: null,
+    updateAvailable: false,
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  });
+
   useEffect(() => {
     // ✅ DISABLE IN DEVELOPMENT: Service Worker causes build issues in dev mode
     const isDevelopment = process.env.NODE_ENV === 'development';
     if (isDevelopment) {
-      console.log('Service Worker disabled in development mode');
+      console.log('[SW] Service Worker disabled in development mode');
       // Unregister any existing service workers
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -19,52 +31,161 @@ export function useServiceWorker() {
       return;
     }
 
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // تسجيل Service Worker
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered successfully:', registration);
-          
-          // التحقق من التحديثات
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.info('تحديث جديد متاح - سيتم إعادة تحميل الصفحة تلقائياً.');
-                  window.location.reload();
-                }
-              });
-            }
-          });
-        })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
-        });
-
-      // معالجة رسائل Service Worker
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'CACHE_UPDATED') {
-          console.log('Cache updated');
-        }
-      });
-
-      // تنظيف الذاكرة المؤقتة عند إغلاق التطبيق
-      window.addEventListener('beforeunload', () => {
-        navigator.serviceWorker.controller?.postMessage({
-          type: 'CLEANUP'
-        });
-      });
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
     }
+
+    let registration: ServiceWorkerRegistration | null = null;
+
+    // تسجيل Service Worker
+    navigator.serviceWorker
+      .register('/sw.js', {
+        updateViaCache: 'none', // دائماً التحقق من التحديثات
+      })
+      .then((reg) => {
+        registration = reg;
+        setSwState((prev) => ({ ...prev, registration: reg }));
+        console.log('[SW] Service Worker registered successfully');
+
+        // التحقق من التحديثات عند التسجيل
+        checkForUpdates(reg);
+
+        // الاستماع للتحديثات
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  // هناك تحديث جديد متاح
+                  console.log('[SW] New update available');
+                  setSwState((prev) => ({ ...prev, updateAvailable: true }));
+                  
+                  // إرسال إشعار للمستخدم (سيتم التعامل معه في UpdateNotification)
+                  window.dispatchEvent(new CustomEvent('sw-update-available', {
+                    detail: { registration: reg }
+                  }));
+                } else {
+                  // Service Worker جديد تم تثبيته لأول مرة
+                  console.log('[SW] Service Worker installed for the first time');
+                }
+              }
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('[SW] Service Worker registration failed:', error);
+      });
+
+    // معالجة رسائل Service Worker
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'CACHE_UPDATED') {
+        console.log('[SW] Cache updated');
+      }
+      if (event.data && event.data.type === 'SW_UPDATED') {
+        console.log('[SW] Service Worker updated to version:', event.data.version);
+        setSwState((prev) => ({ 
+          ...prev, 
+          updateAvailable: true 
+        }));
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+
+    // التحقق من التحديثات بشكل دوري (كل 60 دقيقة)
+    const updateInterval = setInterval(() => {
+      if (registration) {
+        checkForUpdates(registration);
+      }
+    }, 60 * 60 * 1000);
+
+    // التحقق من حالة الاتصال
+    const handleOnline = () => {
+      setSwState((prev) => ({ ...prev, isOnline: true }));
+      // إعادة محاولة الطلبات الفاشلة عند الاتصال
+      if (registration && 'sync' in registration) {
+        (registration as any).sync.register('retry-failed-requests').catch(() => {
+          // Background sync غير متاح
+        });
+      }
+    };
+
+    const handleOffline = () => {
+      setSwState((prev) => ({ ...prev, isOnline: false }));
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // تنظيف
+    return () => {
+      clearInterval(updateInterval);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
   }, []);
+
+  return swState;
 }
 
-// دالة مساعدة لمسح الذاكرة المؤقتة
-export const clearCache = async () => {
-  if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'CLEAR_CACHE'
+// التحقق من التحديثات
+function checkForUpdates(registration: ServiceWorkerRegistration) {
+  registration
+    .update()
+    .then(() => {
+      console.log('[SW] Update check completed');
+    })
+    .catch((error) => {
+      console.warn('[SW] Update check failed:', error);
     });
+}
+
+// دالة مساعدة لتخطي الانتظار وتطبيق التحديث
+export const skipWaiting = async () => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.ready;
+  if (registration.waiting) {
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+};
+
+// دالة مساعدة لمسح الذاكرة المؤقتة
+export const clearCache = async (): Promise<boolean> => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+    return false;
+  }
+
+  try {
+    if (navigator.serviceWorker.controller) {
+      return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data.success || false);
+        };
+
+        navigator.serviceWorker.controller!.postMessage(
+          { type: 'CLEAR_CACHE' },
+          [messageChannel.port2]
+        );
+
+        // Timeout بعد 5 ثوان
+        setTimeout(() => resolve(false), 5000);
+      });
+    }
+
+    // إذا لم يكن هناك controller، مسح الذاكرة المؤقتة مباشرة
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    return true;
+  } catch (error) {
+    console.error('[SW] Error clearing cache:', error);
+    return false;
   }
 };
 

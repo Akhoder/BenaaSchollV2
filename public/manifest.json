@@ -4,16 +4,19 @@
   "description": "مدرسة إسلامية لنشر العلوم الشرعية والتربوية | Islamic school for spreading religious and educational sciences",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#F8F5F0",
   "theme_color": "#115E3C",
   "orientation": "any",
   "scope": "/",
+  "id": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-192x192.png",
@@ -54,5 +57,12 @@
       "url": "/dashboard/classes",
       "icons": [{ "src": "/icons/icon-144x144.png", "sizes": "144x144" }]
     }
-  ]
+  ],
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
