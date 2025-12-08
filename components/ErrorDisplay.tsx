@@ -4,6 +4,7 @@ import { AlertCircle, X, RefreshCw, AlertTriangle, Info, CheckCircle2 } from 'lu
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * Enhanced Error Display Components
@@ -112,10 +113,13 @@ interface SuccessMessageProps {
 
 export function SuccessMessage({ 
   message, 
-  title = 'نجح',
+  title,
   onDismiss,
   className 
 }: SuccessMessageProps) {
+  const { t } = useLanguage();
+  const defaultTitle = title || t('success');
+  
   return (
     <Alert className={cn(
       'animate-fade-in border-2 bg-success-light border-success',
@@ -125,7 +129,7 @@ export function SuccessMessage({
         <CheckCircle2 className="h-5 w-5 mt-0.5 text-success" />
         <div className="flex-1">
           <AlertTitle className="font-semibold mb-1 text-success">
-            {title}
+            {defaultTitle}
           </AlertTitle>
           <AlertDescription className="text-sm">
             {message}
@@ -138,7 +142,7 @@ export function SuccessMessage({
               className="h-8 mt-3"
             >
               <X className="h-3 w-3 mr-1" />
-              إغلاق
+              {t('close')}
             </Button>
           )}
         </div>

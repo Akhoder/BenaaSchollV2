@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { X, Download, Smartphone, Share2, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function InstallPrompt() {
   const { isInstallable, isInstalled, isIOS, isStandalone, promptInstall } = useInstallPrompt();
+  const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -130,10 +132,10 @@ export function InstallPrompt() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Download className="w-6 h-6 text-primary" />
-            تثبيت التطبيق
+            {t('installApp')}
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            ثبّت تطبيق مدرسة البناء العلمي على جهازك للوصول السريع
+            {t('installAppDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -144,7 +146,7 @@ export function InstallPrompt() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Smartphone className="w-5 h-5 text-primary" />
-                  تعليمات التثبيت على iPhone/iPad
+                  {t('installInstructionsIOS')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -153,8 +155,8 @@ export function InstallPrompt() {
                     1
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">اضغط على زر المشاركة</p>
-                    <p className="text-muted-foreground">في أسفل الشاشة (أيقونة <Share2 className="w-4 h-4 inline" />)</p>
+                    <p className="font-semibold mb-1">{t('installStep1IOS')}</p>
+                    <p className="text-muted-foreground">{t('installStep1IOSDesc')} <Share2 className="w-4 h-4 inline" /></p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-background rounded-lg">
@@ -162,8 +164,8 @@ export function InstallPrompt() {
                     2
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">اختر "إضافة إلى الشاشة الرئيسية"</p>
-                    <p className="text-muted-foreground">أو "Add to Home Screen"</p>
+                    <p className="font-semibold mb-1">{t('installStep2IOS')}</p>
+                    <p className="text-muted-foreground">{t('installStep2IOSDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-background rounded-lg">
@@ -171,8 +173,8 @@ export function InstallPrompt() {
                     3
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">اضغط "إضافة"</p>
-                    <p className="text-muted-foreground">سيظهر التطبيق على الشاشة الرئيسية</p>
+                    <p className="font-semibold mb-1">{t('installStep3IOS')}</p>
+                    <p className="text-muted-foreground">{t('installStep3IOSDesc')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -183,7 +185,7 @@ export function InstallPrompt() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Smartphone className="w-5 h-5 text-primary" />
-                  تعليمات التثبيت على Android
+                  {t('installInstructionsAndroid')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -192,8 +194,8 @@ export function InstallPrompt() {
                     1
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">اضغط على زر التثبيت أدناه</p>
-                    <p className="text-muted-foreground">أو ابحث عن رسالة التثبيت في المتصفح</p>
+                    <p className="font-semibold mb-1">{t('installStep1Android')}</p>
+                    <p className="text-muted-foreground">{t('installStep1AndroidDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-background rounded-lg">
@@ -201,8 +203,8 @@ export function InstallPrompt() {
                     2
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">في Chrome: اضغط على القائمة</p>
-                    <p className="text-muted-foreground">ثم اختر "تثبيت التطبيق" أو "Install app"</p>
+                    <p className="font-semibold mb-1">{t('installStep2Android')}</p>
+                    <p className="text-muted-foreground">{t('installStep2AndroidDesc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-background rounded-lg">
@@ -210,8 +212,8 @@ export function InstallPrompt() {
                     3
                   </div>
                   <div>
-                    <p className="font-semibold mb-1">في Samsung Internet</p>
-                    <p className="text-muted-foreground">اضغط على القائمة <Menu className="w-4 h-4 inline" /> ثم "إضافة إلى الشاشة الرئيسية"</p>
+                    <p className="font-semibold mb-1">{t('installStep3Android')}</p>
+                    <p className="text-muted-foreground">{t('installStep3AndroidDesc')} <Menu className="w-4 h-4 inline" /></p>
                   </div>
                 </div>
               </CardContent>
@@ -226,7 +228,7 @@ export function InstallPrompt() {
                 size="lg"
               >
                 <Download className="w-4 h-4 ml-2" />
-                تثبيت الآن
+                {t('installNow')}
               </Button>
             )}
             <Button
@@ -236,12 +238,12 @@ export function InstallPrompt() {
               size="lg"
             >
               <X className="w-4 h-4 ml-2" />
-              لاحقاً
+              {t('installLater')}
             </Button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground pt-2">
-            💡 بعد التثبيت، يمكنك الوصول للتطبيق مباشرة من الشاشة الرئيسية
+            {t('installTip')}
           </p>
         </div>
       </DialogContent>

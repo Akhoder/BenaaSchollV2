@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useServiceWorker, useOnlineStatus, clearCache as clearCacheHelper } from '@/hooks/useServiceWorker';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ServiceWorkerContextType {
   isOnline: boolean;
@@ -13,6 +14,7 @@ interface ServiceWorkerContextType {
 const ServiceWorkerContext = createContext<ServiceWorkerContextType | undefined>(undefined);
 
 export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
   const [isServiceWorkerReady, setIsServiceWorkerReady] = useState(false);
   const isOnline = useOnlineStatus();
   const swState = useServiceWorker();
@@ -43,7 +45,7 @@ export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-in slide-in-from-top-5">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium">غير متصل - الوضع غير متصل</span>
+            <span className="text-sm font-medium">{t('offline')} - {t('offlineMode')}</span>
           </div>
         </div>
       )}
@@ -52,7 +54,7 @@ export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-in slide-in-from-top-5">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full"></div>
-            <span className="text-sm font-medium">متصل</span>
+            <span className="text-sm font-medium">{t('connected')}</span>
           </div>
         </div>
       )}

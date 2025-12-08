@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { RefreshCw, X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ interface UpdateInfo {
 }
 
 export function UpdateNotification() {
+  const { t } = useLanguage();
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo>({ available: false });
   const [isUpdating, setIsUpdating] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -152,10 +154,10 @@ export function UpdateNotification() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Download className="w-6 h-6 text-primary" />
-            تحديث جديد متاح
+            {t('updateAvailable')}
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            تم اكتشاف نسخة جديدة من التطبيق. يرجى التحديث للحصول على أفضل تجربة.
+            {t('updateAvailableDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -165,18 +167,18 @@ export function UpdateNotification() {
               <div className="flex items-start gap-3">
                 <RefreshCw className="w-5 h-5 text-primary mt-0.5" />
                 <div>
-                  <p className="font-semibold mb-1">ما الجديد في هذا التحديث؟</p>
+                  <p className="font-semibold mb-1">{t('whatsNew')}</p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>تحسينات في الأداء والسرعة</li>
-                    <li>دعم أفضل للعمل دون اتصال</li>
-                    <li>إصلاح الأخطاء وتحسينات في الواجهة</li>
+                    <li>{t('updateImprovements')}</li>
+                    <li>{t('updateOfflineSupport')}</li>
+                    <li>{t('updateBugFixes')}</li>
                   </ul>
                 </div>
               </div>
 
               {updateInfo.version && (
                 <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-                  الإصدار: {updateInfo.version}
+                  {t('updateVersion').replace('{version}', updateInfo.version)}
                 </div>
               )}
             </div>
@@ -193,12 +195,12 @@ export function UpdateNotification() {
             {isUpdating ? (
               <>
                 <RefreshCw className="w-4 h-4 ml-2 animate-spin" />
-                جاري التحديث...
+                {t('updating')}
               </>
             ) : (
               <>
                 <Download className="w-4 h-4 ml-2" />
-                تحديث الآن
+                {t('updateNow')}
               </>
             )}
           </Button>
@@ -210,12 +212,12 @@ export function UpdateNotification() {
             disabled={isUpdating}
           >
             <X className="w-4 h-4 ml-2" />
-            لاحقاً
+            {t('updateLater')}
           </Button>
         </div>
 
         <p className="text-xs text-center text-muted-foreground pt-2">
-          💡 سيتم إعادة تحميل الصفحة تلقائياً بعد التحديث
+          {t('updateReloadNote')}
         </p>
       </DialogContent>
     </Dialog>

@@ -74,8 +74,8 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background text-foreground">
         <ErrorSuppressor />
         <FontLoader />
-        <ServiceWorkerProvider>
-          <LanguageProvider>
+        <LanguageProvider>
+          <ServiceWorkerProvider>
             <AuthProvider>
               <BreadcrumbProvider>
                 {children}
@@ -85,8 +85,8 @@ export default function RootLayout({
                 <UpdateNotification />
               </BreadcrumbProvider>
             </AuthProvider>
-          </LanguageProvider>
-        </ServiceWorkerProvider>
+          </ServiceWorkerProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
