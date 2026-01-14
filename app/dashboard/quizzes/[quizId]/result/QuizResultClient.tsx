@@ -12,6 +12,13 @@ import { supabase, fetchQuizBundle, fetchAnswersForAttempt, recalcAttemptScore }
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TranslationKey } from '@/lib/translations';
+import {
+  calculateTotalPoints,
+  getFinalScore,
+  calculatePercentage,
+  calculateAnswerStats,
+  isAnswerCorrect
+} from '@/lib/quizGradingUtils';
 import { 
   ArrowLeft, 
   Award, 
@@ -179,139 +186,13 @@ export default function QuizResultClient() {
     return attempt.status === 'graded' || attempt.status === 'submitted';
   }, [quiz, attempt]);
   
-  // Calculate total_points from questions
-  const totalPoints = useMemo(() => {
-    if (!questions.length) return 100; // Default fallback
-    return questions.reduce((sum, q) => sum + (Number(q.points) || 1), 0);
-  }, [questions]);
-  
-  // Calculate score from answers if attempt.score is null/undefined
-  const calculatedScore = useMemo(() => {
-    if (!questions.length || !answers || Object.keys(answers).length === 0) {
-      return 0;
-    }
-    let total = 0;
-    questions.forEach((q) => {
-      const ansRow = answers[q.id];
-      if (ansRow) {
-        const questionPoints = Number(q.points) || 1;
-        let points = ansRow.points_awarded;
-        
-        // If points_awarded is set and valid, use it
-        if (points !== null && points !== undefined) {
-          const pointsNum = Number(points);
-          if (!isNaN(pointsNum) && pointsNum >= 0) {
-            total += pointsNum;
-            return;
-          }
-        }
-        
-        // If points_awarded is not set or invalid, use is_correct
-        if (typeof ansRow.is_correct === 'boolean') {
-          if (ansRow.is_correct === true) {
-            total += questionPoints;
-          }
-          // If false, add 0 (no need to add anything)
-        }
-      }
-    });
-    return total;
-  }, [questions, answers]);
+  // ✅ استخدام دوال utility موحدة لحساب الدرجات
+  const totalPoints = useMemo(() => calculateTotalPoints(questions), [questions]);
+  const finalScore = useMemo(() => getFinalScore(attempt, questions, answers), [attempt, questions, answers]);
+  const percentageScore = useMemo(() => calculatePercentage(finalScore, totalPoints), [finalScore, totalPoints]);
 
-  // Use attempt.score if available, otherwise use calculated score
-  const finalScore = useMemo(() => {
-    // First try to use attempt.score
-    if (attempt?.score !== null && attempt?.score !== undefined) {
-      const score = Number(attempt.score);
-      if (!isNaN(score) && score >= 0) {
-        return score;
-      }
-    }
-    // Fallback to calculated score from answers
-    return calculatedScore;
-  }, [attempt, calculatedScore]);
-
-  // Calculate percentage score
-  const percentageScore = useMemo(() => {
-    if (!totalPoints || totalPoints === 0) return 0;
-    const percentage = (finalScore / totalPoints) * 100;
-    return Math.max(0, Math.min(100, Math.round(percentage))); // Clamp between 0 and 100
-  }, [finalScore, totalPoints]);
-
-  // Calculate statistics
-  const stats = useMemo(() => {
-    if (!questions.length) return { correct: 0, wrong: 0, notGraded: 0, total: 0 };
-    
-    let correct = 0;
-    let wrong = 0;
-    let notGraded = 0;
-    
-    questions.forEach((q) => {
-      const ansRow = answers[q.id];
-      const questionPoints = Number(q.points) || 1;
-      
-      // Check if answer exists
-      if (!ansRow) {
-        notGraded++;
-        return;
-      }
-      
-      // For auto-graded questions, check is_correct or points_awarded
-      if (['mcq_single', 'mcq_multi', 'true_false', 'numeric'].includes(q.type)) {
-        // Check is_correct first
-        if (typeof ansRow.is_correct === 'boolean') {
-          if (ansRow.is_correct) {
-            correct++;
-          } else {
-            wrong++;
-          }
-        } 
-        // If is_correct is not set, check points_awarded
-        else if (ansRow.points_awarded !== null && ansRow.points_awarded !== undefined) {
-          const points = Number(ansRow.points_awarded);
-          if (!isNaN(points)) {
-            if (points > 0 && points >= questionPoints) {
-              correct++;
-            } else if (points === 0) {
-              wrong++;
-            } else {
-              // Partial credit - count as correct if more than half points
-              if (points >= questionPoints / 2) {
-                correct++;
-              } else {
-                wrong++;
-              }
-            }
-          } else {
-            notGraded++;
-          }
-        } else {
-          notGraded++;
-        }
-      } 
-      // For short_text, check if graded
-      else if (q.type === 'short_text') {
-        if (ansRow.points_awarded !== null && ansRow.points_awarded !== undefined) {
-          const points = Number(ansRow.points_awarded);
-          if (!isNaN(points) && points >= 0) {
-            if (points > 0) {
-              correct++;
-            } else {
-              wrong++;
-            }
-          } else {
-            notGraded++;
-          }
-        } else {
-          notGraded++;
-        }
-      } else {
-        notGraded++;
-      }
-    });
-    
-    return { correct, wrong, notGraded, total: questions.length };
-  }, [questions, answers]);
+  // ✅ استخدام دالة utility موحدة لحساب الإحصائيات
+  const stats = useMemo(() => calculateAnswerStats(questions, answers), [questions, answers]);
 
   if (loading) {
     return (
@@ -465,61 +346,9 @@ export default function QuizResultClient() {
                   const correctOpts = opts.filter((o: any) => o.is_correct);
                   const selectedTextSingle = opts.find((o: any) => o.id === selectedIds[0])?.text || '-';
                   const correctSingleText = correctOpts[0]?.text || '-';
-                  
-                  // Determine if answer is correct: check is_correct first, then points_awarded as fallback
-                  let isCorrect: boolean | undefined = undefined;
-                  const questionPoints = Number(q.points) || 1;
-                  
-                  if (typeof ansRow?.is_correct === 'boolean') {
-                    // Use is_correct if it's explicitly set
-                    isCorrect = ansRow.is_correct;
-                  } else if (ansRow?.points_awarded !== null && ansRow?.points_awarded !== undefined) {
-                    // If is_correct is not set, infer from points_awarded
-                    const points = Number(ansRow.points_awarded);
-                    if (!isNaN(points) && points >= 0) {
-                      // For auto-graded questions, if points equals question points, it's correct
-                      // For manually graded questions, if points > 0, consider it at least partially correct
-                      // But for display purposes, we'll show it as correct if points > 0
-                      if (['mcq_single', 'mcq_multi', 'true_false', 'numeric'].includes(q.type)) {
-                        // Auto-graded: correct if points equals question points
-                        isCorrect = points === questionPoints;
-                      } else {
-                        // Manually graded: correct if points > 0
-                        isCorrect = points > 0;
-                      }
-                    }
-                  }
-                  
-                  // Additional check: if we have both selected answer and correct answer, compare them directly
-                  if (isCorrect === undefined && ansRow && opts.length > 0) {
-                    if (q.type === 'mcq_single') {
-                      const selected = selectedIds[0];
-                      const correctOpt = correctOpts[0];
-                      isCorrect = !!selected && !!correctOpt && selected === correctOpt.id;
-                    } else if (q.type === 'mcq_multi') {
-                      const correctIds = correctOpts.map((o: any) => o.id).sort();
-                      const selSorted = [...selectedIds].sort();
-                      isCorrect = JSON.stringify(correctIds) === JSON.stringify(selSorted);
-                    } else if (q.type === 'true_false') {
-                      const provided = ansRow.answer_payload?.bool;
-                      const correctOpt = correctOpts[0];
-                      if (correctOpt) {
-                        const correctVal = correctOpt.order_index === 0;
-                        isCorrect = typeof provided === 'boolean' && provided === correctVal;
-                      }
-                    } else if (q.type === 'numeric') {
-                      const provided = ansRow.answer_payload?.number;
-                      const correctOpt = correctOpts[0];
-                      if (correctOpt) {
-                        const correctVal = Number(correctOpt.text);
-                        const tol = q.media_url ? Number(q.media_url) : 0;
-                        const providedNum = typeof provided === 'number' && !isNaN(provided) ? provided : undefined;
-                        const correctNum = !isNaN(correctVal) ? correctVal : undefined;
-                        const tolNum = !isNaN(tol) && tol >= 0 ? tol : 0;
-                        isCorrect = providedNum !== undefined && correctNum !== undefined && Math.abs(providedNum - correctNum) <= tolNum;
-                      }
-                    }
-                  }
+
+                  // ✅ استخدام دالة utility موحدة لتحديد صحة الإجابة
+                  const isCorrect = isAnswerCorrect(ansRow, q);
                   
                   return (
                     <div 

@@ -1849,122 +1849,29 @@ export async function updateAnswerPayload(answerId: string, partial: Record<stri
     .single();
 }
 
+/**
+ * ✅ يعيد حساب درجة المحاولة باستخدام دالة قاعدة البيانات
+ * هذه الدالة تستخدم الـ RPC function المُحسّنة في قاعدة البيانات
+ * والتي تتضمن trigger تلقائي لتحديث الدرجات
+ */
 export async function recalcAttemptScore(attemptId: string) {
-  // Step 1: Get all answers with points_awarded and is_correct
-  const { data: answers } = await supabase
-    .from('quiz_answers')
-    .select('id, points_awarded, is_correct, question_id')
-    .eq('attempt_id', attemptId);
-  
-  if (!answers || answers.length === 0) {
-    // No answers found, set score to 0 and status to graded
-    return await updateAttemptScore(attemptId, 0);
+  const { error } = await supabase.rpc('recalculate_quiz_attempt_score', {
+    p_attempt_id: attemptId
+  });
+
+  if (error) {
+    console.error('Error recalculating attempt score:', error);
+    return { error, data: null };
   }
-  
-  // Step 2: Get questions to know the points for each question
-  const questionIds = Array.from(new Set(answers.map((a: any) => a.question_id)));
-  const { data: questions } = await supabase
-    .from('quiz_questions')
-    .select('id, points')
-    .in('id', questionIds);
-  
-  const questionPointsMap = new Map((questions || []).map((q: any) => [q.id, Math.max(1, Number(q.points) || 1)]));
-  
-  // Step 3: Calculate total and fix inconsistent answers
-  const answersToFix: Array<{ id: string; points: number; is_correct: boolean }> = [];
-  let totalScore = 0;
-  
-  for (const ans of answers) {
-    const questionPoints = questionPointsMap.get(ans.question_id) || 1;
-    let points = ans.points_awarded;
-    let isCorrect = ans.is_correct;
-    let needsFix = false;
-    let finalPoints = points;
-    let finalIsCorrect = isCorrect;
-    
-    // Determine correct points based on is_correct
-    if (isCorrect === true) {
-      // Answer is correct - should have full points
-      if (points === null || points === undefined || Number(points) === 0) {
-        finalPoints = questionPoints;
-        needsFix = true;
-      } else {
-        finalPoints = Number(points);
-        // Ensure points match question points for correct answers
-        if (finalPoints !== questionPoints) {
-          finalPoints = questionPoints;
-          needsFix = true;
-        }
-      }
-      totalScore += finalPoints;
-    } else if (isCorrect === false) {
-      // Answer is wrong - should have 0 points
-      finalPoints = 0;
-      if (points !== null && points !== undefined && Number(points) !== 0) {
-        needsFix = true;
-      }
-      // totalScore += 0 (no need to add)
-    } else {
-      // is_correct is null - check points_awarded
-      if (points !== null && points !== undefined) {
-        const pointsNum = Number(points);
-        if (!isNaN(pointsNum) && pointsNum >= 0) {
-          finalPoints = pointsNum;
-          // Infer is_correct from points
-          if (pointsNum > 0) {
-            finalIsCorrect = true;
-            needsFix = true;
-          } else {
-            finalIsCorrect = false;
-            needsFix = true;
-          }
-          totalScore += finalPoints;
-        } else {
-          finalPoints = 0;
-          finalIsCorrect = false;
-          needsFix = true;
-        }
-      } else {
-        // Both are null - default to 0
-        finalPoints = 0;
-        finalIsCorrect = false;
-        needsFix = true;
-      }
-    }
-    
-    // Collect answers that need fixing
-    if (needsFix) {
-      answersToFix.push({ 
-        id: ans.id, 
-        points: finalPoints,
-        is_correct: finalIsCorrect
-      });
-    }
-  }
-  
-  // Step 4: Fix inconsistent answers in database
-  if (answersToFix.length > 0) {
-    await Promise.all(answersToFix.map(async (ans) => {
-      try {
-        await supabase
-          .from('quiz_answers')
-          .update({ 
-            points_awarded: ans.points,
-            is_correct: ans.is_correct,
-            graded_at: new Date().toISOString()
-          })
-          .eq('id', ans.id);
-      } catch (err) {
-        console.warn(`Failed to fix answer ${ans.id}:`, err);
-      }
-    }));
-  }
-  
-  // Step 5: Ensure total is valid
-  const finalTotal = Math.max(0, totalScore);
-  
-  // Step 6: Update attempt score and status
-  return await updateAttemptScore(attemptId, finalTotal);
+
+  // إرجاع المحاولة المُحدّثة
+  const { data, error: fetchError } = await supabase
+    .from('quiz_attempts')
+    .select('*')
+    .eq('id', attemptId)
+    .single();
+
+  return { error: fetchError, data };
 }
 
 export async function fetchEnrolledStudentsForSubject(subjectId: string) {
