@@ -1,9 +1,39 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Validate that environment variables are set with real values (not placeholders)
+const isPlaceholder = (value: string) => {
+  return !value || 
+         value.includes('your-project-id') || 
+         value.includes('your-anon-key') || 
+         value === 'placeholder' ||
+         value.includes('placeholder.supabase.co');
+};
+
+if (typeof window !== 'undefined' && (isPlaceholder(supabaseUrl) || isPlaceholder(supabaseAnonKey))) {
+  console.error(`
+❌ Supabase configuration error!
+
+Please set your Supabase credentials in .env.local:
+
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+You can find these in your Supabase project settings:
+https://app.supabase.com/project/_/settings/api
+
+After updating .env.local, restart your development server.
+  `);
+}
+
+// Only create client if we have valid-looking credentials
+// Use a fallback URL format that will fail gracefully if invalid
+const finalUrl = isPlaceholder(supabaseUrl) ? 'https://invalid-placeholder.supabase.co' : supabaseUrl;
+const finalKey = isPlaceholder(supabaseAnonKey) ? 'invalid-placeholder-key' : supabaseAnonKey;
+
+export const supabase = createClient(finalUrl, finalKey);
 
 export type UserRole = 'admin' | 'teacher' | 'student' | 'supervisor';
 
