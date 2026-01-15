@@ -423,10 +423,10 @@ export default function QuizResultClient() {
                                   <span className="font-medium text-success">{t('correctAnswer' as TranslationKey)}</span>
                                   <span className="ml-2 text-foreground">{correctSingleText || '-'}</span>
                                 </div>
-                                {q.media_url && (
+                                {q.tolerance && (
                                   <div className="text-xs text-warning flex items-center gap-1">
                                     <AlertCircle className="h-3 w-3" />
-                                    {t('tolerance' as TranslationKey)} ±{Number(q.media_url)}
+                                    {t('tolerance' as TranslationKey)} ±{Number(q.tolerance)}
                                   </div>
                                 )}
                               </>

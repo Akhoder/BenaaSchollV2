@@ -283,7 +283,8 @@ export default function TakeQuizPage() {
           const opts = optionsByQuestion.get(q.id) || [];
           const correctOpt = opts.find((o: any) => o.is_correct);
           const correctVal = correctOpt ? Number(correctOpt.text) : undefined;
-          const tol = q.media_url ? Number(q.media_url) : 0;
+          // ✅ استخدام q.tolerance بدلاً من q.media_url
+          const tol = q.tolerance ? Number(q.tolerance) : 0;
           // Validate that both values are valid numbers before comparison
           const providedNum = typeof provided === 'number' && !isNaN(provided) ? provided : undefined;
           const correctNum = typeof correctVal === 'number' && !isNaN(correctVal) ? correctVal : undefined;

@@ -570,9 +570,9 @@ export default function GradeQuizClient() {
                                         </span>
                                       </div>
                                     </div>
-                                    {q.media_url && (
+                                    {q.tolerance && (
                                       <div className="text-xs sm:text-sm text-muted-foreground">
-                                        {language === 'ar' ? 'التسامح' : language === 'fr' ? 'Tolérance' : 'Tolerance'}: ±{Number(q.media_url)}
+                                        {language === 'ar' ? 'التسامح' : language === 'fr' ? 'Tolérance' : 'Tolerance'}: ±{Number(q.tolerance)}
                                       </div>
                                     )}
                                   </div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -234,8 +234,9 @@ export default function EditQuizClient() {
             correct_answer = correctOpt.order_index === 0; // true if order_index is 0 (True), false if 1 (False)
           }
         } else if (q.type === 'numeric') {
-          // For numeric, use media_url as correct_answer
-          correct_answer = q.media_url ? Number(q.media_url) : null;
+          // ✅ للأسئلة الرقمية، الإجابة الصحيحة موجودة في الخيار الصحيح
+          const correctOpt = opts.find((opt: any) => opt.is_correct);
+          correct_answer = correctOpt ? Number(correctOpt.text) : null;
         }
 
         return {
@@ -246,7 +247,8 @@ export default function EditQuizClient() {
           order_index: q.order_index ?? 0,
           options: (q.type === 'mcq_single' || q.type === 'mcq_multi') ? opts : undefined,
           correct_answer,
-          tolerance: undefined,
+          // ✅ استخدام q.tolerance من قاعدة البيانات
+          tolerance: q.tolerance ? Number(q.tolerance) : undefined,
           media_url: q.media_url,
         };
       });
