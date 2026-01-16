@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   Drawer,
@@ -39,21 +40,122 @@ const ResponsiveDialogContext = React.createContext<{ isDesktop: boolean }>({
 
 export function ResponsiveDialog({
   children,
+  onOpenChange,
+  open,
   ...props
 }: RootProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)")
+  
+  // ✅ FIX: Prevent freezing by using ref to track if component is mounted
+  const isMountedRef = React.useRef(true);
+  
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // ✅ FIX: Monitor open state and force cleanup when closed
+  React.useEffect(() => {
+    // Track dialog state on html/body
+    if (open) {
+      document.documentElement.setAttribute('data-dialog-open', 'true');
+      document.body.setAttribute('data-dialog-open', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-dialog-open');
+      document.body.removeAttribute('data-dialog-open');
+      
+      // Force cleanup when dialog closes
+      const cleanup = () => {
+        // Remove body styles
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('margin-right');
+        document.body.removeAttribute('data-scroll-locked');
+        
+        // Remove stuck overlays
+        const overlays = document.querySelectorAll('[data-radix-dialog-overlay]');
+        overlays.forEach(overlay => {
+          const state = overlay.getAttribute('data-state');
+          if (state === 'closed' || !state) {
+            (overlay as HTMLElement).style.display = 'none';
+            (overlay as HTMLElement).style.pointerEvents = 'none';
+            overlay.remove();
+          }
+        });
+        
+        // Remove stuck portals
+        const portals = document.querySelectorAll('[data-radix-portal]');
+        portals.forEach(portal => {
+          const content = portal.querySelector('[data-state="closed"]');
+          if (content && !portal.querySelector('[data-state="open"]')) {
+            portal.remove();
+          }
+        });
+        
+        // Force reflow
+        void document.body.offsetHeight;
+      };
+      
+      // Cleanup immediately and after delays
+      cleanup();
+      requestAnimationFrame(cleanup);
+      setTimeout(cleanup, 0);
+      setTimeout(cleanup, 50);
+      setTimeout(cleanup, 100);
+      setTimeout(cleanup, 200);
+    }
+    
+    return () => {
+      // Cleanup on unmount
+      document.documentElement.removeAttribute('data-dialog-open');
+      document.body.removeAttribute('data-dialog-open');
+    };
+  }, [open]);
+
+  // ✅ FIX: Wrap onOpenChange to prevent state updates after unmount and ensure body scroll unlock
+  const handleOpenChange = React.useCallback((newOpen: boolean) => {
+    if (!newOpen && isMountedRef.current) {
+      // ✅ FIX: Force unlock body scroll when closing
+      const unlockScroll = () => {
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('margin-right');
+        document.body.removeAttribute('data-scroll-locked');
+        
+        // Force remove any stuck overlays
+        document.querySelectorAll('[data-radix-dialog-overlay][data-state="closed"]').forEach(el => {
+          (el as HTMLElement).style.display = 'none';
+          (el as HTMLElement).style.pointerEvents = 'none';
+        });
+      };
+      
+      // Unlock immediately and also after delays
+      unlockScroll();
+      requestAnimationFrame(unlockScroll);
+      setTimeout(unlockScroll, 0);
+      setTimeout(unlockScroll, 50);
+      setTimeout(unlockScroll, 100);
+    }
+    
+    // Call onOpenChange directly
+    if (onOpenChange && isMountedRef.current) {
+      onOpenChange(newOpen);
+    }
+  }, [onOpenChange]);
 
   if (isDesktop) {
     return (
       <ResponsiveDialogContext.Provider value={{ isDesktop }}>
-        <Dialog {...props}>{children}</Dialog>
+        <Dialog {...props} open={open} onOpenChange={handleOpenChange}>{children}</Dialog>
       </ResponsiveDialogContext.Provider>
     )
   }
 
   return (
     <ResponsiveDialogContext.Provider value={{ isDesktop }}>
-      <Drawer {...props}>{children}</Drawer>
+      <Drawer {...props} open={open} onOpenChange={handleOpenChange}>{children}</Drawer>
     </ResponsiveDialogContext.Provider>
   )
 }
@@ -154,21 +256,8 @@ export function ResponsiveDialogClose({
   const { isDesktop } = React.useContext(ResponsiveDialogContext)
 
   if (isDesktop) {
-    // Dialog doesn't have a specific close button component that acts as a trigger usually, 
-    // often just a button with onClick or the X icon. 
-    // But for API compatibility we can render a clone if needed or just pass through.
-    // Usually we use `DialogClose` from radix if exposed, but shadcn doesn't always expose it.
-    // Let's assume we can wrap the child in an onClick handler if passed, or just render children.
-    // Actually, standard DialogClose from Radix is what we want if we want to close without state control.
-    // But Shadcn's dialog.tsx might not export it.
-    // Let's just render children for now or try to use a primitive if available.
-    // Safest is to rely on the `open` prop control for dialogs in this codebase usually.
-    // But DrawerClose is useful. 
-    // If we want to use it in Dialog, we might need to import from @radix-ui/react-dialog if not in ui/dialog.
-    
-    // Fix: Cast props to any to avoid type incompatibility between DrawerClose props and div props
-    // This is safe because we're just passing standard HTML attributes usually
-    return <div className={className} {...(props as any)}>{children}</div>
+    // ✅ FIX: Use DialogClose from dialog component
+    return <DialogClose className={className} {...(props as any)}>{children}</DialogClose>
   }
 
   return <DrawerClose className={className} {...props}>{children}</DrawerClose>

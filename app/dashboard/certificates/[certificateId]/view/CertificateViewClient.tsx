@@ -11,8 +11,6 @@ import type { Certificate } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Loader2, Printer, Download, ArrowLeft, Award } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
 // Client component - generateStaticParams handled in page.tsx
@@ -385,6 +383,12 @@ export default function CertificateViewClient() {
       clone.style.textRendering = 'optimizeLegibility';
       clone.style.letterSpacing = 'normal';
       clone.style.wordSpacing = 'normal';
+
+      // Dynamically import heavy PDF libraries only when needed
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
 
       // Render page to canvas with stable settings
       await new Promise((r) => setTimeout(r, 100));

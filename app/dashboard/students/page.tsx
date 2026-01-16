@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, startTransition } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { PageLoading } from '@/components/LoadingSpinner';
@@ -43,6 +43,7 @@ import {
   ResponsiveDialogFooter as DialogFooter,
   ResponsiveDialogHeader as DialogHeader,
   ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogClose as DialogClose,
 } from '@/components/ui/responsive-dialog';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { Badge } from '@/components/ui/badge';
@@ -170,6 +171,8 @@ export default function StudentsPage() {
   const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'notEnrolled'>('all');
   const [fabVisible, setFabVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  // ✅ FIX: Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -227,6 +230,9 @@ export default function StudentsPage() {
         profile.id
       );
       
+      // ✅ FIX: Check if component is still mounted
+      if (!isMountedRef.current) return;
+      
       // âœ… OPTIMISTIC LOADING: Don't show loading if data is from cache
       if (!fromCache) {
         setLoading(true);
@@ -242,29 +248,111 @@ export default function StudentsPage() {
       }
       
       if (allStudents && allStudents.length > 0) {
-        // âœ… OPTIMIZED: Single query for all enrollments
+        // ✅ OPTIMIZED: Single query for all enrollments and grades
         const studentIds = allStudents.map((s: any) => s.id);
-        const { data: allEnrollments, error: enrollError } = await supabase
-          .from('student_enrollments')
-          .select('student_id')
-          .in('student_id', studentIds);
         
-        if (enrollError) {
-          console.error('Error fetching enrollments:', enrollError);
+        // ✅ FIX: Handle empty studentIds case
+        if (studentIds.length === 0) {
+          setStudents([]);
+          return;
         }
         
-        // Count enrollments per student
-        const enrollCounts = (allEnrollments || []).reduce((acc: Record<string, number>, row: any) => {
-          acc[row.student_id] = (acc[row.student_id] || 0) + 1;
-          return acc;
-        }, {});
+        let enrollCounts: Record<string, number> = {};
+        let gradeMap: Record<string, { totalPercentage: number; count: number }> = {};
         
-        // Map enrollments to students
-        const processedStudents = allStudents.map((student: any) => ({
-          ...student,
-          enrolled_classes: enrollCounts[student.id] || 0,
-          average_grade: '85.5',
-        }));
+        try {
+          // ✅ FIX: Execute queries with individual error handling
+          const [enrollmentsResult, submissionsResult] = await Promise.allSettled([
+            supabase
+              .from('student_enrollments')
+              .select('student_id')
+              .in('student_id', studentIds),
+            // ✅ FIX: Get all graded submissions to calculate average grades
+            supabase
+              .from('assignment_submissions')
+              .select(`
+                student_id,
+                score,
+                status,
+                assignments(
+                  total_points
+                )
+              `)
+              .in('student_id', studentIds)
+              .eq('status', 'graded')
+              .not('score', 'is', null)
+          ]);
+          
+          // ✅ FIX: Extract results from Promise.allSettled
+          const enrollmentsData = enrollmentsResult.status === 'fulfilled' 
+            ? enrollmentsResult.value 
+            : { data: null, error: enrollmentsResult.reason };
+          const submissionsData = submissionsResult.status === 'fulfilled'
+            ? submissionsResult.value
+            : { data: null, error: submissionsResult.reason };
+          
+          const enrollmentsResult_final = enrollmentsData;
+          const submissionsResult_final = submissionsData;
+          
+          // ✅ FIX: Handle errors gracefully - don't block the page
+          if (enrollmentsResult_final.error) {
+            console.error('Error fetching enrollments:', enrollmentsResult_final.error);
+          } else {
+            // Count enrollments per student
+            enrollCounts = (enrollmentsResult_final.data || []).reduce((acc: Record<string, number>, row: any) => {
+              acc[row.student_id] = (acc[row.student_id] || 0) + 1;
+              return acc;
+            }, {});
+          }
+          
+          // ✅ FIX: Handle submissions errors gracefully
+          if (submissionsResult_final.error) {
+            console.error('Error fetching submissions:', submissionsResult_final.error);
+            // Continue without grades - don't block the page
+          } else {
+            // Calculate average grades from actual submissions
+            (submissionsResult_final.data || []).forEach((submission: any) => {
+              try {
+                // Handle case where assignments might be an array or object
+                const assignment = Array.isArray(submission.assignments) 
+                  ? submission.assignments[0] 
+                  : submission.assignments;
+                
+                if (!assignment || !submission.score || !submission.student_id) return;
+                
+                const studentId = submission.student_id;
+                const totalPoints = assignment.total_points || 100;
+                const percentage = totalPoints > 0 ? (submission.score / totalPoints) * 100 : 0;
+                
+                if (!gradeMap[studentId]) {
+                  gradeMap[studentId] = { totalPercentage: 0, count: 0 };
+                }
+                gradeMap[studentId].totalPercentage += percentage;
+                gradeMap[studentId].count += 1;
+              } catch (err) {
+                // Skip invalid submissions
+                console.warn('Invalid submission data:', err);
+              }
+            });
+          }
+        } catch (queryError) {
+          // ✅ FIX: Don't block page if queries fail - use empty data
+          console.error('Error in parallel queries:', queryError);
+        }
+        
+        // Map enrollments and average grades to students
+        const processedStudents = allStudents.map((student: any) => {
+          const gradeData = gradeMap[student.id];
+          const averageGrade = gradeData && gradeData.count > 0
+            ? (gradeData.totalPercentage / gradeData.count).toFixed(1)
+            : null;
+          
+          return {
+            ...student,
+            enrolled_classes: enrollCounts[student.id] || 0,
+            average_grade: averageGrade || '—',
+          };
+        });
         
         setStudents(processedStudents);
       } else {
@@ -272,12 +360,26 @@ export default function StudentsPage() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      toast.error(getErrorMessage(err));
-      setStudents([]);
+      // ✅ FIX: Only show error if component is still mounted
+      if (isMountedRef.current) {
+        toast.error(getErrorMessage(err));
+        setStudents([]);
+      }
     } finally {
-      setLoading(false);
+      // ✅ FIX: Always set loading to false, even if component unmounted
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [profile]);
+  
+  // ✅ FIX: Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // âœ… PERFORMANCE: Fetch students immediately when authorized
   useEffect(() => {
@@ -294,7 +396,7 @@ export default function StudentsPage() {
   
   const handleInsert = useCallback((row: any) => {
     if (row.role === 'student') {
-      setStudents(prev => [{ ...row, enrolled_classes: 0, average_grade: '85.5' }, ...prev]);
+      setStudents(prev => [{ ...row, enrolled_classes: 0, average_grade: '—' }, ...prev]);
     }
   }, []);
   
@@ -364,12 +466,46 @@ export default function StudentsPage() {
     setCurrentPage(1);
   }, [debouncedSearchQuery, enrollmentFilter, setCurrentPage]);
 
-  const stats = {
-    total: students.length,
-    enrolled: students.filter((s) => (s.enrolled_classes || 0) > 0).length,
-    notEnrolled: students.filter((s) => (s.enrolled_classes || 0) === 0).length,
-    averageGrade: 'B+',
-  };
+  // ✅ FIX: Calculate actual average grade from all students' grades
+  const stats = useMemo(() => {
+    const allGrades = students
+      .map((s) => {
+        const grade = s.average_grade;
+        if (grade && grade !== '—' && !isNaN(parseFloat(grade))) {
+          return parseFloat(grade);
+        }
+        return null;
+      })
+      .filter((g): g is number => g !== null);
+    
+    const overallAverage = allGrades.length > 0
+      ? allGrades.reduce((sum, g) => sum + g, 0) / allGrades.length
+      : 0;
+    
+    // Convert to letter grade
+    const getLetterGrade = (avg: number): string => {
+      if (avg >= 97) return 'A+';
+      if (avg >= 93) return 'A';
+      if (avg >= 90) return 'A-';
+      if (avg >= 87) return 'B+';
+      if (avg >= 83) return 'B';
+      if (avg >= 80) return 'B-';
+      if (avg >= 77) return 'C+';
+      if (avg >= 73) return 'C';
+      if (avg >= 70) return 'C-';
+      if (avg >= 67) return 'D+';
+      if (avg >= 63) return 'D';
+      if (avg >= 60) return 'D-';
+      return 'F';
+    };
+    
+    return {
+      total: students.length,
+      enrolled: students.filter((s) => (s.enrolled_classes || 0) > 0).length,
+      notEnrolled: students.filter((s) => (s.enrolled_classes || 0) === 0).length,
+      averageGrade: allGrades.length > 0 ? getLetterGrade(overallAverage) : '—',
+    };
+  }, [students]);
 
   const statsConfig = useMemo(
     () => [
@@ -549,7 +685,33 @@ export default function StudentsPage() {
         </Card>
 
         {/* âœ¨ Create Student Dialog - Islamic Design */}
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <Dialog 
+          open={createOpen} 
+          onOpenChange={(open) => {
+            // ✅ FIX: Defer state updates to prevent blocking
+            if (open) {
+              setCreateOpen(true);
+            } else {
+              // Close first, then reset state
+              setCreateOpen(false);
+              // Reset form state after a delay
+              setTimeout(() => {
+                setCreateName('');
+                setCreateEmail('');
+                setCreatePhone('');
+                setCreateLang(language);
+                setCreateGender('');
+                setCreateAddress('');
+                setCreateDateOfBirth('');
+                setCreateParentName('');
+                setCreateParentPhone('');
+                setCreateEmergencyContact('');
+                setCreateAvatarFile(null);
+                setCreateAvatarPreview(null);
+              }, 100);
+            }
+          }}
+        >
           <DialogContent className="max-w-lg border-primary/20">
             <DialogHeader className="border-b border-primary/10 pb-4">
               <DialogTitle className="text-2xl font-display text-primary flex items-center gap-2">
@@ -731,9 +893,30 @@ export default function StudentsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className="font-sans" disabled={savingCreate}>
-                {t('cancel')}
-              </Button>
+              <DialogClose asChild>
+                <Button 
+                  variant="outline" 
+                  className="font-sans" 
+                  disabled={savingCreate}
+                  onClick={() => {
+                    // ✅ FIX: Reset form state when closing
+                    setCreateName('');
+                    setCreateEmail('');
+                    setCreatePhone('');
+                    setCreateLang(language);
+                    setCreateGender('');
+                    setCreateAddress('');
+                    setCreateDateOfBirth('');
+                    setCreateParentName('');
+                    setCreateParentPhone('');
+                    setCreateEmergencyContact('');
+                    setCreateAvatarFile(null);
+                    setCreateAvatarPreview(null);
+                  }}
+                >
+                  {t('cancel')}
+                </Button>
+              </DialogClose>
               <LoadingButton
                 loading={savingCreate}
                 onClick={async () => {
@@ -1158,7 +1341,32 @@ export default function StudentsPage() {
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog 
+          open={isDialogOpen} 
+          onOpenChange={(open) => {
+            // ✅ FIX: Defer state updates to prevent blocking
+            if (open) {
+              setIsDialogOpen(true);
+            } else {
+              // Close first, then reset state
+              setIsDialogOpen(false);
+              // Reset form state after a delay
+              setTimeout(() => {
+                setSelectedStudent(null);
+                setEditAvatarFile(null);
+                setEditAvatarPreview(null);
+                setEditAvatarUrl('');
+                setEditAddress('');
+                setEditDateOfBirth('');
+                setEditParentName('');
+                setEditParentPhone('');
+                setEditEmergencyContact('');
+                setEditLanguage(language);
+                setEditGender('');
+              }, 100);
+            }
+          }}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">{t('editStudent')}</DialogTitle>
@@ -1352,9 +1560,28 @@ export default function StudentsPage() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-sans">
-                {t('cancel')}
-              </Button>
+              <DialogClose asChild>
+                <Button 
+                  variant="outline" 
+                  className="font-sans"
+                  onClick={() => {
+                    // ✅ FIX: Reset state when closing via DialogClose
+                    setSelectedStudent(null);
+                    setEditAvatarFile(null);
+                    setEditAvatarPreview(null);
+                    setEditAvatarUrl('');
+                    setEditAddress('');
+                    setEditDateOfBirth('');
+                    setEditParentName('');
+                    setEditParentPhone('');
+                    setEditEmergencyContact('');
+                    setEditLanguage(language);
+                    setEditGender('');
+                  }}
+                >
+                  {t('cancel')}
+                </Button>
+              </DialogClose>
               <LoadingButton
                 loading={savingEdit || uploadingEditAvatar}
                 className="btn-gradient font-sans"
@@ -1434,7 +1661,16 @@ export default function StudentsPage() {
         </Dialog>
 
         {/* Delete Confirmation */}
-        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <Dialog 
+          open={deleteConfirmOpen} 
+          onOpenChange={(open) => {
+            // ✅ FIX: Reset selected student when closing
+            if (!open) {
+              setSelectedStudent(null);
+            }
+            setDeleteConfirmOpen(open);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="text-2xl font-display">{t('confirmDeletion')}</DialogTitle>

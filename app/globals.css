@@ -256,6 +256,33 @@
   ::-webkit-scrollbar-corner {
     @apply bg-transparent;
   }
+
+  /* ✅ FIX: Ensure dialogs don't block page interaction */
+  [data-radix-dialog-overlay][data-state="closed"],
+  [data-radix-dialog-overlay]:not([data-state="open"]) {
+    pointer-events: none !important;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* ✅ FIX: Ensure body scroll is never permanently locked */
+  body:not([data-scroll-locked]) {
+    overflow: auto !important;
+  }
+
+  /* ✅ FIX: Force remove any stuck portals */
+  [data-radix-portal]:empty,
+  [data-radix-portal]:not(:has([data-state="open"])) {
+    display: none !important;
+  }
+
+  /* ✅ FIX: Ensure page is always interactive */
+  html:not([data-dialog-open]) body,
+  body:not([data-dialog-open]) {
+    pointer-events: auto !important;
+    overflow: auto !important;
+  }
 }
 
 /* ============================================

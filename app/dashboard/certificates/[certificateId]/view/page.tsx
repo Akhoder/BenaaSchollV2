@@ -12,8 +12,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import * as api from '@/lib/supabase';
 import type { Certificate } from '@/lib/supabase';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { getCertificateTemplateCSS } from '@/lib/certificateTemplates';
 
 export const dynamic = 'force-static';
@@ -385,6 +383,12 @@ export default function CertificateViewPage() {
       clone.style.textRendering = 'optimizeLegibility';
       clone.style.letterSpacing = 'normal';
       clone.style.wordSpacing = 'normal';
+
+      // Dynamically import heavy PDF libraries only when needed
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
 
       // Render page to canvas with stable settings
       await new Promise((r) => setTimeout(r, 100));
