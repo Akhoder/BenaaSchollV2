@@ -10,6 +10,7 @@ import { FontLoader } from '@/components/FontLoader';
 import { ErrorSuppressor } from '@/components/ErrorSuppressor';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdateNotification } from '@/components/UpdateNotification';
+import { PWAMetaTags } from '@/components/PWAMetaTags';
 
 // ✅ PERFORMANCE: Optimized font loading with preconnect
 // Islamic Scholarly Fonts: Tajawal (body) + Amiri (headings) + Scheherazade (decorative)
@@ -50,8 +51,12 @@ export const metadata: Metadata = {
     description: 'مدرسة إسلامية لنشر العلوم الشرعية والتربوية',
   },
   icons: {
-    icon: '/icons/icon-144x144.png',
-    apple: '/icons/icon-192x192.png',
+    icon: [
+      { url: '/icons/icon-144x144.png', sizes: '144x144', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-144x144.png', sizes: '144x144', type: 'image/png' },
+    ],
   },
   keywords: [
     'مدرسة البناء العلمي',
@@ -62,6 +67,15 @@ export const metadata: Metadata = {
     'Quran learning',
     'Islamic studies',
   ],
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'مدرسة البناء العلمي',
+    'mobile-web-app-capable': 'yes',
+    'application-name': 'مدرسة البناء العلمي',
+    'msapplication-TileColor': '#115E3C',
+    'msapplication-config': '/browserconfig.xml',
+  },
 };
 
 export default function RootLayout({
@@ -72,6 +86,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="scroll-smooth">
       <body className="font-sans antialiased bg-background text-foreground">
+        <PWAMetaTags />
         <ErrorSuppressor />
         <FontLoader />
         <LanguageProvider>

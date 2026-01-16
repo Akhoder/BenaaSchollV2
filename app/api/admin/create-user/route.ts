@@ -23,7 +23,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 });
     }
 
-    // Verify user
+    // Create admin client with service role (bypasses RLS)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    // Verify user using admin client to avoid RLS recursion
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { autoRefreshToken: false, persistSession: false },
@@ -34,8 +42,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user profile to check role
-    const { data: profile } = await userClient
+    // ✅ FIX: Get user profile using admin client to avoid RLS recursion
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', user.user.id)
@@ -72,13 +80,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email, full name, and role are required' }, { status: 400 });
     }
 
-    // Create admin client with service role
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    // adminClient is already created above
 
     // Generate a random password if not provided
     const userPassword = password || Math.random().toString(36).slice(-12) + 'A1!';
@@ -105,10 +107,18 @@ export async function POST(request: Request) {
     // Wait a moment for the trigger to create the profile
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Update profile with all fields
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .update({
+    // ✅ FIX: Use REST API directly with service role to bypass RLS completely
+    // This avoids any RLS recursion issues that occur with Supabase client
+    const updateUrl = `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`;
+    const updateResponse = await fetch(updateUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
         full_name,
         email,
         role,
@@ -126,14 +136,17 @@ export async function POST(request: Request) {
         emergency_contact: emergency_contact || null,
         appointment_date: appointment_date || null,
         department: department || null,
-      })
-      .eq('id', userId);
+      }),
+    });
 
-    if (profileError) {
-      console.error('Error updating profile:', profileError);
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      console.error('Error updating profile via REST:', errorText);
       // Try to delete the auth user if profile update fails
       await adminClient.auth.admin.deleteUser(userId);
-      return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to create profile. Please run fix_profiles_rls_recursion.sql script in Supabase SQL Editor to fix RLS policies.' 
+      }, { status: 500 });
     }
 
     return NextResponse.json({

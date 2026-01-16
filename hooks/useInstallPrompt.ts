@@ -59,6 +59,22 @@ export function useInstallPrompt() {
     // نعرض الرسالة دائماً على iOS أو إذا كان manifest موجود
     if (isIOSDevice) {
       setIsInstallable(true);
+    } else {
+      // ✅ FIX: تحقق من وجود manifest لتحديد إذا كان التطبيق قابل للتثبيت
+      // حتى لو لم يحدث beforeinstallprompt (مثل وضع التطوير)
+      fetch('/manifest.json')
+        .then(res => {
+          if (res.ok) {
+            // Manifest موجود، التطبيق قابل للتثبيت
+            setIsInstallable(true);
+            console.log('PWA: Manifest found, app is installable');
+          }
+        })
+        .catch(() => {
+          // Manifest غير موجود، لكن نعرض الرسالة على أي حال
+          setIsInstallable(true);
+          console.log('PWA: Manifest check failed, but showing prompt anyway');
+        });
     }
 
     return () => {

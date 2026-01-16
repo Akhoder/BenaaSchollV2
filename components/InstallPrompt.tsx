@@ -27,10 +27,16 @@ export function InstallPrompt() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted) {
+      console.log('[PWA Install] Component not mounted yet');
+      return;
+    }
+
+    console.log('[PWA Install] State check', { isInstalled, isStandalone, isInstallable, isIOS });
 
     // لا تظهر الرسالة إذا كان التطبيق مثبتاً بالفعل
     if (isInstalled || isStandalone) {
+      console.log('[PWA Install] App already installed, not showing prompt');
       setShowPrompt(false);
       return;
     }
@@ -48,25 +54,31 @@ export function InstallPrompt() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
+    // ✅ FIX: إظهار الرسالة دائماً إذا لم يكن التطبيق مثبتاً
     // إظهار الرسالة إذا:
     // 1. لم يتم إخفاؤها من قبل
     // 2. أو مر أسبوع منذ آخر إخفاء
     // 3. أو على iOS (لإظهار التعليمات دائماً)
     // 4. أو إذا كان التطبيق قابل للتثبيت
+    // 5. أو دائماً (للتأكد من إظهارها)
     const shouldShow = !dismissedTime || 
                       (dismissedDate && dismissedDate < oneWeekAgo) ||
                       isIOS ||
-                      isInstallable;
+                      isInstallable ||
+                      true; // ✅ FIX: إظهار دائماً للتأكد
 
     if (shouldShow) {
-      // تأخير بسيط لإظهار الرسالة بعد تحميل الصفحة
+      console.log('[PWA Install] Will show prompt after delay');
+      // ✅ FIX: تقليل الوقت لإظهار الرسالة بشكل أسرع
       const timer = setTimeout(() => {
         setShowPrompt(true);
-      }, 2000); // قللنا الوقت إلى ثانيتين
+        console.log('[PWA Install] ✅ Showing install prompt now!', { isInstallable, isIOS, isInstalled, isStandalone });
+      }, 1000); // ✅ FIX: قللنا الوقت إلى ثانية واحدة
 
       return () => clearTimeout(timer);
     } else {
       setDismissed(true);
+      console.log('[PWA Install] ❌ Not showing install prompt', { dismissedTime, shouldShow });
     }
   }, [mounted, isInstallable, isIOS, isInstalled, isStandalone]);
 
@@ -93,37 +105,44 @@ export function InstallPrompt() {
     }
   };
 
-  // دالة لإظهار الرسالة يدوياً
+  // ✅ FIX: دالة لإظهار الرسالة يدوياً - تعمل دائماً
   const showManual = () => {
-    if (!isInstalled && !isStandalone) {
-      setShowPrompt(true);
-      setDismissed(false);
+    console.log('PWA: Manual show requested', { isInstalled, isStandalone });
+    setShowPrompt(true);
+    setDismissed(false);
+    // إزالة من localStorage لإجبار إظهار الرسالة
+    try {
+      localStorage.removeItem('pwa-install-dismissed');
+    } catch (e) {
+      // localStorage غير متاح
     }
   };
 
-  // لا تظهر إذا لم يتم تحميل المكون أو كان مثبتاً
-  if (!mounted || isInstalled || isStandalone) {
-    return null;
-  }
-
-  // زر عائم لإظهار رسالة التثبيت يدوياً (يظهر فقط إذا لم تكن الرسالة مفتوحة)
-  const showFloatingButton = !showPrompt && !dismissed;
+  // ✅ FIX: إظهار زر عائم دائماً (حتى لو كان التطبيق مثبتاً، يمكن للمستخدم رؤية التعليمات)
+  // لا تظهر المودال إذا كان التطبيق مثبتاً بالفعل
+  const shouldShowModal = !isInstalled && !isStandalone && mounted;
+  
+  // زر عائم لإظهار رسالة التثبيت يدوياً (يظهر دائماً إذا لم تكن الرسالة مفتوحة)
+  const showFloatingButton = !showPrompt && mounted;
 
   return (
     <>
-      {/* زر عائم لإظهار رسالة التثبيت */}
+      {/* ✅ FIX: زر عائم لإظهار رسالة التثبيت - يظهر دائماً */}
       {showFloatingButton && (
         <Button
           onClick={showManual}
-          className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-2xl z-50 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white border-2 border-white/20 transition-all duration-300"
+          className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-2xl z-50 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white border-2 border-white/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
           size="icon"
           aria-label="تثبيت التطبيق"
+          title="تثبيت التطبيق"
         >
           <Download className="h-6 w-6" />
         </Button>
       )}
 
-      <Dialog open={showPrompt} onOpenChange={(open) => {
+      {/* ✅ FIX: إظهار المودال فقط إذا لم يكن التطبيق مثبتاً */}
+      {shouldShowModal && (
+        <Dialog open={showPrompt} onOpenChange={(open) => {
         if (!open) {
           handleDismiss();
         }
@@ -247,7 +266,8 @@ export function InstallPrompt() {
           </p>
         </div>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      )}
     </>
   );
 }
