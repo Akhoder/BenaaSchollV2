@@ -16,10 +16,14 @@ export function useServiceWorker() {
   });
 
   useEffect(() => {
-    // ✅ DISABLE IN DEVELOPMENT: Service Worker causes build issues in dev mode
+    // ✅ OPTION: Allow Service Worker in development for PWA testing
+    // Set NEXT_PUBLIC_ENABLE_SW_IN_DEV=true to enable Service Worker in development
     const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
+    const enableInDev = process.env.NEXT_PUBLIC_ENABLE_SW_IN_DEV === 'true';
+    
+    if (isDevelopment && !enableInDev) {
       console.log('[SW] Service Worker disabled in development mode');
+      console.log('[SW] To enable for PWA testing, set NEXT_PUBLIC_ENABLE_SW_IN_DEV=true');
       // Unregister any existing service workers
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -29,6 +33,10 @@ export function useServiceWorker() {
         });
       }
       return;
+    }
+    
+    if (isDevelopment && enableInDev) {
+      console.log('[SW] Service Worker enabled in development mode for PWA testing');
     }
 
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {

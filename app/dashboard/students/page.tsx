@@ -274,13 +274,14 @@ export default function StudentsPage() {
                 student_id,
                 score,
                 status,
-                assignments(
+                assignments!inner(
                   total_points
                 )
               `)
               .in('student_id', studentIds)
               .eq('status', 'graded')
-              .not('score', 'is', null)
+              .not('score', 'is', null) // ✅ FIX: Filter out null scores
+              .limit(5000) // ✅ FIX: Add limit to prevent large queries
           ]);
           
           // ✅ FIX: Extract results from Promise.allSettled

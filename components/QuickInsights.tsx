@@ -137,7 +137,8 @@ export function QuickInsights() {
             .from('assignment_submissions')
             .select('student_id, score, total_points')
             .in('student_id', studentIds)
-            .not('score', 'is', null);
+            .not('score', 'is', null) // ✅ FIX: Filter out null scores
+            .limit(1000); // ✅ FIX: Add limit to prevent large queries
           
           if (submissions && submissions.length > 0) {
             const studentScores: Record<string, number[]> = {};

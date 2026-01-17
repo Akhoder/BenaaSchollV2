@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { X, Download, Smartphone, Share2, Menu } from 'lucide-react';
+import { X, Download, Smartphone, Share2, Menu, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,9 +13,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function InstallPrompt() {
-  const { isInstallable, isInstalled, isIOS, isStandalone, promptInstall } = useInstallPrompt();
+  const { isInstallable, isInstalled, isIOS, isStandalone, promptInstall, hasPromptEvent } = useInstallPrompt();
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -83,15 +84,64 @@ export function InstallPrompt() {
   }, [mounted, isInstallable, isIOS, isInstalled, isStandalone]);
 
   const handleInstall = async () => {
+    console.log('[PWA Install] Install button clicked', { 
+      isIOS, 
+      isInstallable, 
+      hasPromptEvent,
+      isStandalone,
+      isInstalled 
+    });
+    
     if (isIOS) {
       // على iOS، نفتح التعليمات فقط (الرسالة مفتوحة بالفعل)
       // لا حاجة لفعل شيء
-    } else {
-      // على Android/Chrome، نستخدم prompt
+      console.log('[PWA Install] iOS device - showing instructions only');
+      toast.info('اتبع التعليمات أعلاه لتثبيت التطبيق على iOS', {
+        icon: <Smartphone className="w-4 h-4" />,
+      });
+      return;
+    }
+    
+    // ✅ FIX: التحقق من وجود prompt event قبل المحاولة
+    if (!hasPromptEvent) {
+      console.log('[PWA Install] ⚠️ No prompt event available - showing manual instructions');
+      toast.warning('التثبيت التلقائي غير متاح', {
+        description: 'يرجى اتباع التعليمات أدناه لتثبيت التطبيق يدوياً',
+        icon: <AlertCircle className="w-4 h-4" />,
+        duration: 5000,
+      });
+      // إبقاء المودال مفتوحاً لإظهار التعليمات
+      setShowPrompt(true);
+      return;
+    }
+    
+    // على Android/Chrome، نستخدم prompt
+    try {
+      console.log('[PWA Install] Attempting to prompt install...');
       const installed = await promptInstall();
+      
       if (installed) {
+        console.log('[PWA Install] ✅ Installation accepted by user');
+        toast.success('جاري تثبيت التطبيق...', {
+          icon: <Download className="w-4 h-4" />,
+        });
         setShowPrompt(false);
+      } else {
+        console.log('[PWA Install] ⚠️ Installation dismissed by user');
+        toast.info('تم إلغاء التثبيت', {
+          description: 'يمكنك المحاولة مرة أخرى لاحقاً',
+          icon: <X className="w-4 h-4" />,
+          duration: 3000,
+        });
       }
+    } catch (error) {
+      console.error('[PWA Install] ❌ Error during install:', error);
+      // إظهار رسالة خطأ
+      toast.error('حدث خطأ أثناء التثبيت', {
+        description: 'يمكنك تثبيت التطبيق يدوياً من قائمة المتصفح',
+        icon: <AlertCircle className="w-4 h-4" />,
+        duration: 5000,
+      });
     }
   };
 
