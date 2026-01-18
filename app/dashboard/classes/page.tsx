@@ -59,6 +59,8 @@ import {
   Loader2,
   MoreVertical,
   Eye,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { supabase, uploadClassImage } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -562,9 +564,12 @@ export default function ClassesPage() {
             onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
             className="border-border bg-background hover:bg-accent text-foreground text-xs sm:text-sm px-3 sm:px-4"
           >
-            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-            <span className="hidden sm:inline">{t('toggleView')}</span>
-            <span className="sm:hidden">{t('view')}</span>
+            {viewMode === 'list' ? (
+              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            ) : (
+              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            )}
+            <span>{viewMode === 'list' ? t('gridView') : t('listView')}</span>
           </Button>
           {profile?.role === 'admin' && (
             <Button 
@@ -696,6 +701,119 @@ export default function ClassesPage() {
                 title={t('noClassesFound')}
                 description={searchQuery ? t('tryAdjustingSearchCriteria') : t('noClassesCreatedYet')}
               />
+            ) : viewMode === 'grid' ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {paginatedClasses.map((cls) => (
+                  <Card key={cls.id} className="glass-card-hover border-primary/10 hover:border-secondary/30 transition-all duration-300">
+                    <CardHeader className="flex-row items-center gap-4">
+                      <Avatar className="h-14 w-14 ring-2 ring-secondary/30 shadow-lg flex-shrink-0">
+                        <AvatarImage src={cls.image_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
+                          {(cls.class_name || '?').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg font-semibold text-foreground truncate">{cls.class_name}</CardTitle>
+                          <Badge
+                            variant={cls.end_date && new Date(cls.end_date) <= new Date() ? 'gold' : 'success'}
+                            className="text-xs flex-shrink-0"
+                          >
+                            {cls.end_date && new Date(cls.end_date) <= new Date() ? t('completed') : t('active')}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground font-mono">{cls.class_code}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="islamic" className="text-xs">
+                            {`${t('level' as TranslationKey)} ${cls.level}`}
+                          </Badge>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Users className="h-3.5 w-3.5 text-accent" />
+                            <span>{cls.student_count || 0} {t('students')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-xs sm:text-sm font-sans">
+                        <div className="flex items-center gap-1 text-foreground">
+                          <Calendar className="h-3 w-3 text-secondary flex-shrink-0" />
+                          <span className="whitespace-nowrap">{new Date(cls.start_date).toLocaleDateString(dateLocale)}</span>
+                        </div>
+                        {cls.end_date && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {t('to')} {new Date(cls.end_date).toLocaleDateString(dateLocale)}
+                          </div>
+                        )}
+                      </div>
+                      {profile?.role === 'admin' && (
+                        <div className="flex items-center justify-between pt-2 border-t border-primary/10">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={cls.published === true}
+                              onCheckedChange={async (val) => {
+                                const { error } = await supabase
+                                  .from('classes')
+                                  .update({ published: val })
+                                  .eq('id', cls.id);
+                                if (error) {
+                                  toast.error(t('failedToUpdate'));
+                                } else {
+                                  setClasses(prev => prev.map(c => c.id === cls.id ? { ...c, published: val } : c));
+                                }
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground">{t('published')}</span>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel className="font-display">{t('actions')}</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedClass(cls);
+                                  prefillFormFromClass(cls);
+                                  setIsViewing(true);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                {t('viewDetails')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedClass(cls);
+                                  setIsViewing(false);
+                                  prefillFormFromClass(cls);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                {t('edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => {
+                                  setSelectedClass(cls);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t('delete')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
                 <Table className="min-w-[800px] md:min-w-0">
