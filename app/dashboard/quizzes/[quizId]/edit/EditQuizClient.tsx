@@ -33,7 +33,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase, fetchQuizBundle, updateQuiz, fetchQuestionsForQuiz, addQuizQuestion, updateQuestion, replaceOptions, addQuizOptions } from '@/lib/supabase';
+import { supabase, fetchQuizBundle, updateQuiz, fetchQuestionsForQuiz, addQuizQuestion, updateQuestion, replaceOptions, addQuizOptions, regradeQuizAttempts } from '@/lib/supabase';
 
 import { PageHeader } from '@/components/PageHeader';
 
@@ -226,6 +226,7 @@ export default function EditQuizClient() {
 
         // Determine correct_answer based on question type
         let correct_answer: string | number | boolean | null = null;
+        let tolerance: number | undefined = undefined;
         if (q.type === 'true_false') {
           // For true_false, find the correct option
           // Use order_index for language independence: 0 = True, 1 = False
@@ -234,8 +235,11 @@ export default function EditQuizClient() {
             correct_answer = correctOpt.order_index === 0; // true if order_index is 0 (True), false if 1 (False)
           }
         } else if (q.type === 'numeric') {
-          // For numeric, use media_url as correct_answer
-          correct_answer = q.media_url ? Number(q.media_url) : null;
+          // For numeric, the correct value lives in a quiz_options row (is_correct=true), same
+          // as every other auto-graded type; media_url holds the tolerance.
+          const correctOpt = opts.find((opt: any) => opt.is_correct);
+          correct_answer = correctOpt ? Number(correctOpt.text) : null;
+          tolerance = q.media_url ? Number(q.media_url) : 0;
         }
 
         return {
@@ -246,7 +250,7 @@ export default function EditQuizClient() {
           order_index: q.order_index ?? 0,
           options: (q.type === 'mcq_single' || q.type === 'mcq_multi') ? opts : undefined,
           correct_answer,
-          tolerance: undefined,
+          tolerance,
           media_url: q.media_url,
         };
       });
@@ -496,9 +500,10 @@ export default function EditQuizClient() {
         order_index: idx,
       };
 
-      // Handle numeric questions
+      // Handle numeric questions: media_url holds the TOLERANCE. The correct value itself is
+      // stored as a quiz_options row (below), same place every other auto-graded type reads it.
       if (question.type === 'numeric') {
-        updateData.media_url = question.correct_answer !== null ? String(question.correct_answer) : null;
+        updateData.media_url = String(question.tolerance ?? 0);
       } else {
         updateData.media_url = question.media_url ?? null;
       }
@@ -537,12 +542,29 @@ export default function EditQuizClient() {
           { text: language === 'ar' ? 'خطأ' : 'False', is_correct: !correctAnswerBool, order_index: 1 },
         ];
         await replaceOptions(question.id, trueFalseOptions);
+      } else if (question.type === 'numeric') {
+        // Store the correct value as a single quiz_options row, mirroring true_false above.
+        if (question.correct_answer !== null && question.correct_answer !== undefined) {
+          await replaceOptions(question.id, [
+            { text: String(question.correct_answer), is_correct: true, order_index: 0 },
+          ]);
+        }
+      }
+
+      // Existing attempts were graded against the old answer key — re-sync their scores if this
+      // question's points or correct answer changed (points/correct_answer edits only matter for
+      // auto-graded and true_false/numeric types; short_text has no answer key to drift).
+      if (question.type !== 'short_text') {
+        const { error: regradeError } = await regradeQuizAttempts(quizId);
+        if (regradeError) {
+          console.warn('Failed to regrade existing attempts after edit:', regradeError);
+        }
       }
 
       toast.success(language === 'ar' ? 'تم الحفظ' : 'Saved');
-      
-      // Reload options for MCQ questions
-      if (question.type === 'mcq_single' || question.type === 'mcq_multi') {
+
+      // Reload options for MCQ / numeric questions
+      if (question.type === 'mcq_single' || question.type === 'mcq_multi' || question.type === 'numeric') {
         const { data: updatedOptions } = await supabase
           .from('quiz_options')
           .select('*')
@@ -560,7 +582,7 @@ export default function EditQuizClient() {
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
-  }, [language]);
+  }, [language, quizId]);
 
   if (authLoading || loading || loadingRefs) {
     return (

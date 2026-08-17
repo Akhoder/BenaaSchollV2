@@ -1,6 +1,5 @@
 'use client';
 
-import TakeQuizClient from './TakeQuizClient';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -14,7 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TranslationKey } from '@/lib/translations';
-import { fetchQuizBundle, supabase, startQuizAttempt, saveQuizAnswer, submitQuizAttempt, fetchAnswersForAttempt, gradeAnswersBulk, updateAttemptScore, recalcAttemptScore } from '@/lib/supabase';
+import { fetchQuizBundleForTaking, supabase, startQuizAttempt, saveQuizAnswer } from '@/lib/supabase';
 
 export const dynamic = 'force-static';
 
@@ -73,7 +72,7 @@ export default function TakeQuizPage() {
   const load = async () => {
     try {
       setLoading(true);
-      const { quiz, questions, optionsByQuestion } = await fetchQuizBundle(quizId);
+      const { quiz, questions, optionsByQuestion } = await fetchQuizBundleForTaking(quizId);
       if (!quiz) { toast.error(t('noQuizzesFound' as TranslationKey)); router.push('/dashboard'); return; }
       setBundle({ quiz, questions, optionsByQuestion });
 
@@ -228,88 +227,23 @@ export default function TakeQuizPage() {
         setSubmitDialogOpen(false);
       }
       const duration = (bundle?.quiz?.time_limit_minutes ? (bundle.quiz.time_limit_minutes * 60 - (timeLeft || 0)) : undefined);
-      const { error } = await submitQuizAttempt(attempt!.id, duration);
-      if (error) { toast.error(t('unexpectedError' as TranslationKey)); return; }
 
-      // Auto-grade auto-gradable questions
-      const { quiz, questions, optionsByQuestion } = bundle!;
-      const { data: ansRows } = await fetchAnswersForAttempt(attempt!.id);
-      const toGrade: Array<{ id: string; is_correct: boolean; points_awarded: number }> = [];
-      let total = 0;
-      (ansRows || []).forEach((row: any) => {
-        const q = (questions as any[]).find((x: any) => x.id === row.question_id);
-        if (!q) return;
-        // Ensure points is a valid positive number, default to 1 if invalid
-        const points = Math.max(1, Number(q.points) || 1);
-        if (isNaN(points) || points <= 0) {
-          console.warn(`Invalid points value for question ${q.id}, using default 1`);
-          return;
-        }
-        
-        // MCQ Single Choice
-        if (q.type === 'mcq_single') {
-          const selected = (row.answer_payload?.selected_option_ids || [])[0];
-          const opts = optionsByQuestion.get(q.id) || [];
-          const correctOpt = opts.find((o: any) => o.is_correct);
-          const correct = !!selected && !!correctOpt && selected === correctOpt.id;
-          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
-          if (correct) total += points;
-        }
-        // MCQ Multiple Choice
-        else if (q.type === 'mcq_multi') {
-          const selected: string[] = row.answer_payload?.selected_option_ids || [];
-          const opts = optionsByQuestion.get(q.id) || [];
-          const correctIds = opts.filter((o: any) => o.is_correct).map((o: any) => o.id).sort();
-          const selSorted = [...selected].sort();
-          const correct = JSON.stringify(correctIds) === JSON.stringify(selSorted);
-          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
-          if (correct) total += points;
-        }
-        // True/False
-        else if (q.type === 'true_false') {
-          const provided = row.answer_payload?.bool;
-          const opts = optionsByQuestion.get(q.id) || [];
-          const correctOpt = opts.find((o: any) => o.is_correct);
-          // Use order_index instead of text comparison for language independence
-          // order_index 0 = True, order_index 1 = False
-          const correctVal = correctOpt ? correctOpt.order_index === 0 : undefined;
-          const correct = typeof provided === 'boolean' && typeof correctVal === 'boolean' && provided === correctVal;
-          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
-          if (correct) total += points;
-        }
-        // Numeric
-        else if (q.type === 'numeric') {
-          const provided = row.answer_payload?.number;
-          const opts = optionsByQuestion.get(q.id) || [];
-          const correctOpt = opts.find((o: any) => o.is_correct);
-          const correctVal = correctOpt ? Number(correctOpt.text) : undefined;
-          const tol = q.media_url ? Number(q.media_url) : 0;
-          // Validate that both values are valid numbers before comparison
-          const providedNum = typeof provided === 'number' && !isNaN(provided) ? provided : undefined;
-          const correctNum = typeof correctVal === 'number' && !isNaN(correctVal) ? correctVal : undefined;
-          const tolNum = !isNaN(tol) && tol >= 0 ? tol : 0;
-          const correct = providedNum !== undefined && correctNum !== undefined && Math.abs(providedNum - correctNum) <= tolNum;
-          toGrade.push({ id: row.id, is_correct: correct, points_awarded: correct ? points : 0 });
-          if (correct) total += points;
-        }
-        // Note: short_text, ordering, matching require manual grading
+      // Submission + grading happen server-side: the browser never has the correct-answer data
+      // (see fetchQuizBundleForTaking) and can't be trusted to grade or set its own score.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch('/api/quizzes/submit-attempt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({ attemptId: attempt!.id, durationSeconds: duration }),
       });
-      if (toGrade.length > 0) {
-        const gradeResult = await gradeAnswersBulk(toGrade);
-        if (gradeResult?.error) {
-          console.error('Error grading answers:', gradeResult.error);
-          toast.error(t('unexpectedError' as TranslationKey));
-        }
-      }
-      // Use recalcAttemptScore to ensure accuracy (sums all points_awarded from DB)
-      // This is more reliable than using the calculated 'total' variable
-      const { error: recalcError } = await recalcAttemptScore(attempt!.id);
-      if (recalcError) {
-        // Fallback to manual calculation if recalc fails
-        const { error: updateError } = await updateAttemptScore(attempt!.id, total);
-        if (updateError) {
-          console.error('Error updating attempt score:', updateError);
-        }
+      if (!res.ok) {
+        console.error('Error submitting attempt:', await res.text().catch(() => ''));
+        toast.error(t('unexpectedError' as TranslationKey));
+        return;
       }
 
       toast.success(t('submitted' as TranslationKey));

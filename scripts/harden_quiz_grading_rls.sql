@@ -1,0 +1,101 @@
+-- ============================================
+-- RECOMMENDED (not applied automatically): harden RLS on quiz grading tables
+-- ============================================
+--
+-- CONTEXT: The app now submits/grades a quiz attempt through a server-side API
+-- route (app/api/quizzes/submit-attempt) using the Supabase service-role key, so
+-- the browser is never trusted to decide whether an answer is correct. That closes
+-- the easy path. It does NOT by itself stop a student from calling the Supabase
+-- client directly (e.g. from devtools, using their own logged-in session) and
+-- issuing `update quiz_answers set is_correct = true, points_awarded = 999 ...`
+-- or `update quiz_attempts set score = 100, status = 'graded' ...` on their own
+-- rows — that is purely a function of whatever RLS policies currently exist on
+-- these tables, which live in the Supabase dashboard, not in this repo.
+--
+-- This script is a STARTING POINT, not a drop-in fix — I cannot see your current
+-- policies from here, so please review it against them (in particular the
+-- existing staff-only policies that let teachers/admins grade answers) before
+-- running it. Run `select * from pg_policies where tablename in ('quiz_answers',
+-- 'quiz_attempts');` first to see what's already there.
+--
+-- Recommended shape:
+-- - A student may INSERT/UPDATE the `answer_payload` column of their OWN
+--   quiz_answers rows only while the parent attempt's status is 'in_progress'
+--   (this is what saveQuizAnswer needs).
+-- - A student may NOT set `is_correct` / `points_awarded` on quiz_answers, nor
+--   `score` / `status` on quiz_attempts, directly — those are written only by the
+--   service role (the submit-attempt route) or by staff roles (grading UI).
+--
+-- ============================================
+
+-- Example: restrict students to only ever touching answer_payload on their own
+-- in-progress attempt's answers. Adjust the role/claim check to match how this
+-- project identifies "student" (see existing policies on `profiles`).
+--
+-- drop policy if exists "students can save their own answers" on quiz_answers;
+-- create policy "students can save their own answers"
+-- on quiz_answers for insert
+-- with check (
+--   exists (
+--     select 1 from quiz_attempts a
+--     where a.id = quiz_answers.attempt_id
+--       and a.student_id = auth.uid()
+--       and a.status = 'in_progress'
+--   )
+-- );
+--
+-- drop policy if exists "students can update their own answer payload" on quiz_answers;
+-- create policy "students can update their own answer payload"
+-- on quiz_answers for update
+-- using (
+--   exists (
+--     select 1 from quiz_attempts a
+--     where a.id = quiz_answers.attempt_id
+--       and a.student_id = auth.uid()
+--       and a.status = 'in_progress'
+--   )
+-- )
+-- with check (
+--   exists (
+--     select 1 from quiz_attempts a
+--     where a.id = quiz_answers.attempt_id
+--       and a.student_id = auth.uid()
+--       and a.status = 'in_progress'
+--   )
+--   -- NOTE: Postgres RLS cannot restrict which *columns* an UPDATE touches.
+--   -- If a student must be blocked from writing is_correct/points_awarded even
+--   -- while allowed to write answer_payload, enforce that with a BEFORE UPDATE
+--   -- trigger that raises if those columns changed and the caller isn't the
+--   -- service role / staff, e.g.:
+--   --
+--   -- create or replace function reject_student_grade_write() returns trigger as $$
+--   -- begin
+--   --   if (new.is_correct is distinct from old.is_correct
+--   --       or new.points_awarded is distinct from old.points_awarded)
+--   --      and auth.role() <> 'service_role' then
+--   --     raise exception 'grading fields are read-only for this session';
+--   --   end if;
+--   --   return new;
+--   -- end;
+--   -- $$ language plpgsql security definer;
+--   --
+--   -- create trigger quiz_answers_reject_student_grade_write
+--   -- before update on quiz_answers
+--   -- for each row execute function reject_student_grade_write();
+-- );
+--
+-- drop policy if exists "students can view their own answers" on quiz_answers;
+-- create policy "students can view their own answers"
+-- on quiz_answers for select
+-- using (
+--   exists (
+--     select 1 from quiz_attempts a
+--     where a.id = quiz_answers.attempt_id and a.student_id = auth.uid()
+--   )
+-- );
+--
+-- quiz_attempts: students should be able to select their own rows and (via
+-- startQuizAttempt) insert a new in_progress attempt, but score/status updates
+-- should come only from the service role or staff — remove/replace any existing
+-- broad "students can update their own attempts" policy with one scoped to
+-- non-grading columns, or a trigger as above.

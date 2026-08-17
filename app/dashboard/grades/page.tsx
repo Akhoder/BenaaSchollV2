@@ -73,11 +73,15 @@ export default function GradesPage() {
 
       // Get all assignments for all subjects in parallel
       if (allSubjectIds.length > 0) {
-        const { data: allAssignments } = await api.supabase
+        const { data: allAssignments, error: assignmentsError } = await api.supabase
           .from('assignments')
           .select('id, title, total_points, subject_id')
           .in('subject_id', allSubjectIds)
           .in('status', ['published', 'closed']);
+
+        if (assignmentsError) {
+          console.error('Error fetching assignments for grades:', assignmentsError);
+        }
 
         if (allAssignments && allAssignments.length > 0) {
           // Get all submissions in parallel
@@ -100,11 +104,17 @@ export default function GradesPage() {
         }
 
         // ✅ Get all quizzes for all subjects in parallel
-        const { data: allQuizzes } = await api.supabase
+        // Note: quizzes has no `status`/`total_points` columns (those belong to `assignments`);
+        // "open/closed" is derived elsewhere from start_at/end_at, and total points is always
+        // computed from quiz_questions below.
+        const { data: allQuizzes, error: quizzesError } = await api.supabase
           .from('quizzes')
-          .select('id, title, total_points, subject_id, lesson_id')
-          .in('subject_id', allSubjectIds)
-          .in('status', ['published', 'closed']);
+          .select('id, title, subject_id, lesson_id')
+          .in('subject_id', allSubjectIds);
+
+        if (quizzesError) {
+          console.error('Error fetching quizzes for grades:', quizzesError);
+        }
 
         if (allQuizzes && allQuizzes.length > 0) {
           // ✅ PERFORMANCE: Calculate total_points for all quizzes in parallel first
@@ -113,22 +123,17 @@ export default function GradesPage() {
             .from('quiz_questions')
             .select('quiz_id, points')
             .in('quiz_id', quizIds);
-          
-          // Create a map of quiz_id -> total_points
+
+          // Create a map of quiz_id -> total_points (always derived from question points)
           const quizTotalPointsMap: Record<string, number> = {};
           allQuizzes.forEach((quiz: any) => {
-            if (quiz.total_points && quiz.total_points > 0) {
-              quizTotalPointsMap[quiz.id] = quiz.total_points;
+            const questions = (allQuestions || []).filter((q: any) => q.quiz_id === quiz.id);
+            if (questions.length > 0) {
+              quizTotalPointsMap[quiz.id] = questions.reduce((sum: number, q: any) => {
+                return sum + (Number(q.points) || 1);
+              }, 0);
             } else {
-              // Calculate from questions
-              const questions = (allQuestions || []).filter((q: any) => q.quiz_id === quiz.id);
-              if (questions.length > 0) {
-                quizTotalPointsMap[quiz.id] = questions.reduce((sum: number, q: any) => {
-                  return sum + (Number(q.points) || 1);
-                }, 0);
-              } else {
-                quizTotalPointsMap[quiz.id] = 100; // Default fallback
-              }
+              quizTotalPointsMap[quiz.id] = 100; // Default fallback
             }
           });
 

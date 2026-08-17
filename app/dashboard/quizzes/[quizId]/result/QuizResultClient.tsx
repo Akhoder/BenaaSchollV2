@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase, fetchQuizBundle, fetchAnswersForAttempt, recalcAttemptScore } from '@/lib/supabase';
+import { supabase, fetchQuizBundle, fetchAnswersForAttempt } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TranslationKey } from '@/lib/translations';
@@ -81,65 +81,12 @@ export default function QuizResultClient() {
             }
           });
           setAnswers(map);
-          
-          // If score is null/undefined, try to recalculate it
-          if ((att.score === null || att.score === undefined) && att.status === 'submitted') {
-            try {
-              const { error: recalcError } = await recalcAttemptScore(att.id);
-              if (!recalcError) {
-                // Re-fetch the attempt to get updated score
-                const { data: updatedAttempt } = await supabase
-                  .from('quiz_attempts')
-                  .select('*')
-                  .eq('id', att.id)
-                  .single();
-                if (updatedAttempt) {
-                  // Re-fetch answers to get updated is_correct and points_awarded
-                  const { data: updatedAnsRows } = await fetchAnswersForAttempt(att.id);
-                  const updatedMap: Record<string, any> = {};
-                  (updatedAnsRows || []).forEach((r: any) => { updatedMap[r.question_id] = r; });
-                  setAnswers(updatedMap);
-                  setAttempt(updatedAttempt);
-                  return;
-                }
-              }
-            } catch (err) {
-              console.warn('Error recalculating score:', err);
-            }
-          }
-          
-          // Also recalculate if attempt is graded but score is 0 and we have answers
-          if (att.status === 'graded' && (att.score === null || att.score === 0 || att.score === undefined)) {
-            // Check if we have answers with points_awarded
-            const hasGradedAnswers = Object.values(map).some((ans: any) => 
-              ans.points_awarded !== null && ans.points_awarded !== undefined
-            );
-            if (hasGradedAnswers) {
-              try {
-                const { error: recalcError } = await recalcAttemptScore(att.id);
-                if (!recalcError) {
-                  // Re-fetch the attempt and answers
-                  const { data: updatedAttempt } = await supabase
-                    .from('quiz_attempts')
-                    .select('*')
-                    .eq('id', att.id)
-                    .single();
-                  if (updatedAttempt) {
-                    const { data: updatedAnsRows } = await fetchAnswersForAttempt(att.id);
-                    const updatedMap: Record<string, any> = {};
-                    (updatedAnsRows || []).forEach((r: any) => { updatedMap[r.question_id] = r; });
-                    setAnswers(updatedMap);
-                    setAttempt(updatedAttempt);
-                    return;
-                  }
-                }
-              } catch (err) {
-                console.warn('Error recalculating score for graded attempt:', err);
-              }
-            }
-          }
+          // Note: this view is intentionally read-only — it no longer triggers a server-side
+          // recalculation just because a score looks missing/zero. If attempt.score is null,
+          // the calculatedScore/finalScore fallbacks below derive a display value purely from
+          // the fetched answers, without writing anything back to the database.
         }
-        
+
         setAttempt(att);
       } finally {
         setLoading(false);

@@ -331,8 +331,10 @@ export default function NewQuizPage() {
           order_index: question.order_index,
         };
 
-        if (question.type === 'numeric' && question.correct_answer !== null) {
-          questionPayload.media_url = String(question.correct_answer);
+        if (question.type === 'numeric') {
+          // media_url holds the TOLERANCE for numeric questions; the correct value itself is
+          // stored as a quiz_options row below (grading reads it from there, same as true_false).
+          questionPayload.media_url = String(question.tolerance ?? 0);
         }
 
         const { data: createdQuestion, error: qErr } = await addQuizQuestion(questionPayload);
@@ -377,6 +379,18 @@ export default function NewQuizPage() {
           if (optErr) {
             console.error('Error adding true/false options:', optErr);
             toast.error(`Failed to add options for question: ${question.text.substring(0, 30)}...`);
+          }
+        }
+
+        // Numeric questions: store the correct value as a single quiz_options row
+        // (mirrors true_false above) so grading can find it the same way for every auto-graded type.
+        if (question.type === 'numeric' && question.correct_answer !== null && question.correct_answer !== undefined) {
+          const { error: optErr } = await addQuizOptions(createdQuestion.id, [
+            { text: String(question.correct_answer), is_correct: true, order_index: 0 },
+          ]);
+          if (optErr) {
+            console.error('Error adding numeric answer option:', optErr);
+            toast.error(`Failed to add correct answer for question: ${question.text.substring(0, 30)}...`);
           }
         }
       }
