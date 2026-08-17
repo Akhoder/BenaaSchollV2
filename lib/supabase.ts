@@ -1586,13 +1586,23 @@ export async function startQuizAttempt(quizId: string) {
 }
 
 export async function saveQuizAnswer(attemptId: string, questionId: string, answer_payload: any) {
-  // upsert-like: remove existing then insert to keep one row per question
-  const { error: delErr } = await supabase
+  // Update-if-exists, insert otherwise. NOTE: this used to be delete-then-insert, but there is
+  // no RLS policy allowing a student to DELETE their own quiz_answers rows, so that delete
+  // silently affected 0 rows and every save (including the periodic autosave) piled up a new
+  // duplicate row per question instead of replacing the old one. This requires a student-scoped
+  // UPDATE policy on quiz_answers (see scripts/harden_quiz_grading_rls.sql) — without it, the
+  // update below will likewise affect 0 rows and this will fall back to inserting duplicates.
+  // Note: quiz_answers has no updated_at column — don't set one, it'll error.
+  const { data: updated, error: updateErr } = await supabase
     .from('quiz_answers')
-    .delete()
+    .update({ answer_payload } as any)
     .eq('attempt_id', attemptId)
-    .eq('question_id', questionId);
-  if (delErr) return { data: null, error: delErr } as any;
+    .eq('question_id', questionId)
+    .select('*');
+
+  if (updateErr) return { data: null, error: updateErr } as any;
+  if (updated && updated.length > 0) return { data: updated[0], error: null } as any;
+
   return await supabase
     .from('quiz_answers')
     .insert([{ attempt_id: attemptId, question_id: questionId, answer_payload }])
@@ -1693,9 +1703,11 @@ export async function updateAnswerPayload(answerId: string, partial: Record<stri
   // Fetch current payload
   const { data: row } = await supabase.from('quiz_answers').select('answer_payload').eq('id', answerId).single();
   const payload = { ...(row?.answer_payload || {}), ...partial };
+  // Note: quiz_answers has no updated_at column — don't set one, it'll error. This was
+  // previously silently broken (the caller doesn't check the error before toasting success).
   return await supabase
     .from('quiz_answers')
-    .update({ answer_payload: payload as any, updated_at: new Date().toISOString() } as any)
+    .update({ answer_payload: payload as any } as any)
     .eq('id', answerId)
     .select('*')
     .single();
