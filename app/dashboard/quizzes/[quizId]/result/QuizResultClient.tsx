@@ -26,6 +26,33 @@ import {
 // Client component - generateStaticParams handled in page.tsx
 export const dynamicParams = true;
 
+// Whether the current student is allowed to see their results at all, per the quiz's
+// show_results_policy. Pulled out of the component so it can be evaluated on freshly-fetched
+// data inside the load effect (before it's committed to state) as well as in the render-time
+// memo below — the two must never disagree, since the fetch effect uses it to decide whether
+// it's even safe to fetch answer-correctness data in the first place.
+function computeCanShow(quiz: any, attempt: any): boolean {
+  if (!quiz || !attempt) return false;
+
+  const policy = quiz.show_results_policy || 'after_close';
+  if (policy === 'never') return false;
+
+  if (policy === 'immediate') {
+    return attempt.status === 'graded' || attempt.status === 'submitted';
+  }
+
+  if (policy === 'after_close') {
+    if (!quiz.end_at) {
+      return attempt.status === 'graded' || attempt.status === 'submitted';
+    }
+    const now = new Date();
+    const endDate = new Date(quiz.end_at);
+    return endDate < now && (attempt.status === 'graded' || attempt.status === 'submitted');
+  }
+
+  return attempt.status === 'graded' || attempt.status === 'submitted';
+}
+
 export default function QuizResultClient() {
   const params = useParams();
   const search = useSearchParams();
@@ -43,16 +70,17 @@ export default function QuizResultClient() {
 
   useEffect(() => {
     if (authLoading || !profile) return;
-    
+
     (async () => {
       try {
         setLoading(true);
-        const { quiz, questions, optionsByQuestion } = await fetchQuizBundle(quizId);
-        setQuiz(quiz);
-        setQuestions(questions || []);
-        setOptionsByQuestion(optionsByQuestion as any);
-        
-        // ✅ FIX: Fetch the most recent attempt (graded or submitted) for current student
+
+        // Fetch just the quiz row and the student's attempt first — neither contains any
+        // correct-answer data — so we can decide whether show_results_policy actually allows
+        // this student to see results BEFORE fetching anything that would reveal them.
+        const { data: quizRow } = await supabase.from('quizzes').select('*').eq('id', quizId).single();
+        setQuiz(quizRow);
+
         const { data: attempts } = await supabase
           .from('quiz_attempts')
           .select('*')
@@ -62,32 +90,31 @@ export default function QuizResultClient() {
           .order('started_at', { ascending: false })
           .limit(1);
         const att = attempts && attempts[0] ? attempts[0] : null;
-        
-        if (att) {
-          const { data: ansRows, error: ansError } = await fetchAnswersForAttempt(att.id);
-          if (ansError) {
-            console.error('Error fetching answers:', ansError);
-          }
-          const map: Record<string, any> = {};
-          (ansRows || []).forEach((r: any) => { 
-            map[r.question_id] = r;
-            // Debug: log answer data
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`Answer for question ${r.question_id}:`, {
-                is_correct: r.is_correct,
-                points_awarded: r.points_awarded,
-                answer_payload: r.answer_payload
-              });
-            }
-          });
-          setAnswers(map);
-          // Note: this view is intentionally read-only — it no longer triggers a server-side
-          // recalculation just because a score looks missing/zero. If attempt.score is null,
-          // the calculatedScore/finalScore fallbacks below derive a display value purely from
-          // the fetched answers, without writing anything back to the database.
+        setAttempt(att);
+
+        if (!quizRow || !att || !computeCanShow(quizRow, att)) {
+          // Policy doesn't allow showing results yet (or ever) — stop here. Don't fetch
+          // questions/options/answers, so correct-answer data never reaches the browser.
+          return;
         }
 
-        setAttempt(att);
+        const { questions, optionsByQuestion } = await fetchQuizBundle(quizId);
+        setQuestions(questions || []);
+        setOptionsByQuestion(optionsByQuestion as any);
+
+        const { data: ansRows, error: ansError } = await fetchAnswersForAttempt(att.id);
+        if (ansError) {
+          console.error('Error fetching answers:', ansError);
+        }
+        const map: Record<string, any> = {};
+        (ansRows || []).forEach((r: any) => {
+          map[r.question_id] = r;
+        });
+        setAnswers(map);
+        // Note: this view is intentionally read-only — it no longer triggers a server-side
+        // recalculation just because a score looks missing/zero. If attempt.score is null,
+        // the calculatedScore/finalScore fallbacks below derive a display value purely from
+        // the fetched answers, without writing anything back to the database.
       } finally {
         setLoading(false);
       }
@@ -96,35 +123,8 @@ export default function QuizResultClient() {
 
   const classId = search.get('classId');
   const subjectId = search.get('subjectId');
-  // ✅ FIX: Check if results should be shown based on quiz policy
-  const canShow = useMemo(() => {
-    if (!quiz || !attempt) return false;
-    
-    // Default policy is 'after_close' if not set
-    const policy = quiz.show_results_policy || 'after_close';
-    
-    // If policy is 'never', never show results
-    if (policy === 'never') return false;
-    
-    // If policy is 'immediate', show results immediately after submission
-    if (policy === 'immediate') {
-      return attempt.status === 'graded' || attempt.status === 'submitted';
-    }
-    
-    // If policy is 'after_close', only show after quiz end date has passed
-    if (policy === 'after_close') {
-      if (!quiz.end_at) {
-        // If no end date, show if attempt is graded or submitted (more lenient)
-        return attempt.status === 'graded' || attempt.status === 'submitted';
-      }
-      const now = new Date();
-      const endDate = new Date(quiz.end_at);
-      return endDate < now && (attempt.status === 'graded' || attempt.status === 'submitted');
-    }
-    
-    // Default: show if attempt is graded or submitted
-    return attempt.status === 'graded' || attempt.status === 'submitted';
-  }, [quiz, attempt]);
+  // Check if results should be shown based on quiz policy
+  const canShow = useMemo(() => computeCanShow(quiz, attempt), [quiz, attempt]);
   
   // Calculate total_points from questions
   const totalPoints = useMemo(() => {
@@ -279,8 +279,10 @@ export default function QuizResultClient() {
           gradient="from-secondary to-accent"
         />
 
-        {/* Score Card - Show if attempt exists and canShow is true, or if attempt exists and we want to show score even if policy doesn't allow full results */}
-        {attempt && (canShow || attempt.status === 'graded' || attempt.status === 'submitted') && (
+        {/* Score Card - only once show_results_policy actually allows it; the previous
+            condition here effectively ignored the policy since every fetched attempt already
+            has status 'graded' or 'submitted'. */}
+        {attempt && canShow && (
           <Card className="glass-card border-secondary/30 bg-gradient-to-br from-secondary/10 to-accent/10 shadow-xl shadow-secondary/20 animate-fade-in-up">
             <CardContent className="pt-6 relative overflow-hidden">
               {/* Decorative Background */}
